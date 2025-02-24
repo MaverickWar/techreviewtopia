@@ -1,5 +1,5 @@
 
-import { useState, Dispatch, SetStateAction } from "react";
+import { useState, Dispatch, SetStateAction, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,25 +19,65 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Debug: Check for existing session on component mount
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      console.log("Current session:", session);
+      if (error) console.error("Session check error:", error);
+      
+      // Clear any existing session
+      if (session) {
+        console.log("Clearing existing session...");
+        await supabase.auth.signOut();
+      }
+    };
+    
+    checkSession();
+  }, []);
+
+  // Debug: Log Supabase client configuration
+  useEffect(() => {
+    console.log("Supabase URL:", supabase.supabaseUrl);
+    console.log("Supabase client initialized:", !!supabase);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    console.log("Attempting auth operation:", mode);
 
     try {
       if (mode === 'register') {
-        const { error: signUpError } = await supabase.auth.signUp({
+        console.log("Starting registration for:", email);
+        
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          }
         });
+
+        console.log("Sign up response:", { data: signUpData, error: signUpError });
 
         if (signUpError) throw signUpError;
 
-        // Create profile in the profiles table
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([{ id: (await supabase.auth.getUser()).data.user?.id, email, role: 'user' }]);
+        if (signUpData.user) {
+          console.log("Creating profile for user:", signUpData.user.id);
+          
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert([{ 
+              id: signUpData.user.id, 
+              email, 
+              role: 'user' 
+            }]);
 
-        if (profileError) throw profileError;
+          console.log("Profile creation result:", { error: profileError });
+          
+          if (profileError) throw profileError;
+        }
 
         toast({
           title: "Account created",
@@ -46,10 +86,14 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
         
         if (onClose) onClose();
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        console.log("Attempting login for:", email);
+        
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
+
+        console.log("Sign in response:", { data: signInData, error: signInError });
 
         if (signInError) throw signInError;
 
