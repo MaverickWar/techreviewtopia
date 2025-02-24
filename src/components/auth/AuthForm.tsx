@@ -96,6 +96,10 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
 
         if (signInError) throw signInError;
 
+        if (!signInData.user) {
+          throw new Error("Login failed - no user data returned");
+        }
+
         toast({
           title: "Welcome back!",
           description: "You have successfully logged in.",

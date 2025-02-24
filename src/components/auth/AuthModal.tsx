@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useState } from "react";
 import { AuthForm } from "./AuthForm";
 
@@ -17,6 +17,10 @@ export const AuthModal = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden">
+        <DialogTitle className="sr-only">Authentication</DialogTitle>
+        <DialogDescription className="sr-only">
+          Sign in or create an account to continue
+        </DialogDescription>
         <div className="grid grid-cols-1 md:grid-cols-5 h-[600px]">
           {/* Left Panel - Image */}
           <div className="relative col-span-2 hidden md:block">
