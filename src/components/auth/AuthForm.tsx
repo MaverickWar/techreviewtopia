@@ -25,29 +25,44 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
 
     try {
       if (mode === 'register') {
-        const { error } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            emailRedirectTo: window.location.origin,
-          },
         });
-        if (error) throw error;
+
+        if (signUpError) throw signUpError;
+
+        // Create profile in the profiles table
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{ id: (await supabase.auth.getUser()).data.user?.id, email, role: 'user' }]);
+
+        if (profileError) throw profileError;
+
         toast({
-          title: "Check your email",
-          description: "We've sent you a verification link.",
+          title: "Account created",
+          description: "Please check your email for verification.",
         });
+        
         if (onClose) onClose();
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        if (error) throw error;
+
+        if (signInError) throw signInError;
+
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully logged in.",
+        });
+
         if (onClose) onClose();
         navigate("/admin");
       }
     } catch (error: any) {
+      console.error("Auth error:", error);
       toast({
         title: "Error",
         description: error.message,
