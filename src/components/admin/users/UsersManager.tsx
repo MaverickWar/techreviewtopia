@@ -40,38 +40,17 @@ export const UsersManager = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Get current user session to check role
   const { data: users, isLoading } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
-      // First get current user session
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log("Current session:", sessionData);
-
-      // Get current user's profile to check role
-      const { data: currentProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', sessionData.session?.user.id)
-        .single();
-      
-      console.log("Current user profile:", currentProfile);
-      
-      if (profileError) {
-        console.error("Profile error:", profileError);
-        throw profileError;
-      }
-
-      // Get all profiles if user is admin
+      // Get all profiles
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      console.log("Fetched profiles:", data);
-      
       if (error) {
-        console.error("Fetch error:", error);
+        console.error("Error fetching users:", error);
         toast({
           title: "Error fetching users",
           description: error.message,
@@ -79,6 +58,8 @@ export const UsersManager = () => {
         });
         throw error;
       }
+
+      console.log("Fetched profiles:", data);
       return data as User[];
     },
   });
@@ -100,6 +81,7 @@ export const UsersManager = () => {
       });
     },
     onError: (error: any) => {
+      console.error("Error updating role:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -122,6 +104,7 @@ export const UsersManager = () => {
       });
     },
     onError: (error: any) => {
+      console.error("Error deleting user:", error);
       setShowDeleteDialog(false);
       toast({
         title: "Error",
@@ -199,9 +182,7 @@ export const UsersManager = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  users.filter(user => 
-                    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
-                  ).map((user) => (
+                  filteredUsers?.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
