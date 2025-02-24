@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -9,9 +9,12 @@ import {
   Image,
   Settings,
   ChevronLeft,
-  Menu
+  Menu,
+  LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
@@ -24,10 +27,24 @@ const sidebarItems = [
 export const AdminLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate("/auth");
+    } catch (error: any) {
+      toast({
+        title: "Error logging out",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Sidebar */}
       <div
         className={cn(
           "fixed left-0 top-0 z-40 h-screen bg-slate-900 text-white transition-all duration-300",
@@ -68,9 +85,19 @@ export const AdminLayout = () => {
             );
           })}
         </nav>
+
+        <div className="absolute bottom-4 left-0 right-0 px-2">
+          <Button
+            variant="ghost"
+            className="w-full justify-start hover:bg-slate-800"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-5 w-5 mr-2" />
+            {!collapsed && <span>Logout</span>}
+          </Button>
+        </div>
       </div>
 
-      {/* Main Content */}
       <div
         className={cn(
           "transition-all duration-300",
