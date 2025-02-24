@@ -9,7 +9,130 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      content: {
+        Row: {
+          author_id: string
+          content: string | null
+          created_at: string | null
+          description: string | null
+          featured_image: string | null
+          id: string
+          published_at: string | null
+          status: string
+          title: string
+          type: string
+        }
+        Insert: {
+          author_id: string
+          content?: string | null
+          created_at?: string | null
+          description?: string | null
+          featured_image?: string | null
+          id?: string
+          published_at?: string | null
+          status?: string
+          title: string
+          type: string
+        }
+        Update: {
+          author_id?: string
+          content?: string | null
+          created_at?: string | null
+          description?: string | null
+          featured_image?: string | null
+          id?: string
+          published_at?: string | null
+          status?: string
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      rating_criteria: {
+        Row: {
+          id: string
+          name: string
+          review_id: string | null
+          score: number | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          review_id?: string | null
+          score?: number | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          review_id?: string | null
+          score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rating_criteria_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "review_details"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_details: {
+        Row: {
+          content_id: string | null
+          gallery: string[] | null
+          id: string
+          overall_score: number | null
+          product_specs: Json | null
+          youtube_url: string | null
+        }
+        Insert: {
+          content_id?: string | null
+          gallery?: string[] | null
+          id?: string
+          overall_score?: number | null
+          product_specs?: Json | null
+          youtube_url?: string | null
+        }
+        Update: {
+          content_id?: string | null
+          gallery?: string[] | null
+          id?: string
+          overall_score?: number | null
+          product_specs?: Json | null
+          youtube_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_details_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      statistics: {
+        Row: {
+          count: number | null
+          id: string
+          last_updated: string | null
+          type: string
+        }
+        Insert: {
+          count?: number | null
+          id?: string
+          last_updated?: string | null
+          type: string
+        }
+        Update: {
+          count?: number | null
+          id?: string
+          last_updated?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
