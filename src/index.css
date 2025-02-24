@@ -39,19 +39,19 @@
   }
 
   .glass-panel {
-    @apply bg-white/30 backdrop-blur-lg border border-white/20 rounded-xl;
+    @apply bg-white shadow-md rounded-lg transition-shadow duration-300 hover:shadow-lg;
   }
 
   .hover-card {
-    @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-lg;
+    @apply transition-all duration-300 hover:scale-[1.02];
   }
 
   .content-container {
-    @apply relative z-10;
+    @apply relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
 
   .category-tag {
-    @apply inline-flex items-center px-3 py-1 text-sm rounded-full bg-primary/10 text-primary font-medium;
+    @apply inline-flex items-center px-3 py-1 text-sm rounded-md bg-orange-500 text-white font-medium;
   }
 
   /* Page transition animations */
