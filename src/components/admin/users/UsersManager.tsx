@@ -40,15 +40,38 @@ export const UsersManager = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Get current user session to check role
   const { data: users, isLoading } = useQuery({
     queryKey: ["users"],
     queryFn: async () => {
+      // First get current user session
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log("Current session:", sessionData);
+
+      // Get current user's profile to check role
+      const { data: currentProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', sessionData.session?.user.id)
+        .single();
+      
+      console.log("Current user profile:", currentProfile);
+      
+      if (profileError) {
+        console.error("Profile error:", profileError);
+        throw profileError;
+      }
+
+      // Get all profiles if user is admin
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
+      console.log("Fetched profiles:", data);
+      
       if (error) {
+        console.error("Fetch error:", error);
         toast({
           title: "Error fetching users",
           description: error.message,
@@ -169,14 +192,16 @@ export const UsersManager = () => {
                       Loading...
                     </TableCell>
                   </TableRow>
-                ) : filteredUsers?.length === 0 ? (
+                ) : !users || users.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center">
-                      No users found
+                      No users found. This could be because you don't have admin privileges.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredUsers?.map((user) => (
+                  users.filter(user => 
+                    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
+                  ).map((user) => (
                     <TableRow key={user.id}>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
