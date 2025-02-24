@@ -45,16 +45,44 @@
   .hover-card {
     @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-lg;
   }
+
+  .content-container {
+    @apply relative z-10;
+  }
+
+  .category-tag {
+    @apply inline-flex items-center px-3 py-1 text-sm rounded-full bg-primary/10 text-primary font-medium;
+  }
+
+  /* Page transition animations */
+  .page-enter {
+    @apply opacity-0;
+  }
+
+  .page-enter-active {
+    @apply opacity-100 transition-opacity duration-300;
+  }
+
+  .page-exit {
+    @apply opacity-100;
+  }
+
+  .page-exit-active {
+    @apply opacity-0 transition-opacity duration-300;
+  }
 }
 
-.scene-container {
-  @apply fixed top-0 left-0 w-full h-full -z-10;
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
 }
 
-.content-container {
-  @apply relative z-10;
-}
-
-.category-tag {
-  @apply inline-flex items-center px-3 py-1 text-sm rounded-full bg-primary/10 text-primary font-medium;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
