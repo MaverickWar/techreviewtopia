@@ -36,9 +36,8 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
     checkSession();
   }, []);
 
-  // Debug: Log Supabase client configuration
+  // Debug: Log Supabase client status
   useEffect(() => {
-    console.log("Supabase URL:", supabase.supabaseUrl);
     console.log("Supabase client initialized:", !!supabase);
   }, []);
 
