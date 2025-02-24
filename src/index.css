@@ -39,7 +39,7 @@
   }
 
   .glass-panel {
-    @apply bg-white shadow-md rounded-lg transition-shadow duration-300 hover:shadow-lg;
+    @apply bg-white shadow-md rounded-lg transition-shadow duration-300 hover:shadow-xl;
   }
 
   .hover-card {
@@ -51,27 +51,19 @@
   }
 
   .category-tag {
-    @apply inline-flex items-center px-3 py-1 text-sm rounded-md bg-orange-500 text-white font-medium;
+    @apply inline-flex items-center px-3 py-1 text-sm rounded-md bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors;
   }
 
-  /* Page transition animations */
-  .page-enter {
-    @apply opacity-0;
+  .nav-link {
+    @apply text-gray-700 hover:text-orange-500 transition-colors font-medium;
   }
 
-  .page-enter-active {
-    @apply opacity-100 transition-opacity duration-300;
-  }
-
-  .page-exit {
-    @apply opacity-100;
-  }
-
-  .page-exit-active {
-    @apply opacity-0 transition-opacity duration-300;
+  .hero-gradient {
+    @apply bg-gradient-to-r from-blue-600 via-purple-600 to-orange-500;
   }
 }
 
+/* Animations */
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out forwards;
 }
@@ -85,4 +77,26 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Card hover effects */
+.review-card {
+  @apply relative overflow-hidden rounded-lg transition-all duration-300;
+}
+
+.review-card:hover {
+  @apply transform scale-[1.02] shadow-xl;
+}
+
+.review-card img {
+  @apply transition-transform duration-300;
+}
+
+.review-card:hover img {
+  @apply scale-105;
+}
+
+/* Reading progress bar */
+.reading-progress {
+  @apply fixed top-0 left-0 h-1 bg-orange-500 transition-all duration-200 z-50;
 }
