@@ -7,6 +7,7 @@ import NotFound from "@/pages/NotFound";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { ContentManager } from "@/components/admin/ContentManager";
+import { ContentForm } from "@/components/admin/ContentForm";
 
 const queryClient = new QueryClient();
 
@@ -19,6 +20,8 @@ function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="content" element={<ContentManager />} />
+            <Route path="content/new" element={<ContentForm />} />
+            <Route path="content/edit/:id" element={<ContentForm />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

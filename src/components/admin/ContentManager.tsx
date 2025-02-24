@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FileText, Star, Search, Plus } from "lucide-react";
 
 export const ContentManager = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [contentType, setContentType] = useState<"all" | "article" | "review">("all");
 
@@ -40,7 +42,10 @@ export const ContentManager = () => {
     <div className="p-6 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Content</h1>
-        <Button className="bg-orange-500 hover:bg-orange-600">
+        <Button 
+          className="bg-orange-500 hover:bg-orange-600"
+          onClick={() => navigate("/admin/content/new")}
+        >
           <Plus className="mr-2 h-4 w-4" />
           New Content
         </Button>
@@ -83,7 +88,11 @@ export const ContentManager = () => {
           <p>Loading...</p>
         ) : (
           filteredContent?.map((item) => (
-            <Card key={item.id} className="p-6 hover:shadow-lg transition-shadow">
+            <Card 
+              key={item.id} 
+              className="p-6 hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => navigate(`/admin/content/edit/${item.id}`)}
+            >
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
