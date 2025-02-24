@@ -17,8 +17,12 @@ interface ContentFormProps {
     content: string;
     type: "article" | "review";
     status: "draft" | "published";
+    author_id?: string;
   };
 }
+
+// Temporary test author ID until we implement authentication
+const TEST_AUTHOR_ID = "00000000-0000-0000-0000-000000000000";
 
 export const ContentForm = ({ initialData }: ContentFormProps) => {
   const [formData, setFormData] = useState(
@@ -28,6 +32,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       content: "",
       type: "article" as const,
       status: "draft" as const,
+      author_id: TEST_AUTHOR_ID,
     }
   );
   const navigate = useNavigate();
@@ -41,6 +46,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         .upsert({
           ...data,
           id: initialData?.id,
+          author_id: TEST_AUTHOR_ID, // Ensure author_id is always set
         })
         .select()
         .single();
