@@ -1,0 +1,46 @@
+
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useState } from "react";
+import { AuthForm } from "./AuthForm";
+
+interface AuthModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-5 h-[600px]">
+          {/* Left Panel - Image */}
+          <div className="relative col-span-2 hidden md:block">
+            <img 
+              src="https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7" 
+              alt="Featured Tech" 
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+            <div className="absolute bottom-0 left-0 p-8 text-white">
+              <h3 className="text-2xl font-bold mb-2">iPhone 15 Pro Review</h3>
+              <p className="text-sm text-gray-200">
+                Discover the future of mobile photography
+              </p>
+            </div>
+          </div>
+
+          {/* Right Panel - Auth Form */}
+          <div className="col-span-3 p-8">
+            <AuthForm 
+              mode={mode} 
+              onModeChange={setMode}
+              onClose={onClose}
+            />
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
