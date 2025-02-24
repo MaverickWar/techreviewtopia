@@ -8,6 +8,7 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { ContentManager } from "@/components/admin/ContentManager";
 import { ContentForm } from "@/components/admin/ContentForm";
+import { UsersManager } from "@/components/admin/users/UsersManager";
 import { AuthPage } from "@/pages/auth/AuthPage";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,6 +56,7 @@ function App() {
             <Route path="content" element={<ContentManager />} />
             <Route path="content/new" element={<ContentForm />} />
             <Route path="content/edit/:id" element={<ContentForm />} />
+            <Route path="users" element={<UsersManager />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
