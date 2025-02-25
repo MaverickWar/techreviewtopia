@@ -60,42 +60,22 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     queryKey: ['subcategories', selectedCategoryId],
     enabled: !!selectedCategoryId,
     queryFn: async () => {
-      console.log('Fetching subcategories for category:', selectedCategoryId);
+      console.log('Selected category ID:', selectedCategoryId);
       
-      // First get all child pages from the page_hierarchy table
-      const { data: hierarchyData, error: hierarchyError } = await supabase
-        .from('page_hierarchy')
-        .select('child_page_id')
-        .eq('parent_page_id', selectedCategoryId);
+      // Query subcategories directly from pages table using menu_category_id
+      const { data: pagesData, error: pagesError } = await supabase
+        .from('pages')
+        .select('id, title')
+        .eq('page_type', 'subcategory')
+        .eq('menu_category_id', selectedCategoryId);
 
-      console.log('Hierarchy data:', hierarchyData);
+      console.log('Pages data:', pagesData);
 
-      if (hierarchyError) {
-        console.error('Hierarchy error:', hierarchyError);
-        throw hierarchyError;
+      if (pagesError) {
+        console.error('Pages error:', pagesError);
+        throw pagesError;
       }
-
-      // If we have child pages, get their details
-      if (hierarchyData && hierarchyData.length > 0) {
-        const childIds = hierarchyData.map(h => h.child_page_id);
-        console.log('Child page IDs:', childIds);
-        
-        const { data: pagesData, error: pagesError } = await supabase
-          .from('pages')
-          .select('id, title')
-          .eq('page_type', 'subcategory')
-          .in('id', childIds);
-
-        console.log('Pages data:', pagesData);
-
-        if (pagesError) {
-          console.error('Pages error:', pagesError);
-          throw pagesError;
-        }
-        return pagesData;
-      }
-
-      return [];
+      return pagesData || [];
     },
   });
 
