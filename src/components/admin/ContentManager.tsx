@@ -4,12 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Star, Search, Plus } from "lucide-react";
+import { FileText, Star, Search, Plus, Edit, Eye, EyeOff } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 export const ContentManager = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [contentType, setContentType] = useState<"all" | "article" | "review">("all");
 
@@ -32,6 +35,39 @@ export const ContentManager = () => {
       return data;
     }
   });
+
+  const togglePublishMutation = useMutation({
+    mutationFn: async ({ id, currentStatus }: { id: string; currentStatus: string }) => {
+      const newStatus = currentStatus === 'published' ? 'draft' : 'published';
+      const { data, error } = await supabase
+        .from('content')
+        .update({ status: newStatus })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['content'] });
+      toast({
+        title: `Content ${data.status === 'published' ? 'published' : 'unpublished'}`,
+        description: data.title,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleTogglePublish = (id: string, currentStatus: string) => {
+    togglePublishMutation.mutate({ id, currentStatus });
+  };
 
   const filteredContent = content?.filter(item =>
     item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -90,11 +126,10 @@ export const ContentManager = () => {
           filteredContent?.map((item) => (
             <Card 
               key={item.id} 
-              className="p-6 hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => navigate(`/admin/content/edit/${item.id}`)}
+              className="p-6 hover:shadow-lg transition-shadow"
             >
               <div className="flex items-start justify-between">
-                <div>
+                <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     {item.type === "article" ? (
                       <FileText className="h-4 w-4 text-blue-500" />
@@ -105,11 +140,11 @@ export const ContentManager = () => {
                       {item.type}
                     </span>
                   </div>
-                  <h3 className="mt-2 font-semibold">{item.title}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                  <h3 className="font-semibold">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground line-clamp-2">
                     {item.description}
                   </p>
-                  <div className="mt-4 flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                     <span className={`px-2 py-1 rounded-full text-xs ${
                       item.status === 'published' 
                         ? 'bg-green-100 text-green-700'
@@ -119,6 +154,33 @@ export const ContentManager = () => {
                     </span>
                   </div>
                 </div>
+              </div>
+              <div className="mt-4 flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/admin/content/edit/${item.id}`)}
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+                <Button
+                  variant={item.status === 'published' ? "destructive" : "default"}
+                  size="sm"
+                  onClick={() => handleTogglePublish(item.id, item.status)}
+                >
+                  {item.status === 'published' ? (
+                    <>
+                      <EyeOff className="h-4 w-4 mr-1" />
+                      Unpublish
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4 mr-1" />
+                      Publish
+                    </>
+                  )}
+                </Button>
               </div>
             </Card>
           ))
