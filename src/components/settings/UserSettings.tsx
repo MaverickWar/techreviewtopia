@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -36,22 +35,38 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
 
   useEffect(() => {
     const getProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        
-        if (profile && profile.avatar_url) {
-          setAvatarUrl(profile.avatar_url);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUser(user);
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+          
+          if (error) {
+            throw error;
+          }
+          
+          if (profile?.avatar_url) {
+            setAvatarUrl(profile.avatar_url);
+          }
         }
+      } catch (error: any) {
+        console.error('Error fetching profile:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load profile data",
+          variant: "destructive",
+        });
       }
     };
-    getProfile();
-  }, []);
+    
+    if (isOpen) {
+      getProfile();
+    }
+  }, [isOpen]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || !event.target.files[0]) return;
@@ -84,10 +99,10 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
     try {
       setAvatarLoading(true);
       const fileExt = selectedFile.name.split('.').pop()?.toLowerCase() || 'png';
-      // Ensure the path matches our storage policy structure: avatars/{user_id}/{filename}
-      const filePath = `avatars/${user.id}/${Date.now()}.${fileExt}`;
+      // Fix the path to not nest avatars twice
+      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
 
-      console.log('Uploading to path:', filePath); // Debug log
+      console.log('Uploading to path:', filePath);
 
       const { data, error: uploadError } = await supabase.storage
         .from('avatars')
@@ -97,17 +112,12 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
         });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError); // Debug log
         throw uploadError;
       }
-
-      console.log('Upload successful:', data); // Debug log
 
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
-
-      console.log('Public URL:', publicUrl); // Debug log
 
       const { error: updateError } = await supabase
         .from('profiles')
@@ -115,13 +125,14 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
         .eq('id', user.id);
 
       if (updateError) {
-        console.error('Profile update error:', updateError); // Debug log
         throw updateError;
       }
 
+      // Update local state
       setAvatarUrl(publicUrl);
       setSelectedFile(null);
-      // Reset the file input
+      
+      // Reset file input
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
       
@@ -130,10 +141,10 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
         description: "Avatar updated successfully",
       });
     } catch (error: any) {
-      console.error('Error in handleAvatarUpload:', error); // Debug log
+      console.error('Error in handleAvatarUpload:', error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to upload avatar",
         variant: "destructive",
       });
     } finally {

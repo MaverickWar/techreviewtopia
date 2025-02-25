@@ -1,4 +1,3 @@
-
 import { Search, Bell, UserRound, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -24,38 +23,59 @@ export const TopNav = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        fetchProfile(session.user.id);
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        throw error;
       }
-      setLoading(false);
-    });
+      
+      if (profile?.avatar_url) {
+        setAvatarUrl(profile.avatar_url);
+      } else {
+        setAvatarUrl(null);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      setAvatarUrl(null);
+    }
+  };
+
+  useEffect(() => {
+    const setupAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('Error setting up auth:', error);
+        setLoading(false);
+      }
+    };
+
+    setupAuth();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        await fetchProfile(session.user.id);
+      } else {
+        setAvatarUrl(null);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const fetchProfile = async (userId: string) => {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('avatar_url')
-      .eq('id', userId)
-      .single();
-    
-    if (profile?.avatar_url) {
-      setAvatarUrl(profile.avatar_url);
-    }
-  };
 
   const handleLogout = async () => {
     try {
