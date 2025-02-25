@@ -37,7 +37,7 @@ interface DatabaseContent {
   page_id: string | null;
   published_at: string | null;
   review_details: ReviewDetailsType[];
-  rating_criteria: RatingCriteriaType[] | null;  // Made nullable to handle potential errors
+  rating_criteria: RatingCriteriaType[] | null;
 }
 
 export const SubcategoryPage = () => {
@@ -47,41 +47,58 @@ export const SubcategoryPage = () => {
   const { data: pageData, isLoading } = useQuery({
     queryKey: ['subcategory', categorySlug, subcategorySlug],
     queryFn: async () => {
-      // First, get the page data
-      const { data: pages, error: pagesError } = await supabase
+      // First get the menu item to get its ID
+      const { data: menuItem, error: menuItemError } = await supabase
+        .from('menu_items')
+        .select(`
+          id,
+          name,
+          description,
+          menu_categories!inner(name)
+        `)
+        .eq('slug', subcategorySlug)
+        .eq('menu_categories.slug', categorySlug)
+        .single();
+
+      if (menuItemError) {
+        console.error('Error fetching menu item:', menuItemError);
+        return null;
+      }
+
+      if (!menuItem) {
+        console.error('No menu item found');
+        return null;
+      }
+
+      // Then get the page with all its content
+      const { data: page, error: pageError } = await supabase
         .from('pages')
         .select(`
           *,
-          menu_items!inner (
-            name,
-            description,
-            menu_categories!inner (
-              name
-            )
-          ),
-          page_content!inner (
-            content (
+          page_content!inner(
+            content(
               *,
-              review_details (*),
-              rating_criteria (*)
+              review_details(*),
+              rating_criteria(*)
             )
           )
         `)
-        .eq('menu_items.slug', subcategorySlug)
-        .eq('menu_items.menu_categories.slug', categorySlug)
+        .eq('menu_item_id', menuItem.id)
         .single();
 
-      if (pagesError) {
-        console.error('Error fetching page:', pagesError);
+      if (pageError) {
+        console.error('Error fetching page:', pageError);
         return null;
       }
 
-      if (!pages) {
-        console.error('No page found');
-        return null;
-      }
-
-      return pages;
+      return {
+        ...page,
+        menu_items: {
+          name: menuItem.name,
+          description: menuItem.description,
+          menu_categories: menuItem.menu_categories
+        }
+      };
     },
   });
 
@@ -98,7 +115,6 @@ export const SubcategoryPage = () => {
   }
 
   const content = pageData.page_content?.map(pc => {
-    // Ensure the content has the correct shape
     if (pc.content) {
       const processedContent = {
         ...pc.content,
