@@ -28,6 +28,7 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const { toast } = useToast();
@@ -52,19 +53,30 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
     getProfile();
   }, []);
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || !event.target.files[0]) return;
+    setSelectedFile(event.target.files[0]);
+  };
+
+  const handleAvatarUpload = async () => {
+    if (!selectedFile || !user) {
+      toast({
+        title: "Error",
+        description: "Please select a file first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setAvatarLoading(true);
-      if (!event.target.files || !event.target.files[0]) return;
-
-      const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
+      const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${user.id}-avatar.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, selectedFile, { upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -80,6 +92,11 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
       if (updateError) throw updateError;
 
       setAvatarUrl(publicUrl);
+      setSelectedFile(null);
+      // Reset the file input
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      
       toast({
         title: "Success",
         description: "Avatar updated successfully",
@@ -150,23 +167,31 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
                 <AvatarImage src={avatarUrl || undefined} />
                 <AvatarFallback>{user.email?.substring(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
-              <div>
+              <div className="space-y-2">
                 <Input
                   type="file"
                   accept="image/*"
-                  onChange={handleAvatarUpload}
+                  onChange={handleFileSelect}
                   disabled={avatarLoading}
                   className="max-w-xs"
                 />
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-gray-500">
                   Square image, max 1MB
                 </p>
-                {avatarLoading && (
-                  <div className="flex items-center mt-2 text-sm text-orange-600">
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Uploading...
-                  </div>
-                )}
+                <Button 
+                  onClick={handleAvatarUpload}
+                  disabled={!selectedFile || avatarLoading}
+                  className="w-full"
+                >
+                  {avatarLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    'Upload Avatar'
+                  )}
+                </Button>
               </div>
             </div>
           </div>
