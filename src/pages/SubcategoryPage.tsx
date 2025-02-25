@@ -47,41 +47,54 @@ export const SubcategoryPage = () => {
   const { data: pageData, isLoading } = useQuery({
     queryKey: ['subcategory', categorySlug, subcategorySlug],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First, get the page data
+      const { data: pages, error: pagesError } = await supabase
         .from('pages')
         .select(`
           *,
-          menu_items!inner(
+          menu_items!inner (
             name,
             description,
-            category_id,
-            menu_categories!inner(
+            menu_categories!inner (
               name
             )
           ),
-          page_content(
-            content(
+          page_content!inner (
+            content (
               *,
-              review_details(*),
-              rating_criteria(*)
+              review_details (*),
+              rating_criteria (*)
             )
           )
         `)
-        .eq('menu_items.slug', subcategorySlug || '')
-        .eq('menu_items.menu_categories.slug', categorySlug || '')
+        .eq('menu_items.slug', subcategorySlug)
+        .eq('menu_items.menu_categories.slug', categorySlug)
         .single();
 
-      if (error) throw error;
-      return data;
+      if (pagesError) {
+        console.error('Error fetching page:', pagesError);
+        return null;
+      }
+
+      if (!pages) {
+        console.error('No page found');
+        return null;
+      }
+
+      return pages;
     },
   });
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="flex justify-center items-center min-h-screen">
+      <div className="text-lg">Loading...</div>
+    </div>;
   }
 
   if (!pageData) {
-    return <div>Page not found</div>;
+    return <div className="flex justify-center items-center min-h-screen">
+      <div className="text-lg">Page not found</div>
+    </div>;
   }
 
   const content = pageData.page_content?.map(pc => pc.content) || [];
@@ -235,7 +248,7 @@ export const SubcategoryPage = () => {
       }}
     >
       <div className="space-y-8">
-        {content.map((item: DatabaseContent) => renderContent(item))}
+        {content.map((item) => renderContent(item as DatabaseContent))}
       </div>
     </ContentPageLayout>
   );
