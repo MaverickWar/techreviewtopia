@@ -1,8 +1,6 @@
+import { PageLayout } from '@/components/layouts/PageLayout';
 import { Laptop, Smartphone, Gamepad, Brain } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { TopNav } from '../components/TopNav';
-import { MainNav } from '../components/MainNav';
-import { Footer } from '../components/Footer';
 const categories = [{
   id: 1,
   name: "Smartphones",
@@ -53,9 +51,8 @@ const featuredReviews = [{
   rating: 4.7
 }];
 const Index = () => {
-  return <div className="min-h-screen bg-gray-50">
-      <TopNav />
-      <MainNav />
+  return (
+    <PageLayout>
       
       {/* Hero Section */}
       <section className="hero-gradient text-white py-20">
@@ -144,7 +141,8 @@ const Index = () => {
         </div>
       </section>
 
-      <Footer />
-    </div>;
+    </PageLayout>
+  );
 };
+
 export default Index;

@@ -17,6 +17,7 @@ export type Database = {
           description: string | null
           featured_image: string | null
           id: string
+          page_id: string | null
           published_at: string | null
           status: string
           title: string
@@ -29,6 +30,7 @@ export type Database = {
           description?: string | null
           featured_image?: string | null
           id?: string
+          page_id?: string | null
           published_at?: string | null
           status?: string
           title: string
@@ -41,12 +43,185 @@ export type Database = {
           description?: string | null
           featured_image?: string | null
           id?: string
+          page_id?: string | null
           published_at?: string | null
           status?: string
           title?: string
           type?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "content_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          order_index: number | null
+          slug: string
+          type: Database["public"]["Enums"]["menu_type"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          order_index?: number | null
+          slug: string
+          type?: Database["public"]["Enums"]["menu_type"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          order_index?: number | null
+          slug?: string
+          type?: Database["public"]["Enums"]["menu_type"] | null
+          updated_at?: string | null
+        }
         Relationships: []
+      }
+      menu_items: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          order_index: number | null
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          order_index?: number | null
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          order_index?: number | null
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      page_content: {
+        Row: {
+          content_id: string
+          created_at: string | null
+          order_index: number | null
+          page_id: string
+        }
+        Insert: {
+          content_id: string
+          created_at?: string | null
+          order_index?: number | null
+          page_id: string
+        }
+        Update: {
+          content_id?: string
+          created_at?: string | null
+          order_index?: number | null
+          page_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_content_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_content_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pages: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          menu_category_id: string | null
+          menu_item_id: string | null
+          page_type: Database["public"]["Enums"]["page_type"] | null
+          slug: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          menu_category_id?: string | null
+          menu_item_id?: string | null
+          page_type?: Database["public"]["Enums"]["page_type"] | null
+          slug: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          menu_category_id?: string | null
+          menu_item_id?: string | null
+          page_type?: Database["public"]["Enums"]["page_type"] | null
+          slug?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pages_menu_category_id_fkey"
+            columns: ["menu_category_id"]
+            isOneToOne: false
+            referencedRelation: "menu_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pages_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -176,6 +351,8 @@ export type Database = {
       }
     }
     Enums: {
+      menu_type: "standard" | "megamenu"
+      page_type: "category" | "subcategory"
       user_role: "admin" | "user"
     }
     CompositeTypes: {
