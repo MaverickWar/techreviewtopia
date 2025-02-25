@@ -319,7 +319,51 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         throw new Error("You must be logged in to create or edit content");
       }
 
-      // Create/update the content first
+      // First check if the page exists for the selected menu item
+      if (data.page_id) {
+        const { data: existingPage, error: pageCheckError } = await supabase
+          .from('pages')
+          .select('id')
+          .eq('menu_item_id', data.page_id)
+          .single();
+
+        if (pageCheckError && pageCheckError.code !== 'PGRST116') {
+          throw pageCheckError;
+        }
+
+        // If page doesn't exist, create it
+        if (!existingPage) {
+          const { data: menuItem, error: menuItemError } = await supabase
+            .from('menu_items')
+            .select('*')
+            .eq('id', data.page_id)
+            .single();
+
+          if (menuItemError) throw menuItemError;
+
+          const { data: newPage, error: createPageError } = await supabase
+            .from('pages')
+            .insert({
+              menu_item_id: menuItem.id,
+              title: menuItem.name,
+              slug: menuItem.slug,
+              description: menuItem.description,
+              page_type: 'subcategory'
+            })
+            .select()
+            .single();
+
+          if (createPageError) throw createPageError;
+
+          // Update the page_id to use the newly created page
+          data.page_id = newPage.id;
+        } else {
+          // Use the existing page id
+          data.page_id = existingPage.id;
+        }
+      }
+
+      // Create/update the content
       const { data: content, error: contentError } = await supabase
         .from("content")
         .upsert({
@@ -381,6 +425,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
       // If a page is selected, create the page_content relationship
       if (data.page_id) {
+        console.log("Creating page_content relationship with page_id:", data.page_id);
         const { error: pageContentError } = await supabase
           .from("page_content")
           .upsert({
