@@ -6,23 +6,38 @@ import { ContentPageLayout } from '@/components/layouts/ContentPageLayout';
 import { useRealtimeContent } from '@/hooks/useRealtimeContent';
 import { Separator } from '@/components/ui/separator';
 import { Star, Youtube } from 'lucide-react';
+import { Json } from '@/integrations/supabase/types';
 
 interface ReviewDetailsType {
-  gallery?: string[];
-  youtube_url?: string | null;
-  product_specs?: string;
-  overall_score?: number;
+  id: string;
+  content_id: string;
+  gallery: string[] | null;
+  youtube_url: string | null;
+  product_specs: Json | null;
+  overall_score: number | null;
 }
 
-interface ContentItem {
+interface RatingCriteriaType {
+  id: string;
+  name: string;
+  review_id: string | null;
+  score: number | null;
+}
+
+interface DatabaseContent {
   id: string;
   title: string;
   description: string | null;
   content: string | null;
-  type: string; // Changed from 'article' | 'review' to string to match database
+  type: string;
+  status: string;
   featured_image: string | null;
-  review_details?: ReviewDetailsType[];
-  rating_criteria?: { name: string; score: number }[];
+  created_at: string | null;
+  author_id: string;
+  page_id: string | null;
+  published_at: string | null;
+  review_details: ReviewDetailsType[];
+  rating_criteria: RatingCriteriaType[];
 }
 
 export const SubcategoryPage = () => {
@@ -71,13 +86,15 @@ export const SubcategoryPage = () => {
 
   const content = pageData.page_content?.map(pc => pc.content) || [];
 
-  const renderContent = (item: ContentItem) => {
+  const renderContent = (item: DatabaseContent) => {
     const review = item.review_details?.[0];
     let productSpecs = [];
     
     if (review?.product_specs) {
       try {
-        productSpecs = JSON.parse(review.product_specs);
+        productSpecs = typeof review.product_specs === 'string' 
+          ? JSON.parse(review.product_specs)
+          : review.product_specs;
       } catch (e) {
         console.error('Error parsing product specs:', e);
       }
@@ -133,8 +150,8 @@ export const SubcategoryPage = () => {
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-gray-900">Rating Breakdown</h3>
                   <div className="grid gap-2">
-                    {item.rating_criteria.map((criterion, index) => (
-                      <div key={index} className="flex items-center justify-between">
+                    {item.rating_criteria.map((criterion) => (
+                      <div key={criterion.id} className="flex items-center justify-between">
                         <span className="text-gray-600">{criterion.name}</span>
                         <span className="font-medium">{criterion.score}/10</span>
                       </div>
@@ -144,7 +161,7 @@ export const SubcategoryPage = () => {
               )}
 
               {/* Product Specifications */}
-              {productSpecs.length > 0 && (
+              {productSpecs && productSpecs.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold text-gray-900">Specifications</h3>
                   <div className="grid gap-2">
@@ -218,7 +235,7 @@ export const SubcategoryPage = () => {
       }}
     >
       <div className="space-y-8">
-        {content.map((item: ContentItem) => renderContent(item))}
+        {content.map((item: DatabaseContent) => renderContent(item))}
       </div>
     </ContentPageLayout>
   );
