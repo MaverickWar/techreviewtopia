@@ -1,4 +1,4 @@
-
+import { ReactNode } from "react";
 import { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -17,16 +17,11 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
-const sidebarItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
-  { icon: FileText, label: "Content", path: "/admin/content" },
-  { icon: FileStack, label: "Pages", path: "/admin/pages" },
-  { icon: Users, label: "Users", path: "/admin/users" },
-  { icon: Image, label: "Media", path: "/admin/media" },
-  { icon: Settings, label: "Settings", path: "/admin/settings" },
-];
+interface AdminLayoutProps {
+  children?: ReactNode;
+}
 
-export const AdminLayout = () => {
+export const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -35,7 +30,7 @@ export const AdminLayout = () => {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      navigate("/auth");
+      navigate("/");
     } catch (error: any) {
       toast({
         title: "Error logging out",
@@ -107,7 +102,7 @@ export const AdminLayout = () => {
         )}
       >
         <div className="min-h-screen bg-background">
-          <Outlet />
+          {children || <Outlet />}
         </div>
       </div>
     </div>
