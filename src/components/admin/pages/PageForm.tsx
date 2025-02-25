@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom"; // Added useParams
+import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ interface PageFormProps {
 }
 
 export const PageForm = ({ initialData }: PageFormProps) => {
-  const { id } = useParams(); // Add this to get the page ID from URL
+  const { id } = useParams();
   const [formData, setFormData] = useState(
     initialData || {
       title: "",
@@ -35,7 +35,7 @@ export const PageForm = ({ initialData }: PageFormProps) => {
       menu_item_id: undefined,
       is_active: true,
       template_type: "standard",
-      layout_settings: {},
+      layout_settings: {} as Record<string, any>,
     }
   );
 
@@ -43,7 +43,6 @@ export const PageForm = ({ initialData }: PageFormProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch the page data when editing
   const { data: pageData, isLoading: isLoadingPage } = useQuery({
     queryKey: ['page', id],
     queryFn: async () => {
@@ -63,16 +62,13 @@ export const PageForm = ({ initialData }: PageFormProps) => {
         throw error;
       }
 
-      console.log('Fetched page data:', data);
       return data;
     },
     enabled: !!id
   });
 
-  // Update form data when page data is loaded
   useEffect(() => {
     if (pageData) {
-      console.log('Setting form data from page data:', pageData);
       setFormData({
         id: pageData.id,
         title: pageData.title,
@@ -83,43 +79,10 @@ export const PageForm = ({ initialData }: PageFormProps) => {
         menu_item_id: pageData.menu_item_id,
         is_active: pageData.is_active,
         template_type: pageData.template_type || "standard",
-        layout_settings: pageData.layout_settings || {},
+        layout_settings: (pageData.layout_settings as Record<string, any>) || {},
       });
     }
   }, [pageData]);
-
-  // Fetch existing menu categories
-  const { data: menuCategories, isLoading: categoriesLoading } = useQuery({
-    queryKey: ['menu_categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('menu_categories')
-        .select('*')
-        .order('name');
-      
-      if (error) throw error;
-      console.log('Fetched menu categories:', data);
-      return data;
-    }
-  });
-
-  // Fetch menu items when a category is selected
-  const { data: menuItems, isLoading: itemsLoading } = useQuery({
-    queryKey: ['menu_items', formData.menu_category_id],
-    queryFn: async () => {
-      if (!formData.menu_category_id) return [];
-      const { data, error } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('category_id', formData.menu_category_id)
-        .order('name');
-      
-      if (error) throw error;
-      console.log('Fetched menu items:', data);
-      return data;
-    },
-    enabled: !!formData.menu_category_id
-  });
 
   const createMenuCategory = async (pageId: string, pageTitle: string, pageSlug: string) => {
     const { data, error } = await supabase
@@ -164,16 +127,47 @@ export const PageForm = ({ initialData }: PageFormProps) => {
     return data;
   };
 
+  // Fetch existing menu categories
+  const { data: menuCategories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['menu_categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('menu_categories')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      console.log('Fetched menu categories:', data);
+      return data;
+    }
+  });
+
+  // Fetch menu items when a category is selected
+  const { data: menuItems, isLoading: itemsLoading } = useQuery({
+    queryKey: ['menu_items', formData.menu_category_id],
+    queryFn: async () => {
+      if (!formData.menu_category_id) return [];
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('category_id', formData.menu_category_id)
+        .order('name');
+      
+      if (error) throw error;
+      console.log('Fetched menu items:', data);
+      return data;
+    },
+    enabled: !!formData.menu_category_id
+  });
+
   const mutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      console.log('Submitting form data:', data);
-      
-      // First, create or update the page
       const { data: page, error: pageError } = await supabase
         .from("pages")
         .upsert({
           ...data,
           id: data.id || undefined,
+          layout_settings: data.layout_settings || {},
         })
         .select()
         .single();
