@@ -1,3 +1,4 @@
+
 import { Search, Bell, UserRound, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -36,6 +37,8 @@ export const TopNav = () => {
       }
       
       if (profile?.avatar_url) {
+        // Log the avatar URL for debugging
+        console.log('Fetched avatar URL:', profile.avatar_url);
         setAvatarUrl(profile.avatar_url);
       } else {
         setAvatarUrl(null);
@@ -97,6 +100,11 @@ export const TopNav = () => {
     return email ? email.substring(0, 2).toUpperCase() : 'U';
   };
 
+  // Debug log when avatar URL changes
+  useEffect(() => {
+    console.log('Current avatar URL:', avatarUrl);
+  }, [avatarUrl]);
+
   return (
     <>
       <div className="bg-slate-900 text-white py-2">
@@ -119,7 +127,17 @@ export const TopNav = () => {
                   <DropdownMenu>
                     <DropdownMenuTrigger className="focus:outline-none">
                       <Avatar className="h-8 w-8 bg-orange-500 hover:bg-orange-600 transition-colors">
-                        <AvatarImage src={avatarUrl || undefined} alt="Profile" />
+                        {avatarUrl && (
+                          <AvatarImage 
+                            src={avatarUrl} 
+                            alt="Profile" 
+                            onError={(e) => {
+                              console.error('Avatar image failed to load:', e);
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                            }}
+                          />
+                        )}
                         <AvatarFallback>
                           {getUserInitials(session?.user?.email)}
                         </AvatarFallback>
