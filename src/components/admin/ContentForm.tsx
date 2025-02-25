@@ -50,6 +50,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         .select('id, title')
         .eq('page_type', 'category');
       
+      console.log('Categories query result:', data);
       if (error) throw error;
       return data;
     },
@@ -60,16 +61,25 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     queryKey: ['subcategories', selectedCategoryId],
     enabled: !!selectedCategoryId,
     queryFn: async () => {
-      console.log('Selected category ID:', selectedCategoryId);
+      console.log('Fetching subcategories for category:', selectedCategoryId);
       
-      // Query subcategories directly from pages table using menu_category_id
+      // First, let's see what we have in the database for this category
+      const { data: debugData, error: debugError } = await supabase
+        .from('pages')
+        .select('*')
+        .eq('page_type', 'subcategory');
+      
+      console.log('All subcategories in database:', debugData);
+
+      // Now query for our specific category
       const { data: pagesData, error: pagesError } = await supabase
         .from('pages')
-        .select('id, title')
+        .select('id, title, menu_category_id')
         .eq('page_type', 'subcategory')
         .eq('menu_category_id', selectedCategoryId);
 
-      console.log('Pages data:', pagesData);
+      console.log('Subcategories for selected category:', pagesData);
+      console.log('Selected category ID:', selectedCategoryId);
 
       if (pagesError) {
         console.error('Pages error:', pagesError);
