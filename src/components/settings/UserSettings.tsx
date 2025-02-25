@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -71,7 +71,9 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
           cacheControl: '3600'
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        throw uploadError;
+      }
 
       // Get public URL
       const { data: urlData } = await supabase.storage
@@ -87,7 +89,9 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
         })
         .eq('id', user.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        throw updateError;
+      }
 
       setAvatarUrl(urlData.publicUrl);
       setSelectedFile(null);
@@ -104,7 +108,7 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
       console.error('Error in handleAvatarUpload:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to upload avatar",
+        description: error.message || "Failed to upload avatar. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -117,21 +121,25 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Profile Settings</DialogTitle>
+          <DialogDescription>
+            Update your profile picture and manage your account settings.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-6 py-4">
           <div className="space-y-4">
             <div className="flex flex-col items-center space-y-4">
               <Avatar className="h-24 w-24">
-                {avatarUrl && (
+                {avatarUrl ? (
                   <AvatarImage 
                     src={avatarUrl} 
                     alt="Profile" 
                     className="object-cover"
                   />
+                ) : (
+                  <AvatarFallback className="text-lg">
+                    {user?.email?.substring(0, 2).toUpperCase() || 'U'}
+                  </AvatarFallback>
                 )}
-                <AvatarFallback className="text-lg">
-                  {user?.email?.substring(0, 2).toUpperCase() || 'U'}
-                </AvatarFallback>
               </Avatar>
               <div className="flex flex-col items-center space-y-2 w-full max-w-xs">
                 <input
