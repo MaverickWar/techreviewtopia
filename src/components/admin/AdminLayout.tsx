@@ -1,3 +1,4 @@
+
 import { ReactNode } from "react";
 import { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -20,6 +21,29 @@ import { useToast } from "@/components/ui/use-toast";
 interface AdminLayoutProps {
   children?: ReactNode;
 }
+
+const sidebarItems = [
+  {
+    path: "/admin",
+    label: "Dashboard",
+    icon: LayoutDashboard
+  },
+  {
+    path: "/admin/content",
+    label: "Content",
+    icon: FileText
+  },
+  {
+    path: "/admin/pages",
+    label: "Pages",
+    icon: FileStack
+  },
+  {
+    path: "/admin/users",
+    label: "Users",
+    icon: Users
+  }
+];
 
 export const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [collapsed, setCollapsed] = useState(false);
