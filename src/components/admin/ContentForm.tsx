@@ -372,7 +372,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
           .from('pages')
           .select('id')
           .eq('menu_item_id', data.page_id)
-          .maybeSingle();
+          .maybeSingle(); // Changed from single() to maybeSingle()
 
         if (pageCheckError && pageCheckError.code !== 'PGRST116') {
           throw pageCheckError;
@@ -384,9 +384,10 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             .from('menu_items')
             .select('*')
             .eq('id', data.page_id)
-            .single();
+            .maybeSingle(); // Changed from single() to maybeSingle()
 
           if (menuItemError) throw menuItemError;
+          if (!menuItem) throw new Error("Menu item not found");
 
           const { data: newPage, error: createPageError } = await supabase
             .from('pages')
@@ -431,17 +432,26 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         throw contentError;
       }
 
-      console.log("Content created/updated:", content);
-
       // If this is a review, create/update review details
       if (data.type === 'review') {
+        const { data: existingReview } = await supabase
+          .from('review_details')
+          .select('id')
+          .eq('content_id', content.id)
+          .maybeSingle(); // Changed from single() to maybeSingle()
+
         const reviewData = {
           content_id: content.id,
           youtube_url: data.youtube_url,
           gallery: data.gallery,
-          product_specs: data.product_specs ? JSON.stringify(data.product_specs) : null,
+          product_specs: data.product_specs,
           overall_score: data.overall_score,
         };
+
+        // If review exists, include its ID in the upsert
+        if (existingReview) {
+          Object.assign(reviewData, { id: existingReview.id });
+        }
 
         const { data: reviewDetails, error: reviewError } = await supabase
           .from('review_details')
@@ -456,6 +466,14 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
         // Handle rating criteria
         if (data.rating_criteria?.length) {
+          // Delete existing criteria first
+          if (reviewDetails.id) {
+            await supabase
+              .from('rating_criteria')
+              .delete()
+              .eq('review_id', reviewDetails.id);
+          }
+
           const criteriaData = data.rating_criteria.map(criterion => ({
             name: criterion.name,
             score: criterion.score,
@@ -464,15 +482,14 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
           const { error: criteriaError } = await supabase
             .from('rating_criteria')
-            .upsert(criteriaData);
+            .insert(criteriaData);
 
           if (criteriaError) throw criteriaError;
         }
       }
 
-      // If a page is selected, create the page_content relationship
+      // If a page is selected, handle the page_content relationship
       if (data.page_id) {
-        console.log("Creating page_content relationship with page_id:", data.page_id);
         const { error: pageContentError } = await supabase
           .from("page_content")
           .upsert({
@@ -497,7 +514,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       });
       navigate("/admin/content");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error("Mutation error:", error);
       toast({
         title: "Error",
