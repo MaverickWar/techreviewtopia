@@ -19,7 +19,7 @@ interface ContentItem {
   title: string;
   description: string | null;
   content: string | null;
-  type: 'article' | 'review';
+  type: string; // Changed from 'article' | 'review' to string to match database
   featured_image: string | null;
   review_details?: ReviewDetailsType[];
   rating_criteria?: { name: string; score: number }[];
