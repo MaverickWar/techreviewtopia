@@ -55,7 +55,20 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || !event.target.files[0]) return;
-    setSelectedFile(event.target.files[0]);
+    
+    const file = event.target.files[0];
+    // Check file size (1MB = 1048576 bytes)
+    if (file.size > 1048576) {
+      toast({
+        title: "Error",
+        description: "File size must be less than 1MB",
+        variant: "destructive",
+      });
+      event.target.value = '';
+      return;
+    }
+    
+    setSelectedFile(file);
   };
 
   const handleAvatarUpload = async () => {
@@ -70,26 +83,41 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
 
     try {
       setAvatarLoading(true);
-      const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `${user.id}-avatar.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileExt = selectedFile.name.split('.').pop()?.toLowerCase() || 'png';
+      // Ensure the path matches our storage policy structure: avatars/{user_id}/{filename}
+      const filePath = `avatars/${user.id}/${Date.now()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
+      console.log('Uploading to path:', filePath); // Debug log
+
+      const { data, error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, selectedFile, { upsert: true });
+        .upload(filePath, selectedFile, { 
+          upsert: true,
+          cacheControl: '3600'
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError); // Debug log
+        throw uploadError;
+      }
+
+      console.log('Upload successful:', data); // Debug log
 
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
+
+      console.log('Public URL:', publicUrl); // Debug log
 
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
         .eq('id', user.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Profile update error:', updateError); // Debug log
+        throw updateError;
+      }
 
       setAvatarUrl(publicUrl);
       setSelectedFile(null);
@@ -102,6 +130,7 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
         description: "Avatar updated successfully",
       });
     } catch (error: any) {
+      console.error('Error in handleAvatarUpload:', error); // Debug log
       toast({
         title: "Error",
         description: error.message,
