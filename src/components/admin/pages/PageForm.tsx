@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -54,7 +55,7 @@ export const PageForm = ({ initialData }: PageFormProps) => {
           menu_category_id
         `)
         .eq('page_type', 'category')
-        .is('menu_category_id', 'not.null') // Only get categories that have a menu_category_id
+        .not('menu_category_id', 'is', null) // Fixed: Using .not('column', 'is', null) instead of .is()
         .order('title');
       if (error) throw error;
       return data;
@@ -274,7 +275,7 @@ export const PageForm = ({ initialData }: PageFormProps) => {
             />
           </div>
 
-          {/* Updated Parent Category Selection */}
+          {/* Parent Category Selection */}
           {formData.page_type === "subcategory" && categories && (
             <div className="space-y-2">
               <label htmlFor="parentCategory" className="block text-sm font-medium">
