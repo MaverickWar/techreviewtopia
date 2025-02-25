@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { ContentPageLayout } from "@/components/layouts/ContentPageLayout";
 import { ArrowRight } from "lucide-react";
-import { MenuCategory, ContentType } from "@/types/navigation";
+import { MenuCategory, MenuItem, ContentType } from "@/types/navigation";
 
 interface PageContent {
   content: ContentType;
@@ -65,10 +64,21 @@ export const CategoryPage = () => {
 
       if (itemsError) throw itemsError;
 
+      // Map the data to match our TypeScript interfaces
+      const mappedPage = page ? {
+        ...page,
+        page_content: page.page_content?.map(pc => ({
+          content: {
+            ...pc.content,
+            type: pc.content.type as 'article' | 'review'
+          }
+        }))
+      } : null;
+
       return {
         category: menuCategory as MenuCategory,
-        page: page as PageData | null,
-        subcategories: menuItems
+        page: mappedPage as PageData | null,
+        subcategories: menuItems as MenuItem[]
       };
     }
   });

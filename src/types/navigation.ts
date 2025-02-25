@@ -5,9 +5,12 @@ export interface MenuItem {
   id: string;
   name: string;
   slug: string;
-  imageUrl: string | null;
+  image_url: string | null;
   description: string | null;
-  orderIndex: number | null;
+  order_index: number | null;
+  category_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface MenuCategory {
@@ -15,7 +18,9 @@ export interface MenuCategory {
   name: string;
   slug: string;
   type: MenuType;
-  orderIndex: number | null;
+  order_index: number | null;
+  created_at?: string;
+  updated_at?: string;
   items?: MenuItem[];
 }
 

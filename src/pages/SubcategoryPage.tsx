@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +7,7 @@ import { Star, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { MenuCategory, MenuItem, ContentType } from "@/types/navigation";
 
-interface PageData {
+interface SubcategoryPageData {
   category: MenuCategory;
   menuItem: MenuItem;
   page: {
@@ -22,7 +21,7 @@ interface PageData {
 export const SubcategoryPage = () => {
   const { categorySlug, subcategorySlug } = useParams();
 
-  const { data: pageData, isLoading } = useQuery<PageData | null>({
+  const { data: pageData, isLoading } = useQuery<SubcategoryPageData | null>({
     queryKey: ['subcategory', categorySlug, subcategorySlug],
     queryFn: async () => {
       const { data: menuCategory, error: categoryError } = await supabase
@@ -61,10 +60,21 @@ export const SubcategoryPage = () => {
 
       if (pageError) throw pageError;
 
+      // Map the data to match our TypeScript interfaces
+      const mappedPage = page ? {
+        ...page,
+        page_content: page.page_content?.map(pc => ({
+          content: {
+            ...pc.content,
+            type: pc.content.type as 'article' | 'review'
+          }
+        }))
+      } : null;
+
       return {
         category: menuCategory as MenuCategory,
         menuItem: menuItem as MenuItem,
-        page
+        page: mappedPage
       };
     }
   });
@@ -106,14 +116,14 @@ export const SubcategoryPage = () => {
     );
   }
 
-  const { category, menuItem, page } = pageData;
+  const { category, menuItem, page } = pageData || {};
 
   return (
     <ContentPageLayout
       header={{
-        title: menuItem.name,
-        subtitle: menuItem.description || undefined,
-        category: category.name
+        title: menuItem?.name || "Subcategory",
+        subtitle: menuItem?.description,
+        category: category?.name
       }}
     >
       {page?.page_content?.map(({ content }) => {
@@ -134,7 +144,7 @@ export const SubcategoryPage = () => {
               <div className="p-6">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="text-sm text-gray-500">
-                    {new Date(content.created_at).toLocaleDateString()}
+                    {new Date(content.created_at!).toLocaleDateString()}
                   </span>
                   {content.type === 'review' && content.review_details?.[0] && (
                     <div className="flex items-center gap-1 text-yellow-500">
