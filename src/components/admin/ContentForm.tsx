@@ -104,7 +104,13 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         .from('content')
         .select(`
           *,
-          page_content!inner(page_id),
+          page_content!inner(
+            page_id,
+            pages(
+              id,
+              menu_category_id
+            )
+          ),
           review_details(*)
         `)
         .eq('id', id)
@@ -147,6 +153,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
   useEffect(() => {
     if (existingContent) {
       const reviewDetails = existingContent.review_details?.[0];
+      const pageContent = existingContent.page_content?.[0];
       
       // Parse product specs from JSON if they exist
       let parsedProductSpecs: ProductSpec[] = [];
@@ -174,7 +181,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         ...contentData,
         type: existingContent.type as ContentType,
         status: existingContent.status as ContentStatus,
-        page_id: page_content?.[0]?.page_id || null,
+        page_id: pageContent?.page_id || null,
         product_specs: parsedProductSpecs,
         gallery: reviewDetails?.gallery || [],
         youtube_url: reviewDetails?.youtube_url || null,
@@ -189,9 +196,9 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         } : undefined
       });
       
-      // Fetch parent category when page_id is available
-      if (page_content?.[0]?.page_id) {
-        fetchParentCategory(page_content[0].page_id);
+      // Set the parent category directly from the nested pages data
+      if (pageContent?.pages?.menu_category_id) {
+        setSelectedCategory(pageContent.pages.menu_category_id);
       }
     }
   }, [existingContent]);
