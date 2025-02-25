@@ -1,26 +1,28 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { ContentPageLayout } from "@/components/layouts/ContentPageLayout";
-import { ArrowRight } from "lucide-react";
-import { MenuCategory, MenuItem, ContentType } from "@/types/navigation";
+import { ContentPreviewCard } from "@/components/content/ContentPreviewCard";
+import { MenuCategory, MenuItem } from "@/types/navigation";
 
 interface PageContent {
-  content: ContentType;
-}
-
-interface PageData {
   id: string;
+  type: "article" | "review";
   title: string;
-  template_type?: string;
-  page_content?: PageContent[];
+  description: string | null;
+  featured_image: string | null;
+  published_at: string | null;
+  status: string;
+  review_details?: {
+    overall_score: number | null;
+  }[];
 }
 
 interface CategoryData {
   category: MenuCategory;
-  page: PageData | null;
+  content: PageContent[];
   subcategories: MenuItem[];
 }
 
@@ -39,23 +41,19 @@ export const CategoryPage = () => {
       if (menuError) throw menuError;
       if (!menuCategory) return null;
 
-      const { data: page, error: pageError } = await supabase
-        .from('pages')
+      // Fetch content for this category
+      const { data: content, error: contentError } = await supabase
+        .from('content')
         .select(`
           *,
-          page_content (
-            content (
-              *,
-              review_details(*)
-            )
-          )
+          review_details(*)
         `)
-        .eq('menu_category_id', menuCategory.id)
-        .eq('page_type', 'category')
-        .maybeSingle();
+        .eq('status', 'published')
+        .order('published_at', { ascending: false });
 
-      if (pageError) throw pageError;
+      if (contentError) throw contentError;
 
+      // Fetch subcategories
       const { data: menuItems, error: itemsError } = await supabase
         .from('menu_items')
         .select('*')
@@ -64,20 +62,9 @@ export const CategoryPage = () => {
 
       if (itemsError) throw itemsError;
 
-      // Map the data to match our TypeScript interfaces
-      const mappedPage = page ? {
-        ...page,
-        page_content: page.page_content?.map(pc => ({
-          content: {
-            ...pc.content,
-            type: pc.content.type as 'article' | 'review'
-          }
-        }))
-      } : null;
-
       return {
         category: menuCategory as MenuCategory,
-        page: mappedPage as PageData | null,
+        content: content as PageContent[],
         subcategories: menuItems as MenuItem[]
       };
     }
@@ -120,7 +107,7 @@ export const CategoryPage = () => {
     );
   }
 
-  const { category, page, subcategories } = categoryData;
+  const { category, content, subcategories } = categoryData;
 
   return (
     <ContentPageLayout
@@ -130,38 +117,22 @@ export const CategoryPage = () => {
       }}
     >
       {/* Featured Content Section */}
-      {page?.template_type === 'featured' && page.page_content && (
+      {content && content.length > 0 && (
         <div className="mb-12">
-          <h2 className="text-2xl font-semibold mb-6 text-gray-900">Featured</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {page.page_content.map(({ content }) => (
-              content && (
-                <Card key={content.id} className="hover:shadow-lg transition-shadow">
-                  {content.featured_image && (
-                    <div className="aspect-video w-full overflow-hidden rounded-t-lg">
-                      <img 
-                        src={content.featured_image} 
-                        alt={content.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                  <div className="p-6">
-                    <h3 className="font-semibold text-xl mb-2 text-gray-900">
-                      {content.title}
-                    </h3>
-                    {content.description && (
-                      <p className="text-gray-600 mb-4">{content.description}</p>
-                    )}
-                    <Link 
-                      to={`/${categorySlug}/${content.id}`}
-                      className="text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
-                    >
-                      Read more <ArrowRight size={16} />
-                    </Link>
-                  </div>
-                </Card>
-              )
+          <h2 className="text-2xl font-semibold mb-6 text-gray-900">Latest Content</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {content.map((item) => (
+              <ContentPreviewCard
+                key={item.id}
+                slug={item.id}
+                categorySlug={categorySlug || ""}
+                title={item.title}
+                description={item.description}
+                type={item.type as "article" | "review"}
+                featuredImage={item.featured_image}
+                publishedAt={item.published_at}
+                overallScore={item.review_details?.[0]?.overall_score}
+              />
             ))}
           </div>
         </div>
@@ -194,14 +165,14 @@ export const CategoryPage = () => {
                       <span className="text-gray-600 font-medium">{subcategory.name}</span>
                     </div>
                   )}
-                  <div className="p-6">
+                  <CardContent className="p-6">
                     <h3 className="font-semibold text-lg group-hover:text-blue-600 transition-colors">
                       {subcategory.name}
                     </h3>
                     {subcategory.description && (
                       <p className="text-gray-600 mt-2 line-clamp-2">{subcategory.description}</p>
                     )}
-                  </div>
+                  </CardContent>
                 </Card>
               </Link>
             ))}
