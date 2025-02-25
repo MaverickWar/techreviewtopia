@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { ContentPageLayout } from "@/components/layouts/ContentPageLayout";
 import { ContentPreviewCard } from "@/components/content/ContentPreviewCard";
+import { Card, CardContent } from "@/components/ui/card";
 import { MenuCategory, MenuItem } from "@/types/navigation";
 
 interface PageContent {
