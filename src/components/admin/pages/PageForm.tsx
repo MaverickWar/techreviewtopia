@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom"; // Added useParams
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +24,7 @@ interface PageFormProps {
 }
 
 export const PageForm = ({ initialData }: PageFormProps) => {
+  const { id } = useParams(); // Add this to get the page ID from URL
   const [formData, setFormData] = useState(
     initialData || {
       title: "",
@@ -43,39 +43,52 @@ export const PageForm = ({ initialData }: PageFormProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Updated categories query to fetch both pages and their menu categories
-  const { data: categories } = useQuery({
-    queryKey: ['parent_categories'],
+  // Fetch the page data when editing
+  const { data: pageData, isLoading: isLoadingPage } = useQuery({
+    queryKey: ['page', id],
     queryFn: async () => {
-      const { data: categoryPages, error: pagesError } = await supabase
+      if (!id) return null;
+      const { data, error } = await supabase
         .from('pages')
         .select(`
-          id,
-          title,
-          menu_category_id,
-          menu_category:menu_categories(id, name)
+          *,
+          menu_category:menu_categories(*),
+          menu_item:menu_items(*)
         `)
-        .eq('page_type', 'category')
-        .order('title');
+        .eq('id', id)
+        .single();
 
-      if (pagesError) {
-        console.error('Error fetching categories:', pagesError);
-        throw pagesError;
+      if (error) {
+        console.error('Error fetching page:', error);
+        throw error;
       }
 
-      console.log('Category pages fetched:', categoryPages);
-
-      // Filter pages that have a valid menu category
-      const validCategories = categoryPages.filter(page => 
-        page.menu_category_id !== null && page.menu_category !== null
-      );
-
-      console.log('Valid categories:', validCategories);
-      return validCategories;
-    }
+      console.log('Fetched page data:', data);
+      return data;
+    },
+    enabled: !!id
   });
 
-  // Fetch existing menu categories and items
+  // Update form data when page data is loaded
+  useEffect(() => {
+    if (pageData) {
+      console.log('Setting form data from page data:', pageData);
+      setFormData({
+        id: pageData.id,
+        title: pageData.title,
+        description: pageData.description || "",
+        slug: pageData.slug,
+        page_type: pageData.page_type,
+        menu_category_id: pageData.menu_category_id,
+        menu_item_id: pageData.menu_item_id,
+        is_active: pageData.is_active,
+        template_type: pageData.template_type || "standard",
+        layout_settings: pageData.layout_settings || {},
+      });
+    }
+  }, [pageData]);
+
+  // Fetch existing menu categories
   const { data: menuCategories, isLoading: categoriesLoading } = useQuery({
     queryKey: ['menu_categories'],
     queryFn: async () => {
@@ -85,6 +98,7 @@ export const PageForm = ({ initialData }: PageFormProps) => {
         .order('name');
       
       if (error) throw error;
+      console.log('Fetched menu categories:', data);
       return data;
     }
   });
@@ -101,6 +115,7 @@ export const PageForm = ({ initialData }: PageFormProps) => {
         .order('name');
       
       if (error) throw error;
+      console.log('Fetched menu items:', data);
       return data;
     },
     enabled: !!formData.menu_category_id
@@ -151,48 +166,77 @@ export const PageForm = ({ initialData }: PageFormProps) => {
 
   const mutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      console.log('Submitting form data:', data);
+      
       // First, create or update the page
       const { data: page, error: pageError } = await supabase
         .from("pages")
         .upsert({
           ...data,
-          id: initialData?.id,
+          id: data.id || undefined,
         })
         .select()
         .single();
 
       if (pageError) throw pageError;
 
-      // If this is a new category page, create the menu category
-      if (data.page_type === 'category' && !initialData?.id) {
-        const { data: menuCategory, error: menuCategoryError } = await supabase
-          .from('menu_categories')
-          .insert([
-            { 
+      if (data.page_type === 'category') {
+        // Update menu category if it exists
+        if (data.menu_category_id) {
+          const { error: menuCategoryError } = await supabase
+            .from('menu_categories')
+            .update({
+              name: data.title,
+              slug: data.slug
+            })
+            .eq('id', data.menu_category_id);
+
+          if (menuCategoryError) throw menuCategoryError;
+        }
+        // Create new menu category if it doesn't exist
+        else {
+          const { data: menuCategory, error: menuCategoryError } = await supabase
+            .from('menu_categories')
+            .insert([
+              { 
+                name: data.title,
+                slug: data.slug,
+                type: 'standard'
+              }
+            ])
+            .select()
+            .single();
+
+          if (menuCategoryError) throw menuCategoryError;
+
+          // Update the page with the new menu_category_id
+          const { error: updateError } = await supabase
+            .from('pages')
+            .update({ menu_category_id: menuCategory.id })
+            .eq('id', page.id);
+
+          if (updateError) throw updateError;
+        }
+      }
+      // Handle subcategory page
+      else if (data.page_type === 'subcategory' && data.menu_category_id) {
+        console.log('Handling subcategory with menu_category_id:', data.menu_category_id);
+
+        // Update existing menu item
+        if (data.menu_item_id) {
+          const { error: updateMenuItemError } = await supabase
+            .from('menu_items')
+            .update({
               name: data.title,
               slug: data.slug,
-              type: 'standard'
-            }
-          ])
-          .select()
-          .single();
+              description: data.description
+            })
+            .eq('id', data.menu_item_id);
 
-        if (menuCategoryError) throw menuCategoryError;
-
-        // Update the page with the new menu_category_id
-        const { error: updateError } = await supabase
-          .from('pages')
-          .update({ menu_category_id: menuCategory.id })
-          .eq('id', page.id);
-
-        if (updateError) throw updateError;
-      }
-      // If this is a new subcategory page
-      else if (data.page_type === 'subcategory' && data.menu_category_id) {
-        console.log('Creating subcategory with menu_category_id:', data.menu_category_id);
-
-        // Create menu item for subcategory if it doesn't exist
-        if (!data.menu_item_id) {
+          if (updateMenuItemError) throw updateMenuItemError;
+        }
+        // Create new menu item
+        else {
           const { data: menuItem, error: menuItemError } = await supabase
             .from('menu_items')
             .insert([
@@ -216,19 +260,6 @@ export const PageForm = ({ initialData }: PageFormProps) => {
 
           if (updatePageError) throw updatePageError;
         }
-        // If menu item exists, update it
-        else {
-          const { error: updateMenuItemError } = await supabase
-            .from('menu_items')
-            .update({
-              name: data.title,
-              slug: data.slug,
-              description: data.description
-            })
-            .eq('id', data.menu_item_id);
-
-          if (updateMenuItemError) throw updateMenuItemError;
-        }
       }
 
       return page;
@@ -236,7 +267,7 @@ export const PageForm = ({ initialData }: PageFormProps) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pages"] });
       toast({
-        title: `Page ${initialData ? "updated" : "created"} successfully`,
+        title: `Page ${id ? "updated" : "created"} successfully`,
         description: formData.title,
       });
       navigate("/admin/pages");
@@ -265,6 +296,15 @@ export const PageForm = ({ initialData }: PageFormProps) => {
       }));
     }
   }, [formData.title, initialData?.slug]);
+
+  if (isLoadingPage) {
+    return (
+      <div className="flex items-center justify-center p-6">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading page data...</span>
+      </div>
+    );
+  }
 
   return (
     <Card className="max-w-4xl mx-auto">
