@@ -25,6 +25,7 @@ interface UserSettingsDialogProps {
 
 export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps) => {
   const [loading, setLoading] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
@@ -53,7 +54,7 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      setLoading(true);
+      setAvatarLoading(true);
       if (!event.target.files || !event.target.files[0]) return;
 
       const file = event.target.files[0];
@@ -90,7 +91,7 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setAvatarLoading(false);
     }
   };
 
@@ -154,12 +155,18 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
                   type="file"
                   accept="image/*"
                   onChange={handleAvatarUpload}
-                  disabled={loading}
+                  disabled={avatarLoading}
                   className="max-w-xs"
                 />
                 <p className="text-sm text-gray-500 mt-1">
                   Square image, max 1MB
                 </p>
+                {avatarLoading && (
+                  <div className="flex items-center mt-2 text-sm text-orange-600">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Uploading...
+                  </div>
+                )}
               </div>
             </div>
           </div>
