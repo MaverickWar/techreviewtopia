@@ -34,10 +34,10 @@ export const MegaMenu = ({ category }: MegaMenuProps) => {
                   className="group/item"
                   onClick={() => setIsOpen(false)}
                 >
-                  {item.imageUrl ? (
+                  {item.image_url ? (
                     <div className="aspect-video mb-4 overflow-hidden rounded-lg bg-gray-100">
                       <img
-                        src={item.imageUrl}
+                        src={item.image_url}
                         alt={item.name}
                         className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300"
                       />

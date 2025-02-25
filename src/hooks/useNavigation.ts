@@ -29,16 +29,21 @@ export const useNavigation = () => {
         name: category.name,
         slug: category.slug,
         type: category.type,
-        orderIndex: category.order_index,
+        order_index: category.order_index,
+        created_at: category.created_at,
+        updated_at: category.updated_at,
         items: menuItems
           .filter(item => item.category_id === category.id)
           .map((item): MenuItem => ({
             id: item.id,
             name: item.name,
             slug: item.slug,
-            imageUrl: item.image_url,
+            image_url: item.image_url,
             description: item.description,
-            orderIndex: item.order_index
+            order_index: item.order_index,
+            category_id: item.category_id,
+            created_at: item.created_at,
+            updated_at: item.updated_at
           }))
       }));
 

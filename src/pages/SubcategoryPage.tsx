@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +14,16 @@ interface SubcategoryPageData {
   page: {
     id: string;
     page_content?: Array<{
-      content: ContentType;
+      content: Omit<ContentType, 'review_details'> & {
+        review_details?: Array<{
+          id: string;
+          content_id: string;
+          overall_score: number;
+          gallery: string[] | null;
+          product_specs: Record<string, any> | null;
+          youtube_url: string | null;
+        }>;
+      };
     }>;
   } | null;
 }
@@ -66,7 +76,11 @@ export const SubcategoryPage = () => {
         page_content: page.page_content?.map(pc => ({
           content: {
             ...pc.content,
-            type: pc.content.type as 'article' | 'review'
+            type: pc.content.type as 'article' | 'review',
+            review_details: pc.content.review_details?.map(rd => ({
+              ...rd,
+              product_specs: rd.product_specs as Record<string, any> | null
+            }))
           }
         }))
       } : null;
@@ -116,14 +130,14 @@ export const SubcategoryPage = () => {
     );
   }
 
-  const { category, menuItem, page } = pageData || {};
+  const { category, menuItem, page } = pageData;
 
   return (
     <ContentPageLayout
       header={{
-        title: menuItem?.name || "Subcategory",
-        subtitle: menuItem?.description,
-        category: category?.name
+        title: menuItem.name,
+        subtitle: menuItem.description,
+        category: category.name
       }}
     >
       {page?.page_content?.map(({ content }) => {
