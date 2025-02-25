@@ -7,11 +7,36 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Star } from "lucide-react";
+import { 
+  FileText, 
+  Star, 
+  Image as ImageIcon,
+  Youtube,
+  Plus,
+  Minus,
+  Upload,
+  X
+} from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
-// Define strict types for our content
 type ContentType = "article" | "review";
 type ContentStatus = "draft" | "published";
+
+interface RatingCriterion {
+  name: string;
+  score: number;
+}
+
+interface ProductSpec {
+  label: string;
+  value: string;
+}
 
 interface ContentFormData {
   id?: string;
@@ -22,6 +47,12 @@ interface ContentFormData {
   status: ContentStatus;
   author_id: string | null;
   page_id: string | null;
+  featured_image?: string | null;
+  youtube_url?: string | null;
+  gallery?: string[];
+  product_specs?: ProductSpec[];
+  rating_criteria?: RatingCriterion[];
+  overall_score?: number;
 }
 
 interface ContentFormProps {
@@ -29,7 +60,7 @@ interface ContentFormProps {
 }
 
 export const ContentForm = ({ initialData }: ContentFormProps) => {
-  const { id } = useParams(); // Get the content ID from URL params
+  const { id } = useParams();
   const [formData, setFormData] = useState<ContentFormData>(
     initialData || {
       title: "",
@@ -39,9 +70,16 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       status: "draft",
       author_id: null,
       page_id: null,
+      featured_image: null,
+      gallery: [],
+      product_specs: [],
+      rating_criteria: [],
+      overall_score: 0,
     }
   );
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -52,42 +90,51 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     queryFn: async () => {
       if (!id) return null;
       
-      const { data, error } = await supabase
+      const { data: contentData, error: contentError } = await supabase
         .from('content')
-        .select('*, page_content!inner(page_id)')
+        .select('*, page_content!inner(page_id), review_details(*)')
         .eq('id', id)
         .single();
       
-      if (error) throw error;
-      return data;
+      if (contentError) throw contentError;
+
+      // If this is a review, fetch rating criteria
+      if (contentData.type === 'review' && contentData.review_details) {
+        const { data: criteriaData, error: criteriaError } = await supabase
+          .from('rating_criteria')
+          .select('*')
+          .eq('review_id', contentData.review_details.id);
+          
+        if (criteriaError) throw criteriaError;
+        
+        return {
+          ...contentData,
+          rating_criteria: criteriaData || []
+        };
+      }
+      
+      return contentData;
     },
-    enabled: !!id, // Only run query if we have an ID
+    enabled: !!id,
   });
 
-  // Populate form with existing content data when it's loaded
   useEffect(() => {
     if (existingContent) {
-      const pageId = existingContent.page_content?.[0]?.page_id || null;
-      
       setFormData({
-        id: existingContent.id,
-        title: existingContent.title,
-        description: existingContent.description,
-        content: existingContent.content,
-        type: existingContent.type as ContentType,
-        status: existingContent.status as ContentStatus,
-        author_id: existingContent.author_id,
-        page_id: pageId,
+        ...existingContent,
+        page_id: existingContent.page_content?.[0]?.page_id || null,
+        product_specs: existingContent.review_details?.product_specs || [],
+        gallery: existingContent.review_details?.gallery || [],
+        youtube_url: existingContent.review_details?.youtube_url || null,
+        overall_score: existingContent.review_details?.overall_score || 0,
       });
-
-      // If we have a page_id, we need to fetch its parent category
-      if (pageId) {
-        fetchParentCategory(pageId);
+      
+      if (existingContent.page_content?.[0]?.page_id) {
+        fetchParentCategory(existingContent.page_content[0].page_id);
       }
     }
   }, [existingContent]);
 
-  // Function to fetch the parent category of a page
   const fetchParentCategory = async (pageId: string) => {
     const { data, error } = await supabase
       .from('pages')
@@ -96,32 +143,11 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       .single();
 
     if (!error && data?.menu_category_id) {
-      // Find the category page that has this menu_category_id
-      const { data: categoryData } = await supabase
-        .from('pages')
-        .select('id')
-        .eq('page_type', 'category')
-        .eq('menu_category_id', data.menu_category_id)
-        .single();
-
-      if (categoryData) {
-        setSelectedCategoryId(categoryData.id);
-      }
+      setSelectedCategory(data.menu_category_id);
     }
   };
 
-  // Get the current user's ID
-  useEffect(() => {
-    const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setFormData(prev => ({ ...prev, author_id: user.id }));
-      }
-    };
-    getCurrentUser();
-  }, []);
-
-  // Fetch categories (pages with type 'category')
+  // Get categories and subcategories
   const { data: categories } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
@@ -135,83 +161,183 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     },
   });
 
-  // Fetch subcategories based on selected category
   const { data: subcategories } = useQuery({
-    queryKey: ['subcategories', selectedCategoryId],
-    enabled: !!selectedCategoryId,
+    queryKey: ['subcategories', selectedCategory],
+    enabled: !!selectedCategory,
     queryFn: async () => {
-      // First get the menu category ID for the selected page
-      const { data: categoryPage, error: categoryError } = await supabase
-        .from('pages')
-        .select('menu_category_id')
-        .eq('id', selectedCategoryId)
-        .single();
-
-      if (categoryError) throw categoryError;
-
-      if (!categoryPage?.menu_category_id) {
-        return [];
-      }
-
-      // Now get subcategories that match this menu category ID
-      const { data: pagesData, error: pagesError } = await supabase
+      const { data, error } = await supabase
         .from('pages')
         .select('id, title')
         .eq('page_type', 'subcategory')
-        .eq('menu_category_id', categoryPage.menu_category_id);
-
-      if (pagesError) throw pagesError;
-      return pagesData || [];
+        .eq('menu_category_id', selectedCategory);
+      
+      if (error) throw error;
+      return data;
     },
   });
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'featured' | 'gallery') => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setImageUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `${type}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('content-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('content-images')
+        .getPublicUrl(filePath);
+
+      if (type === 'featured') {
+        setFormData(prev => ({ ...prev, featured_image: publicUrl }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          gallery: [...(prev.gallery || []), publicUrl]
+        }));
+      }
+
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload image",
+        variant: "destructive",
+      });
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      gallery: prev.gallery?.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addProductSpec = () => {
+    setFormData(prev => ({
+      ...prev,
+      product_specs: [...(prev.product_specs || []), { label: '', value: '' }]
+    }));
+  };
+
+  const updateProductSpec = (index: number, field: 'label' | 'value', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      product_specs: prev.product_specs?.map((spec, i) => 
+        i === index ? { ...spec, [field]: value } : spec
+      )
+    }));
+  };
+
+  const removeProductSpec = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      product_specs: prev.product_specs?.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addRatingCriterion = () => {
+    setFormData(prev => ({
+      ...prev,
+      rating_criteria: [...(prev.rating_criteria || []), { name: '', score: 0 }]
+    }));
+  };
+
+  const updateRatingCriterion = (index: number, field: 'name' | 'score', value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      rating_criteria: prev.rating_criteria?.map((criterion, i) => 
+        i === index ? { ...criterion, [field]: value } : criterion
+      )
+    }));
+  };
+
+  const removeRatingCriterion = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      rating_criteria: prev.rating_criteria?.filter((_, i) => i !== index)
+    }));
+  };
 
   const mutation = useMutation({
     mutationFn: async (data: ContentFormData) => {
       if (!data.author_id) {
-        throw new Error("No author ID available. Please make sure you're logged in.");
+        throw new Error("No author ID available");
       }
 
-      // Prepare the content data according to the required schema
-      const contentData: {
-        id?: string;
-        title: string;
-        description: string | null;
-        content: string | null;
-        type: ContentType;
-        status: ContentStatus;
-        author_id: string;
-        page_id: string | null;
-      } = {
-        title: data.title,
-        description: data.description,
-        content: data.content,
-        type: data.type,
-        status: data.status,
-        author_id: data.author_id,
-        page_id: data.page_id,
-      };
-
-      if (data.id) {
-        contentData.id = data.id;
-      }
-
-      // Create/Update the content
+      // First, create/update the content
       const { data: content, error: contentError } = await supabase
         .from("content")
-        .upsert(contentData)
+        .upsert({
+          id: data.id,
+          title: data.title,
+          description: data.description,
+          content: data.content,
+          type: data.type,
+          status: data.status,
+          author_id: data.author_id,
+          featured_image: data.featured_image,
+        })
         .select()
         .single();
 
       if (contentError) throw contentError;
 
-      // If we have a page_id, create/update the page_content relationship
+      // If this is a review, create/update review details
+      if (data.type === 'review') {
+        const reviewData = {
+          content_id: content.id,
+          youtube_url: data.youtube_url,
+          gallery: data.gallery,
+          product_specs: data.product_specs,
+          overall_score: data.overall_score,
+        };
+
+        const { data: reviewDetails, error: reviewError } = await supabase
+          .from('review_details')
+          .upsert(reviewData)
+          .select()
+          .single();
+
+        if (reviewError) throw reviewError;
+
+        // Handle rating criteria
+        if (data.rating_criteria?.length) {
+          const criteriaData = data.rating_criteria.map(criterion => ({
+            ...criterion,
+            review_id: reviewDetails.id
+          }));
+
+          const { error: criteriaError } = await supabase
+            .from('rating_criteria')
+            .upsert(criteriaData);
+
+          if (criteriaError) throw criteriaError;
+        }
+      }
+
+      // Handle page relationship
       if (data.page_id) {
         const { error: pageContentError } = await supabase
           .from("page_content")
           .upsert({
             page_id: data.page_id,
             content_id: content.id,
-            order_index: 0, // Default to beginning of the list
+            order_index: 0,
           });
 
         if (pageContentError) throw pageContentError;
@@ -242,8 +368,8 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
   };
 
   return (
-    <Card className="max-w-4xl mx-auto">
-      <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit}>
+      <Card className="max-w-4xl mx-auto">
         <CardHeader>
           <div className="flex items-center gap-2">
             {formData.type === "article" ? (
@@ -252,20 +378,20 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
               <Star className="h-5 w-5 text-yellow-500" />
             )}
             <h2 className="text-2xl font-bold">
-              {initialData ? "Edit" : "Create"} {formData.type}
+              {id ? "Edit" : "Create"} {formData.type}
             </h2>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Type</label>
+
+        <CardContent className="space-y-6">
+          {/* Content Type Selection */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Type</label>
             <div className="flex gap-2">
               <Button
                 type="button"
                 variant={formData.type === "article" ? "default" : "outline"}
-                onClick={() =>
-                  setFormData((prev) => ({ ...prev, type: "article" }))
-                }
+                onClick={() => setFormData(prev => ({ ...prev, type: "article" }))}
               >
                 <FileText className="mr-2 h-4 w-4" />
                 Article
@@ -273,9 +399,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
               <Button
                 type="button"
                 variant={formData.type === "review" ? "default" : "outline"}
-                onClick={() =>
-                  setFormData((prev) => ({ ...prev, type: "review" }))
-                }
+                onClick={() => setFormData(prev => ({ ...prev, type: "review" }))}
               >
                 <Star className="mr-2 h-4 w-4" />
                 Review
@@ -283,114 +407,320 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Category</label>
-              <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2"
-                value={selectedCategoryId || ''}
-                onChange={(e) => {
-                  setSelectedCategoryId(e.target.value || null);
-                  setFormData(prev => ({ ...prev, page_id: null }));
-                }}
-              >
-                <option value="">Select a category</option>
-                {categories?.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.title}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <Separator />
 
-            {selectedCategoryId && (
-              <div>
-                <label className="block text-sm font-medium mb-1">Subcategory</label>
-                <select
-                  className="w-full rounded-md border border-input bg-background px-3 py-2"
-                  value={formData.page_id || ''}
-                  onChange={(e) => 
-                    setFormData(prev => ({ ...prev, page_id: e.target.value || null }))
-                  }
-                >
-                  <option value="">Select a subcategory</option>
-                  {subcategories?.map((subcategory) => (
-                    <option key={subcategory.id} value={subcategory.id}>
-                      {subcategory.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {/* Basic Information */}
+          <Accordion type="single" collapsible defaultValue="basic">
+            <AccordionItem value="basic">
+              <AccordionTrigger>Basic Information</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Title</label>
+                    <Input
+                      value={formData.title}
+                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Description</label>
+                    <textarea
+                      className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={formData.description || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Content</label>
+                    <textarea
+                      className="w-full min-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={formData.content || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                      required
+                    />
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Categories Selection */}
+            <AccordionItem value="categories">
+              <AccordionTrigger>Categories</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Category</label>
+                    <select
+                      className="w-full rounded-md border border-input bg-background px-3 py-2"
+                      value={selectedCategory || ''}
+                      onChange={(e) => {
+                        setSelectedCategory(e.target.value || null);
+                        setFormData(prev => ({ ...prev, page_id: null }));
+                      }}
+                    >
+                      <option value="">Select a category</option>
+                      {categories?.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {selectedCategory && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Subcategory</label>
+                      <select
+                        className="w-full rounded-md border border-input bg-background px-3 py-2"
+                        value={formData.page_id || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, page_id: e.target.value || null }))}
+                      >
+                        <option value="">Select a subcategory</option>
+                        {subcategories?.map((subcategory) => (
+                          <option key={subcategory.id} value={subcategory.id}>
+                            {subcategory.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Media Upload */}
+            <AccordionItem value="media">
+              <AccordionTrigger>Media</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  {/* Featured Image */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Featured Image</label>
+                    <div className="flex items-center gap-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('featured-image')?.click()}
+                        disabled={imageUploading}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Image
+                      </Button>
+                      <input
+                        id="featured-image"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleImageUpload(e, 'featured')}
+                      />
+                      {formData.featured_image && (
+                        <div className="relative">
+                          <img
+                            src={formData.featured_image}
+                            alt="Featured"
+                            className="h-20 w-20 object-cover rounded"
+                          />
+                          <button
+                            type="button"
+                            className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full"
+                            onClick={() => setFormData(prev => ({ ...prev, featured_image: null }))}
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Gallery */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Gallery</label>
+                    <div className="space-y-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('gallery-image')?.click()}
+                        disabled={imageUploading}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add to Gallery
+                      </Button>
+                      <input
+                        id="gallery-image"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleImageUpload(e, 'gallery')}
+                      />
+                      <div className="grid grid-cols-4 gap-4 mt-4">
+                        {formData.gallery?.map((image, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={image}
+                              alt={`Gallery ${index + 1}`}
+                              className="h-24 w-24 object-cover rounded"
+                            />
+                            <button
+                              type="button"
+                              className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full"
+                              onClick={() => handleRemoveImage(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* YouTube Video */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">YouTube Video URL</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="url"
+                        value={formData.youtube_url || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, youtube_url: e.target.value }))}
+                        placeholder="https://youtube.com/watch?v=..."
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setFormData(prev => ({ ...prev, youtube_url: null }))}
+                        disabled={!formData.youtube_url}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Review Specific Fields */}
+            {formData.type === 'review' && (
+              <>
+                <AccordionItem value="specs">
+                  <AccordionTrigger>Product Specifications</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4">
+                      {formData.product_specs?.map((spec, index) => (
+                        <div key={index} className="flex gap-2">
+                          <Input
+                            placeholder="Specification"
+                            value={spec.label}
+                            onChange={(e) => updateProductSpec(index, 'label', e.target.value)}
+                          />
+                          <Input
+                            placeholder="Value"
+                            value={spec.value}
+                            onChange={(e) => updateProductSpec(index, 'value', e.target.value)}
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={() => removeProductSpec(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addProductSpec}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Specification
+                      </Button>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="rating">
+                  <AccordionTrigger>Rating</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4">
+                      {formData.rating_criteria?.map((criterion, index) => (
+                        <div key={index} className="flex gap-2">
+                          <Input
+                            placeholder="Criterion"
+                            value={criterion.name}
+                            onChange={(e) => updateRatingCriterion(index, 'name', e.target.value)}
+                          />
+                          <Input
+                            type="number"
+                            min="0"
+                            max="10"
+                            step="0.1"
+                            placeholder="Score (0-10)"
+                            value={criterion.score}
+                            onChange={(e) => updateRatingCriterion(index, 'score', parseFloat(e.target.value))}
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={() => removeRatingCriterion(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addRatingCriterion}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Rating Criterion
+                      </Button>
+
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Overall Score</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.1"
+                          value={formData.overall_score || 0}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            overall_score: parseFloat(e.target.value)
+                          }))}
+                        />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </>
             )}
-          </div>
+          </Accordion>
 
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium mb-1">
-              Title
-            </label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, title: e.target.value }))
-              }
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium mb-1">
-              Description
-            </label>
-            <textarea
-              id="description"
-              className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={formData.description || ''}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, description: e.target.value }))
-              }
-            />
-          </div>
-
-          <div>
-            <label htmlFor="content" className="block text-sm font-medium mb-1">
-              Content
-            </label>
-            <textarea
-              id="content"
-              className="w-full min-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={formData.content || ''}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, content: e.target.value }))
-              }
-              required
-            />
-          </div>
-
+          {/* Status */}
           <div>
             <label className="block text-sm font-medium mb-1">Status</label>
             <div className="flex gap-2">
               <Button
                 type="button"
                 variant={formData.status === "draft" ? "default" : "outline"}
-                onClick={() =>
-                  setFormData((prev) => ({ ...prev, status: "draft" }))
-                }
+                onClick={() => setFormData(prev => ({ ...prev, status: "draft" }))}
               >
                 Draft
               </Button>
               <Button
                 type="button"
                 variant={formData.status === "published" ? "default" : "outline"}
-                onClick={() =>
-                  setFormData((prev) => ({ ...prev, status: "published" }))
-                }
+                onClick={() => setFormData(prev => ({ ...prev, status: "published" }))}
               >
                 Published
               </Button>
             </div>
           </div>
         </CardContent>
+
         <CardFooter className="flex justify-end gap-2">
           <Button
             type="button"
@@ -403,7 +733,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             {mutation.isPending ? "Saving..." : "Save"}
           </Button>
         </CardFooter>
-      </form>
-    </Card>
+      </Card>
+    </form>
   );
 };
