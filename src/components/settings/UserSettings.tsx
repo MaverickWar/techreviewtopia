@@ -7,6 +7,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2 } from 'lucide-react';
 
+interface Profile {
+  id: string;
+  email: string;
+  role: 'admin' | 'user';
+  created_at: string;
+  updated_at: string;
+  avatar_url: string | null;
+}
+
 export const UserSettings = () => {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -27,7 +36,7 @@ export const UserSettings = () => {
           .eq('id', user.id)
           .single();
         
-        if (profile?.avatar_url) {
+        if (profile && profile.avatar_url) {
           setAvatarUrl(profile.avatar_url);
         }
       }
