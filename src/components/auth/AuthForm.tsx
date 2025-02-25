@@ -36,11 +36,6 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
     checkSession();
   }, []);
 
-  // Debug: Log Supabase client status
-  useEffect(() => {
-    console.log("Supabase client initialized:", !!supabase);
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -60,7 +55,20 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
 
         console.log("Sign up response:", { data: signUpData, error: signUpError });
 
-        if (signUpError) throw signUpError;
+        if (signUpError) {
+          // Handle the "User already registered" error specifically
+          if (signUpError.message === "User already registered") {
+            toast({
+              title: "Account exists",
+              description: "This email is already registered. Please log in instead.",
+              variant: "destructive",
+            });
+            onModeChange?.('login');
+            setIsLoading(false);
+            return;
+          }
+          throw signUpError;
+        }
 
         if (signUpData.user) {
           console.log("Creating profile for user:", signUpData.user.id);
@@ -94,7 +102,14 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
 
         console.log("Sign in response:", { data: signInData, error: signInError });
 
-        if (signInError) throw signInError;
+        if (signInError) {
+          // Handle specific login errors
+          const errorMessage = signInError.message === "Invalid login credentials"
+            ? "Invalid email or password. Please try again."
+            : signInError.message;
+            
+          throw new Error(errorMessage);
+        }
 
         if (!signInData.user) {
           throw new Error("Login failed - no user data returned");
