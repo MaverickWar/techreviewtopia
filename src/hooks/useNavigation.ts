@@ -23,13 +23,26 @@ export const useNavigation = () => {
 
       if (menuItemsError) throw menuItemsError;
 
-      // Organize menu items by category
-      const organizedCategories = categories.map((category) => ({
-        ...category,
-        items: menuItems.filter((item) => item.category_id === category.id)
+      // Map database fields to our TypeScript types
+      const organizedCategories = categories.map((category): MenuCategory => ({
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+        type: category.type,
+        orderIndex: category.order_index,
+        items: menuItems
+          .filter(item => item.category_id === category.id)
+          .map((item): MenuItem => ({
+            id: item.id,
+            name: item.name,
+            slug: item.slug,
+            imageUrl: item.image_url,
+            description: item.description,
+            orderIndex: item.order_index
+          }))
       }));
 
-      return organizedCategories as MenuCategory[];
+      return organizedCategories;
     }
   });
 };

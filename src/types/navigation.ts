@@ -7,7 +7,7 @@ export interface MenuItem {
   slug: string;
   imageUrl: string | null;
   description: string | null;
-  orderIndex: number;
+  orderIndex: number | null;
 }
 
 export interface MenuCategory {
@@ -15,6 +15,6 @@ export interface MenuCategory {
   name: string;
   slug: string;
   type: MenuType;
-  orderIndex: number;
+  orderIndex: number | null;
   items?: MenuItem[];
 }
