@@ -136,11 +136,28 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     if (existingContent) {
       const reviewDetails = existingContent.review_details?.[0];
       
+      // Parse product specs from JSON if they exist
+      let parsedProductSpecs: ProductSpec[] = [];
+      if (reviewDetails?.product_specs) {
+        try {
+          const specs = JSON.parse(reviewDetails.product_specs as string);
+          if (Array.isArray(specs)) {
+            parsedProductSpecs = specs.map(spec => ({
+              label: String(spec.label || ''),
+              value: String(spec.value || '')
+            }));
+          }
+        } catch (e) {
+          console.error('Error parsing product specs:', e);
+        }
+      }
+
       setFormData({
         ...existingContent,
         type: existingContent.type as ContentType,
+        status: existingContent.status as ContentStatus, // Ensure status is cast to the correct type
         page_id: existingContent.page_content?.[0]?.page_id || null,
-        product_specs: reviewDetails?.product_specs as ProductSpec[] || [],
+        product_specs: parsedProductSpecs,
         gallery: reviewDetails?.gallery || [],
         youtube_url: reviewDetails?.youtube_url || null,
         overall_score: reviewDetails?.overall_score || 0,
