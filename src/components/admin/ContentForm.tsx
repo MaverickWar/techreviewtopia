@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ interface ContentFormProps {
 }
 
 export const ContentForm = ({ initialData }: ContentFormProps) => {
+  const { id } = useParams(); // Get the content ID from URL params
   const [formData, setFormData] = useState<ContentFormData>(
     initialData || {
       title: "",
@@ -44,6 +45,70 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch existing content if we're editing
+  const { data: existingContent } = useQuery({
+    queryKey: ['content', id],
+    queryFn: async () => {
+      if (!id) return null;
+      
+      const { data, error } = await supabase
+        .from('content')
+        .select('*, page_content!inner(page_id)')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id, // Only run query if we have an ID
+  });
+
+  // Populate form with existing content data when it's loaded
+  useEffect(() => {
+    if (existingContent) {
+      const pageId = existingContent.page_content?.[0]?.page_id || null;
+      
+      setFormData({
+        id: existingContent.id,
+        title: existingContent.title,
+        description: existingContent.description,
+        content: existingContent.content,
+        type: existingContent.type as ContentType,
+        status: existingContent.status as ContentStatus,
+        author_id: existingContent.author_id,
+        page_id: pageId,
+      });
+
+      // If we have a page_id, we need to fetch its parent category
+      if (pageId) {
+        fetchParentCategory(pageId);
+      }
+    }
+  }, [existingContent]);
+
+  // Function to fetch the parent category of a page
+  const fetchParentCategory = async (pageId: string) => {
+    const { data, error } = await supabase
+      .from('pages')
+      .select('menu_category_id')
+      .eq('id', pageId)
+      .single();
+
+    if (!error && data?.menu_category_id) {
+      // Find the category page that has this menu_category_id
+      const { data: categoryData } = await supabase
+        .from('pages')
+        .select('id')
+        .eq('page_type', 'category')
+        .eq('menu_category_id', data.menu_category_id)
+        .single();
+
+      if (categoryData) {
+        setSelectedCategoryId(categoryData.id);
+      }
+    }
+  };
 
   // Get the current user's ID
   useEffect(() => {
@@ -130,7 +195,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         contentData.id = data.id;
       }
 
-      // Create the content
+      // Create/Update the content
       const { data: content, error: contentError } = await supabase
         .from("content")
         .upsert(contentData)
@@ -139,7 +204,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
       if (contentError) throw contentError;
 
-      // If we have a page_id, create the page_content relationship
+      // If we have a page_id, create/update the page_content relationship
       if (data.page_id) {
         const { error: pageContentError } = await supabase
           .from("page_content")
@@ -157,7 +222,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["content"] });
       toast({
-        title: `Content ${initialData ? "updated" : "created"} successfully`,
+        title: `Content ${id ? "updated" : "created"} successfully`,
         description: formData.title,
       });
       navigate("/admin/content");
