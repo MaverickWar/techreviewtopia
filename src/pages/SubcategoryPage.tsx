@@ -112,8 +112,7 @@ export const SubcategoryPage = () => {
     <ContentPageLayout
       header={{
         title: pageData.menu_items.name,
-        subtitle: pageData.menu_items.description,
-        category: pageData.menu_items.menu_categories.name
+        subtitle: pageData.menu_items.description || undefined
       }}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

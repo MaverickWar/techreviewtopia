@@ -24,7 +24,7 @@ function App() {
           <Route path=":categorySlug/content/:contentId" element={<ArticlePage />} />
           <Route path="*" element={<NotFound />} />
         </Route>
-        <Route path="admin" element={<AdminLayout><Outlet /></AdminLayout>}>
+        <Route path="admin" element={<AdminLayout>{<Outlet />}</AdminLayout>}>
           <Route index element={<AdminDashboard />} />
           <Route path="content/*" element={<ContentManager />} />
           <Route path="pages/*" element={<PagesManager />} />
