@@ -42,26 +42,34 @@ export const PageForm = ({ initialData }: PageFormProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fix the categories query to correctly fetch categories with menu_category_id
+  // Updated categories query to fetch both pages and their menu categories
   const { data: categories } = useQuery({
     queryKey: ['parent_categories'],
     queryFn: async () => {
-      // First, get pages that are categories
       const { data: categoryPages, error: pagesError } = await supabase
         .from('pages')
         .select(`
           id,
           title,
-          menu_category_id
+          menu_category_id,
+          menu_category:menu_categories(id, name)
         `)
         .eq('page_type', 'category')
         .order('title');
 
-      if (pagesError) throw pagesError;
+      if (pagesError) {
+        console.error('Error fetching categories:', pagesError);
+        throw pagesError;
+      }
 
-      // Filter out pages without menu_category_id in JavaScript
-      const validCategories = categoryPages.filter(page => page.menu_category_id !== null);
-      
+      console.log('Category pages fetched:', categoryPages);
+
+      // Filter pages that have a valid menu category
+      const validCategories = categoryPages.filter(page => 
+        page.menu_category_id !== null && page.menu_category !== null
+      );
+
+      console.log('Valid categories:', validCategories);
       return validCategories;
     }
   });
@@ -125,11 +133,14 @@ export const PageForm = ({ initialData }: PageFormProps) => {
 
       // If this is a new category page, create the menu category
       if (data.page_type === 'category' && !initialData?.id) {
-        await createMenuCategory(page.id, data.title, data.slug);
+        const menuCategory = await createMenuCategory(page.id, data.title, data.slug);
+        console.log('Created menu category:', menuCategory);
       }
 
       // If this is a new subcategory page
       if (data.page_type === 'subcategory' && data.menu_category_id) {
+        console.log('Creating subcategory with menu_category_id:', data.menu_category_id);
+        
         // Update parent category to megamenu if it's not already
         const { error: updateError } = await supabase
           .from('menu_categories')
@@ -140,6 +151,7 @@ export const PageForm = ({ initialData }: PageFormProps) => {
 
         // Create menu item for subcategory
         const menuItem = await createMenuItem(data.menu_category_id, data.title, data.slug);
+        console.log('Created menu item:', menuItem);
 
         // Update page with menu_item_id
         const { error: updatePageError } = await supabase
@@ -161,6 +173,7 @@ export const PageForm = ({ initialData }: PageFormProps) => {
       navigate("/admin/pages");
     },
     onError: (error) => {
+      console.error('Mutation error:', error);
       toast({
         title: "Error",
         description: error.message,
@@ -279,33 +292,34 @@ export const PageForm = ({ initialData }: PageFormProps) => {
             />
           </div>
 
-          {/* Parent Category Selection */}
-          {formData.page_type === "subcategory" && categories && (
-            <div className="space-y-2">
-              <label htmlFor="parentCategory" className="block text-sm font-medium">
-                Parent Category
-              </label>
-              <select
-                id="parentCategory"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={formData.menu_category_id || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    menu_category_id: e.target.value || undefined
-                  }))
-                }
-                required
-              >
-                <option value="">Select a parent category</option>
-                {categories?.map((category) => (
-                  <option key={category.id} value={category.menu_category_id}>
-                    {category.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+        {/* Updated Parent Category Selection */}
+        {formData.page_type === "subcategory" && (
+          <div className="space-y-2">
+            <label htmlFor="parentCategory" className="block text-sm font-medium">
+              Parent Category
+            </label>
+            <select
+              id="parentCategory"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={formData.menu_category_id || ""}
+              onChange={(e) => {
+                console.log('Selected category ID:', e.target.value);
+                setFormData((prev) => ({
+                  ...prev,
+                  menu_category_id: e.target.value || undefined
+                }));
+              }}
+              required
+            >
+              <option value="">Select a parent category</option>
+              {categories?.map((category) => (
+                <option key={category.id} value={category.menu_category_id}>
+                  {category.title} {/* Display the page title */}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
           {/* Template Selection */}
           <div className="space-y-2">
