@@ -1,12 +1,12 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, Star } from "lucide-react";
 
 interface ContentFormProps {
@@ -18,6 +18,7 @@ interface ContentFormProps {
     type: "article" | "review";
     status: "draft" | "published";
     author_id?: string;
+    page_id?: string;
   };
 }
 
@@ -33,26 +34,73 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       type: "article" as const,
       status: "draft" as const,
       author_id: TEST_AUTHOR_ID,
+      page_id: null as string | null,
     }
   );
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Fetch categories (pages with type 'category')
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pages')
+        .select('id, title')
+        .eq('page_type', 'category');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch subcategories based on selected category
+  const { data: subcategories } = useQuery({
+    queryKey: ['subcategories', selectedCategoryId],
+    enabled: !!selectedCategoryId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pages')
+        .select('id, title')
+        .eq('page_type', 'subcategory')
+        .eq('menu_category_id', selectedCategoryId);
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const mutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { data: result, error } = await supabase
+      // Create the content
+      const { data: content, error: contentError } = await supabase
         .from("content")
         .upsert({
           ...data,
           id: initialData?.id,
-          author_id: TEST_AUTHOR_ID, // Ensure author_id is always set
+          author_id: TEST_AUTHOR_ID,
         })
         .select()
         .single();
 
-      if (error) throw error;
-      return result;
+      if (contentError) throw contentError;
+
+      // If we have a page_id, create the page_content relationship
+      if (data.page_id) {
+        const { error: pageContentError } = await supabase
+          .from("page_content")
+          .upsert({
+            page_id: data.page_id,
+            content_id: content.id,
+            order_index: 0, // Default to beginning of the list
+          });
+
+        if (pageContentError) throw pageContentError;
+      }
+
+      return content;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["content"] });
@@ -116,6 +164,47 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
                 Review
               </Button>
             </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Category</label>
+              <select
+                className="w-full rounded-md border border-input bg-background px-3 py-2"
+                value={selectedCategoryId || ''}
+                onChange={(e) => {
+                  setSelectedCategoryId(e.target.value || null);
+                  setFormData(prev => ({ ...prev, page_id: null }));
+                }}
+              >
+                <option value="">Select a category</option>
+                {categories?.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedCategoryId && subcategories && (
+              <div>
+                <label className="block text-sm font-medium mb-1">Subcategory</label>
+                <select
+                  className="w-full rounded-md border border-input bg-background px-3 py-2"
+                  value={formData.page_id || ''}
+                  onChange={(e) => 
+                    setFormData(prev => ({ ...prev, page_id: e.target.value || null }))
+                  }
+                >
+                  <option value="">Select a subcategory</option>
+                  {subcategories.map((subcategory) => (
+                    <option key={subcategory.id} value={subcategory.id}>
+                      {subcategory.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div>
