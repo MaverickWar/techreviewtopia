@@ -36,17 +36,15 @@ export const TopNav = () => {
         console.error('TopNav: Error fetching profile:', error);
         return;
       }
-      
-      // Add cache-busting timestamp to URL
-      const url = profile?.avatar_url 
-        ? `${profile.avatar_url}?t=${Date.now()}`
-        : null;
-      
-      setAvatarUrl(url);
+
+      // Only update avatar URL if it's different from current
+      if (profile?.avatar_url !== avatarUrl) {
+        setAvatarUrl(profile?.avatar_url || null);
+      }
     } catch (error) {
       console.error('TopNav: Error in fetchProfile:', error);
     }
-  }, []);
+  }, [avatarUrl]);
 
   useEffect(() => {
     let mounted = true;
@@ -92,6 +90,7 @@ export const TopNav = () => {
     try {
       await supabase.auth.signOut();
       setAvatarUrl(null);
+      setSession(null);
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of your account.",
@@ -133,10 +132,10 @@ export const TopNav = () => {
             <Avatar className="h-8 w-8 bg-orange-500 hover:bg-orange-600 transition-colors cursor-pointer">
               {avatarUrl ? (
                 <AvatarImage 
-                  src={avatarUrl} 
+                  src={avatarUrl}
                   alt="Profile"
                   className="object-cover"
-                  onError={() => setAvatarUrl(null)} // Fallback if image fails to load
+                  onError={() => setAvatarUrl(null)}
                 />
               ) : (
                 <AvatarFallback>
@@ -146,7 +145,7 @@ export const TopNav = () => {
             </Avatar>
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuContent align="end" className="w-56 bg-white">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => setShowSettingsDialog(true)}>
@@ -172,7 +171,7 @@ export const TopNav = () => {
 
   const handleSettingsClose = useCallback(() => {
     setShowSettingsDialog(false);
-    // Immediate refresh of avatar
+    // Refresh the avatar after settings dialog closes
     if (session?.user) {
       fetchProfile(session.user.id);
     }
