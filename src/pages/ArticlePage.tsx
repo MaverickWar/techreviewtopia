@@ -31,6 +31,8 @@ export const ArticlePage = () => {
   const { data: article, isLoading } = useQuery({
     queryKey: ['article', contentId],
     queryFn: async () => {
+      if (!contentId) return null;
+
       const { data, error } = await supabase
         .from('content')
         .select(`
@@ -41,7 +43,11 @@ export const ArticlePage = () => {
         .eq('status', 'published')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching article:', error);
+        return null;
+      }
+
       if (!data) return null;
 
       // Type assertion to ensure the data matches our ArticleData interface
