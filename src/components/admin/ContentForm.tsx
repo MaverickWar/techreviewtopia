@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -21,9 +22,6 @@ interface ContentFormProps {
   };
 }
 
-// Temporary test author ID until we implement authentication
-const TEST_AUTHOR_ID = "00000000-0000-0000-0000-000000000000";
-
 export const ContentForm = ({ initialData }: ContentFormProps) => {
   const [formData, setFormData] = useState(
     initialData || {
@@ -32,7 +30,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       content: "",
       type: "article" as const,
       status: "draft" as const,
-      author_id: TEST_AUTHOR_ID,
+      author_id: null as string | null,
       page_id: null as string | null,
     }
   );
@@ -40,6 +38,17 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Get the current user's ID
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setFormData(prev => ({ ...prev, author_id: user.id }));
+      }
+    };
+    getCurrentUser();
+  }, []);
 
   // Fetch categories (pages with type 'category')
   const { data: categories } = useQuery({
@@ -101,13 +110,16 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
   const mutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      if (!data.author_id) {
+        throw new Error("No author ID available. Please make sure you're logged in.");
+      }
+
       // Create the content
       const { data: content, error: contentError } = await supabase
         .from("content")
         .upsert({
           ...data,
           id: initialData?.id,
-          author_id: TEST_AUTHOR_ID,
         })
         .select()
         .single();
