@@ -152,19 +152,33 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         }
       }
 
+      const {
+        review_details,
+        page_content,
+        ...contentData
+      } = existingContent;
+
       setFormData({
-        ...existingContent,
+        ...contentData,
         type: existingContent.type as ContentType,
-        status: existingContent.status as ContentStatus, // Ensure status is cast to the correct type
-        page_id: existingContent.page_content?.[0]?.page_id || null,
+        status: existingContent.status as ContentStatus,
+        page_id: page_content?.[0]?.page_id || null,
         product_specs: parsedProductSpecs,
         gallery: reviewDetails?.gallery || [],
         youtube_url: reviewDetails?.youtube_url || null,
         overall_score: reviewDetails?.overall_score || 0,
+        review_details: reviewDetails ? {
+          id: reviewDetails.id,
+          content_id: reviewDetails.content_id,
+          youtube_url: reviewDetails.youtube_url || null,
+          gallery: reviewDetails.gallery || [],
+          product_specs: parsedProductSpecs,
+          overall_score: reviewDetails.overall_score || 0
+        } : undefined
       });
       
-      if (existingContent.page_content?.[0]?.page_id) {
-        fetchParentCategory(existingContent.page_content[0].page_id);
+      if (page_content?.[0]?.page_id) {
+        fetchParentCategory(page_content[0].page_id);
       }
     }
   }, [existingContent]);
