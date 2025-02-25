@@ -224,59 +224,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         throw new Error("You must be logged in to create or edit content");
       }
 
-      // First, if we have a menu_item selected, create or get the corresponding page
-      let pageId = data.page_id;
-      if (data.page_id) {
-        // Check if a page already exists for this menu item
-        const { data: existingPage, error: pageCheckError } = await supabase
-          .from('pages')
-          .select('id')
-          .eq('menu_item_id', data.page_id)
-          .single();
-
-        if (pageCheckError && pageCheckError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-          console.error("Error checking existing page:", pageCheckError);
-          throw pageCheckError;
-        }
-
-        if (existingPage) {
-          pageId = existingPage.id;
-        } else {
-          // Get the menu item details to create the page
-          const { data: menuItem, error: menuItemError } = await supabase
-            .from('menu_items')
-            .select('name, category_id')
-            .eq('id', data.page_id)
-            .single();
-
-          if (menuItemError) {
-            console.error("Error fetching menu item:", menuItemError);
-            throw menuItemError;
-          }
-
-          // Create the page
-          const { data: newPage, error: pageError } = await supabase
-            .from('pages')
-            .insert({
-              title: menuItem.name,
-              slug: menuItem.name.toLowerCase().replace(/\s+/g, '-'),
-              menu_item_id: data.page_id,
-              menu_category_id: menuItem.category_id,
-              page_type: 'subcategory'
-            })
-            .select()
-            .single();
-
-          if (pageError) {
-            console.error("Error creating page:", pageError);
-            throw pageError;
-          }
-
-          pageId = newPage.id;
-        }
-      }
-
-      // Then create/update the content
+      // Create/update the content first
       const { data: content, error: contentError } = await supabase
         .from("content")
         .upsert({
@@ -320,8 +268,6 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
           throw reviewError;
         }
 
-        console.log("Review details created/updated:", reviewDetails);
-
         // Handle rating criteria
         if (data.rating_criteria?.length) {
           const criteriaData = data.rating_criteria.map(criterion => ({
@@ -334,25 +280,22 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             .from('rating_criteria')
             .upsert(criteriaData);
 
-          if (criteriaError) {
-            console.error("Error creating/updating rating criteria:", criteriaError);
-            throw criteriaError;
-          }
+          if (criteriaError) throw criteriaError;
         }
       }
 
-      // Handle page relationship if we have a pageId
-      if (pageId) {
+      // If a page is selected, create the page_content relationship
+      if (data.page_id) {
         const { error: pageContentError } = await supabase
           .from("page_content")
           .upsert({
-            page_id: pageId,
+            page_id: data.page_id,
             content_id: content.id,
-            order_index: 0,
+            order_index: 0, // Default to first position
           });
 
         if (pageContentError) {
-          console.error("Error creating/updating page content:", pageContentError);
+          console.error("Error linking content to page:", pageContentError);
           throw pageContentError;
         }
       }

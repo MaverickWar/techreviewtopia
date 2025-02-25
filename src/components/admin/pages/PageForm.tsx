@@ -162,6 +162,11 @@ export const PageForm = ({ initialData }: PageFormProps) => {
 
   const mutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      if (data.page_type === 'subcategory' && !data.menu_category_id) {
+        throw new Error('Category selection is required for subcategory pages');
+      }
+
+      // First create/update the page
       const { data: page, error: pageError } = await supabase
         .from("pages")
         .upsert({
@@ -214,8 +219,6 @@ export const PageForm = ({ initialData }: PageFormProps) => {
       }
       // Handle subcategory page
       else if (data.page_type === 'subcategory' && data.menu_category_id) {
-        console.log('Handling subcategory with menu_category_id:', data.menu_category_id);
-
         // Update existing menu item
         if (data.menu_item_id) {
           const { error: updateMenuItemError } = await supabase

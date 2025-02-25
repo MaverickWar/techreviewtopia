@@ -1,194 +1,70 @@
 
-import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
-import { ContentPageLayout } from "@/components/layouts/ContentPageLayout";
-import { Star, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
-import { MenuCategory, MenuItem, ContentType } from "@/types/navigation";
-
-interface SubcategoryPageData {
-  category: MenuCategory;
-  menuItem: MenuItem;
-  page: {
-    id: string;
-    page_content?: Array<{
-      content: Omit<ContentType, 'review_details'> & {
-        review_details?: Array<{
-          id: string;
-          content_id: string;
-          overall_score: number;
-          gallery: string[] | null;
-          product_specs: Record<string, any> | null;
-          youtube_url: string | null;
-        }>;
-      };
-    }>;
-  } | null;
-}
+import { useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { ContentPageLayout } from '@/components/layouts/ContentPageLayout';
+import { useRealtimeContent } from '@/hooks/useRealtimeContent';
 
 export const SubcategoryPage = () => {
   const { categorySlug, subcategorySlug } = useParams();
+  useRealtimeContent(); // Add real-time updates
 
-  const { data: pageData, isLoading } = useQuery<SubcategoryPageData | null>({
+  const { data: pageData, isLoading } = useQuery({
     queryKey: ['subcategory', categorySlug, subcategorySlug],
     queryFn: async () => {
-      const { data: menuCategory, error: categoryError } = await supabase
-        .from('menu_categories')
-        .select('*')
-        .eq('slug', categorySlug)
-        .maybeSingle();
-
-      if (categoryError) throw categoryError;
-      if (!menuCategory) return null;
-
-      const { data: menuItem, error: menuItemError } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('category_id', menuCategory.id)
-        .eq('slug', subcategorySlug)
-        .maybeSingle();
-
-      if (menuItemError) throw menuItemError;
-      if (!menuItem) return null;
-
-      const { data: page, error: pageError } = await supabase
+      const { data, error } = await supabase
         .from('pages')
         .select(`
           *,
-          page_content (
-            content (
-              *,
-              review_details(*)
+          menu_items!inner(
+            name,
+            description,
+            category_id,
+            menu_categories!inner(
+              name
             )
+          ),
+          page_content(
+            content(*)
           )
         `)
-        .eq('menu_item_id', menuItem.id)
-        .eq('page_type', 'subcategory')
-        .maybeSingle();
+        .eq('menu_items.slug', subcategorySlug || '')
+        .eq('menu_items.menu_categories.slug', categorySlug || '')
+        .single();
 
-      if (pageError) throw pageError;
-
-      // Map the data to match our TypeScript interfaces
-      const mappedPage = page ? {
-        ...page,
-        page_content: page.page_content?.map(pc => ({
-          content: {
-            ...pc.content,
-            type: pc.content.type as 'article' | 'review',
-            review_details: pc.content.review_details?.map(rd => ({
-              ...rd,
-              product_specs: rd.product_specs as Record<string, any> | null
-            }))
-          }
-        }))
-      } : null;
-
-      return {
-        category: menuCategory as MenuCategory,
-        menuItem: menuItem as MenuItem,
-        page: mappedPage
-      };
-    }
+      if (error) throw error;
+      return data;
+    },
   });
 
   if (isLoading) {
-    return (
-      <ContentPageLayout
-        header={{
-          title: "Loading...",
-          subtitle: "Please wait while we load the content"
-        }}
-      >
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-        </div>
-      </ContentPageLayout>
-    );
+    return <div>Loading...</div>;
   }
 
-  if (!pageData || !pageData.menuItem) {
-    return (
-      <ContentPageLayout
-        header={{
-          title: "Page Not Found",
-          subtitle: "The requested page could not be found"
-        }}
-      >
-        <div className="text-center py-8">
-          <p className="text-gray-600">
-            Please check the URL and try again
-          </p>
-          <Link to="/" className="text-blue-600 hover:underline mt-4 inline-block">
-            Return to Home
-          </Link>
-        </div>
-      </ContentPageLayout>
-    );
+  if (!pageData) {
+    return <div>Page not found</div>;
   }
 
-  const { category, menuItem, page } = pageData;
+  const content = pageData.page_content?.map(pc => pc.content) || [];
 
   return (
     <ContentPageLayout
       header={{
-        title: menuItem.name,
-        subtitle: menuItem.description,
-        category: category.name
+        title: pageData.menu_items.name,
+        subtitle: pageData.menu_items.description,
+        category: pageData.menu_items.menu_categories.name
       }}
     >
-      {page?.page_content?.map(({ content }) => {
-        if (!content) return null;
-
-        return (
-          <div key={content.id} className="mb-8 last:mb-0">
-            <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-              {content.featured_image && (
-                <div className="aspect-video w-full">
-                  <img
-                    src={content.featured_image}
-                    alt={content.title}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-              <div className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-sm text-gray-500">
-                    {new Date(content.created_at!).toLocaleDateString()}
-                  </span>
-                  {content.type === 'review' && content.review_details?.[0] && (
-                    <div className="flex items-center gap-1 text-yellow-500">
-                      <Star className="h-4 w-4 fill-current" />
-                      <span className="font-medium">
-                        {content.review_details[0].overall_score.toFixed(1)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                
-                <h2 className="text-2xl font-semibold mb-3 text-gray-900">
-                  {content.title}
-                </h2>
-                
-                {content.description && (
-                  <p className="text-gray-600 mb-4">{content.description}</p>
-                )}
-
-                <Link
-                  to={`/${categorySlug}/${subcategorySlug}/${content.id}`}
-                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Read full {content.type} <ArrowRight size={16} />
-                </Link>
-              </div>
-            </Card>
-          </div>
-        );
-      })}
+      <div className="space-y-8">
+        {content.map((item: any) => (
+          <article key={item.id} className="prose max-w-none">
+            <h2>{item.title}</h2>
+            {item.description && <p className="text-gray-600">{item.description}</p>}
+            <div dangerouslySetInnerHTML={{ __html: item.content || '' }} />
+          </article>
+        ))}
+      </div>
     </ContentPageLayout>
   );
 };
+
