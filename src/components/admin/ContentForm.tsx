@@ -184,6 +184,21 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
   useEffect(() => {
     if (existingContent) {
       const reviewDetails = existingContent.review_details?.[0];
+      
+      // Handle product_specs parsing correctly
+      let productSpecs: ProductSpec[] = [];
+      if (reviewDetails?.product_specs) {
+        try {
+          // Check if product_specs is already an object or needs parsing
+          productSpecs = typeof reviewDetails.product_specs === 'string' 
+            ? JSON.parse(reviewDetails.product_specs)
+            : reviewDetails.product_specs;
+        } catch (error) {
+          console.error('Error parsing product specs:', error);
+          productSpecs = [];
+        }
+      }
+
       setFormData({
         id: existingContent.id,
         title: existingContent.title,
@@ -195,7 +210,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         page_id: existingContent.page_content?.[0]?.page_id || null,
         featured_image: existingContent.featured_image,
         gallery: reviewDetails?.gallery || [],
-        product_specs: reviewDetails?.product_specs ? JSON.parse(reviewDetails.product_specs as string) : [],
+        product_specs: productSpecs,
         rating_criteria: existingContent.rating_criteria || [],
         overall_score: reviewDetails?.overall_score || 0,
         youtube_url: reviewDetails?.youtube_url || null,
