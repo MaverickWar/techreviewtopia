@@ -100,15 +100,18 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     queryFn: async () => {
       if (!id) return null;
       
+      console.log('Fetching content with ID:', id);
+      
       const { data: contentData, error: contentError } = await supabase
         .from('content')
         .select(`
           *,
           page_content!inner(
             page_id,
-            pages(
+            pages!inner(
               id,
-              menu_category_id
+              menu_category_id,
+              title
             )
           ),
           review_details(*)
@@ -116,7 +119,12 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         .eq('id', id)
         .single();
       
-      if (contentError) throw contentError;
+      if (contentError) {
+        console.error('Error fetching content:', contentError);
+        throw contentError;
+      }
+
+      console.log('Content data:', contentData);
 
       // If this is a review, fetch rating criteria
       if (contentData.type === 'review' && contentData.review_details?.[0]?.id) {
@@ -138,20 +146,43 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     enabled: !!id,
   });
 
-  const fetchParentCategory = async (pageId: string) => {
-    const { data, error } = await supabase
-      .from('pages')
-      .select('menu_category_id')
-      .eq('id', pageId)
-      .single();
+  // Get categories and subcategories
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      console.log('Fetching categories');
+      const { data, error } = await supabase
+        .from('pages')
+        .select('id, title')
+        .eq('page_type', 'category');
+      
+      if (error) throw error;
+      console.log('Categories:', data);
+      return data;
+    },
+  });
 
-    if (!error && data?.menu_category_id) {
-      setSelectedCategory(data.menu_category_id);
-    }
-  };
+  // Modified subcategories query to show subcategories based on selected category
+  const { data: subcategories } = useQuery({
+    queryKey: ['subcategories', selectedCategory],
+    enabled: !!selectedCategory,
+    queryFn: async () => {
+      console.log('Fetching subcategories for category:', selectedCategory);
+      const { data, error } = await supabase
+        .from('pages')
+        .select('id, title')
+        .eq('page_type', 'subcategory')
+        .eq('menu_category_id', selectedCategory);
+      
+      if (error) throw error;
+      console.log('Subcategories:', data);
+      return data;
+    },
+  });
 
   useEffect(() => {
     if (existingContent) {
+      console.log('Setting form data from existing content:', existingContent);
       const reviewDetails = existingContent.review_details?.[0];
       const pageContent = existingContent.page_content?.[0];
       
@@ -198,40 +229,29 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       
       // Set the parent category directly from the nested pages data
       if (pageContent?.pages?.menu_category_id) {
+        console.log('Setting selected category:', pageContent.pages.menu_category_id);
         setSelectedCategory(pageContent.pages.menu_category_id);
       }
     }
   }, [existingContent]);
 
+  const fetchParentCategory = async (pageId: string) => {
+    const { data, error } = await supabase
+      .from('pages')
+      .select('menu_category_id')
+      .eq('id', pageId)
+      .single();
+
+    if (!error && data?.menu_category_id) {
+      setSelectedCategory(data.menu_category_id);
+    }
+  };
+
   // Get categories and subcategories
-  const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pages')
-        .select('id, title')
-        .eq('page_type', 'category');
-      
-      if (error) throw error;
-      return data;
-    },
-  });
+  
 
   // Modified subcategories query to show subcategories based on selected category
-  const { data: subcategories } = useQuery({
-    queryKey: ['subcategories', selectedCategory],
-    enabled: !!selectedCategory,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pages')
-        .select('id, title')
-        .eq('page_type', 'subcategory')
-        .eq('menu_category_id', selectedCategory);
-      
-      if (error) throw error;
-      return data;
-    },
-  });
+  
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'featured' | 'gallery') => {
     const file = event.target.files?.[0];
@@ -515,6 +535,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
                       className="w-full rounded-md border border-input bg-background px-3 py-2"
                       value={selectedCategory || ''}
                       onChange={(e) => {
+                        console.log('Selected category changed to:', e.target.value);
                         setSelectedCategory(e.target.value || null);
                         setFormData(prev => ({ ...prev, page_id: null }));
                       }}
