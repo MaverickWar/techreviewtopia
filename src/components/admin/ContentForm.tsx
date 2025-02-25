@@ -9,29 +9,35 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, Star } from "lucide-react";
 
+// Define strict types for our content
+type ContentType = "article" | "review";
+type ContentStatus = "draft" | "published";
+
+interface ContentFormData {
+  id?: string;
+  title: string;
+  description: string | null;
+  content: string | null;
+  type: ContentType;
+  status: ContentStatus;
+  author_id: string | null;
+  page_id: string | null;
+}
+
 interface ContentFormProps {
-  initialData?: {
-    id?: string;
-    title: string;
-    description: string;
-    content: string;
-    type: "article" | "review";
-    status: "draft" | "published";
-    author_id?: string;
-    page_id?: string;
-  };
+  initialData?: ContentFormData;
 }
 
 export const ContentForm = ({ initialData }: ContentFormProps) => {
-  const [formData, setFormData] = useState(
+  const [formData, setFormData] = useState<ContentFormData>(
     initialData || {
       title: "",
-      description: "",
-      content: "",
-      type: "article" as const,
-      status: "draft" as const,
-      author_id: null as string | null,
-      page_id: null as string | null,
+      description: null,
+      content: null,
+      type: "article",
+      status: "draft",
+      author_id: null,
+      page_id: null,
     }
   );
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
@@ -59,7 +65,6 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         .select('id, title')
         .eq('page_type', 'category');
       
-      console.log('Categories query result:', data);
       if (error) throw error;
       return data;
     },
@@ -70,8 +75,6 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     queryKey: ['subcategories', selectedCategoryId],
     enabled: !!selectedCategoryId,
     queryFn: async () => {
-      console.log('Fetching subcategories for category:', selectedCategoryId);
-      
       // First get the menu category ID for the selected page
       const { data: categoryPage, error: categoryError } = await supabase
         .from('pages')
@@ -79,15 +82,9 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         .eq('id', selectedCategoryId)
         .single();
 
-      if (categoryError) {
-        console.error('Category error:', categoryError);
-        throw categoryError;
-      }
-
-      console.log('Category page data:', categoryPage);
+      if (categoryError) throw categoryError;
 
       if (!categoryPage?.menu_category_id) {
-        console.log('No menu category ID found for page');
         return [];
       }
 
@@ -98,29 +95,36 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         .eq('page_type', 'subcategory')
         .eq('menu_category_id', categoryPage.menu_category_id);
 
-      console.log('Subcategories found:', pagesData);
-
-      if (pagesError) {
-        console.error('Pages error:', pagesError);
-        throw pagesError;
-      }
+      if (pagesError) throw pagesError;
       return pagesData || [];
     },
   });
 
   const mutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (data: ContentFormData) => {
       if (!data.author_id) {
         throw new Error("No author ID available. Please make sure you're logged in.");
+      }
+
+      // Prepare the content data according to the required schema
+      const contentData = {
+        title: data.title,
+        description: data.description,
+        content: data.content,
+        type: data.type,
+        status: data.status,
+        author_id: data.author_id,
+        page_id: data.page_id,
+      };
+
+      if (data.id) {
+        contentData.id = data.id;
       }
 
       // Create the content
       const { data: content, error: contentError } = await supabase
         .from("content")
-        .upsert({
-          ...data,
-          id: initialData?.id,
-        })
+        .upsert(contentData)
         .select()
         .single();
 
@@ -267,7 +271,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             <textarea
               id="description"
               className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={formData.description}
+              value={formData.description || ''}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, description: e.target.value }))
               }
@@ -281,7 +285,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             <textarea
               id="content"
               className="w-full min-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={formData.content}
+              value={formData.content || ''}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, content: e.target.value }))
               }
