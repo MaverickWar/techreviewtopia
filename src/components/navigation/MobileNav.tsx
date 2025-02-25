@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, ArrowLeft, Layers } from 'lucide-react';
+import { ChevronRight, ArrowLeft, Layers, X, Home } from 'lucide-react';
 import type { MenuCategory, MenuItem } from '@/types/navigation';
 
 interface MobileNavProps {
@@ -80,7 +80,7 @@ export const MobileNav = ({ categories, onClose }: MobileNavProps) => {
     setTimeout(() => {
       onClose();
       setIsExiting(false);
-    }, 300); // Match the animation duration
+    }, 300);
   };
 
   const handleCategorySelect = (category: MenuCategory) => {
@@ -98,7 +98,26 @@ export const MobileNav = ({ categories, onClose }: MobileNavProps) => {
       ) : (
         <div className="animate-fade-in">
           <div className="sticky top-0 bg-white z-10 border-b">
-            <h2 className="p-4 text-xl font-semibold">Menu</h2>
+            <div className="flex items-center justify-between p-4">
+              <h2 className="text-xl font-semibold">Menu</h2>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/"
+                  onClick={handleClose}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label="Go to home page"
+                >
+                  <Home className="h-5 w-5" />
+                </Link>
+                <button
+                  onClick={handleClose}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label="Close menu"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
             {categories.map((category) => (
