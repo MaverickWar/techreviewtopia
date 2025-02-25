@@ -18,13 +18,13 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<PageLayout><Outlet /></PageLayout>}>
-          <Route path="/" element={<IndexPage />} />
+          <Route index element={<div className="animate-fade-in">{<IndexPage />}</div>} />
           <Route path=":categorySlug" element={<CategoryPage />} />
           <Route path=":categorySlug/:subcategorySlug" element={<SubcategoryPage />} />
           <Route path=":categorySlug/content/:contentId" element={<ArticlePage />} />
           <Route path="*" element={<NotFound />} />
         </Route>
-        <Route path="admin" element={<AdminLayout>{<Outlet />}</AdminLayout>}>
+        <Route path="/admin" element={<AdminLayout><Outlet /></AdminLayout>}>
           <Route index element={<AdminDashboard />} />
           <Route path="content/*" element={<ContentManager />} />
           <Route path="pages/*" element={<PagesManager />} />
