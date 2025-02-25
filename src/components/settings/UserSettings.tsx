@@ -99,12 +99,12 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
     try {
       setAvatarLoading(true);
       const fileExt = selectedFile.name.split('.').pop()?.toLowerCase() || 'png';
-      // Fix the path to not nest avatars twice
       const filePath = `${user.id}/${Date.now()}.${fileExt}`;
 
-      console.log('Uploading to path:', filePath);
+      console.log('Starting upload to path:', filePath);
 
-      const { data, error: uploadError } = await supabase.storage
+      // First upload the file
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, selectedFile, { 
           upsert: true,
@@ -115,13 +115,22 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
         throw uploadError;
       }
 
-      const { data: { publicUrl } } = supabase.storage
+      console.log('Upload successful:', uploadData);
+
+      // Then get the public URL
+      const { data: urlData } = await supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
+      console.log('Generated public URL:', urlData.publicUrl);
+
+      // Update the profile with the new URL
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ 
+          avatar_url: urlData.publicUrl,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', user.id);
 
       if (updateError) {
@@ -129,7 +138,7 @@ export const UserSettingsDialog = ({ isOpen, onClose }: UserSettingsDialogProps)
       }
 
       // Update local state
-      setAvatarUrl(publicUrl);
+      setAvatarUrl(urlData.publicUrl);
       setSelectedFile(null);
       
       // Reset file input

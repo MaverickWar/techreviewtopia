@@ -1,4 +1,3 @@
-
 import { Search, Bell, UserRound, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -37,14 +36,14 @@ export const TopNav = () => {
       }
       
       if (profile?.avatar_url) {
-        // Log the avatar URL for debugging
-        console.log('Fetched avatar URL:', profile.avatar_url);
+        console.log('TopNav: Fetched avatar URL:', profile.avatar_url);
         setAvatarUrl(profile.avatar_url);
       } else {
+        console.log('TopNav: No avatar URL found in profile');
         setAvatarUrl(null);
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('TopNav: Error fetching profile:', error);
       setAvatarUrl(null);
     }
   };
@@ -55,11 +54,12 @@ export const TopNav = () => {
         const { data: { session } } = await supabase.auth.getSession();
         setSession(session);
         if (session?.user) {
+          console.log('TopNav: Setting up auth with user:', session.user.id);
           await fetchProfile(session.user.id);
         }
         setLoading(false);
       } catch (error) {
-        console.error('Error setting up auth:', error);
+        console.error('TopNav: Error setting up auth:', error);
         setLoading(false);
       }
     };
@@ -69,6 +69,7 @@ export const TopNav = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log('TopNav: Auth state changed, session:', session?.user?.id);
       setSession(session);
       if (session?.user) {
         await fetchProfile(session.user.id);
@@ -100,11 +101,6 @@ export const TopNav = () => {
     return email ? email.substring(0, 2).toUpperCase() : 'U';
   };
 
-  // Debug log when avatar URL changes
-  useEffect(() => {
-    console.log('Current avatar URL:', avatarUrl);
-  }, [avatarUrl]);
-
   return (
     <>
       <div className="bg-slate-900 text-white py-2">
@@ -132,7 +128,7 @@ export const TopNav = () => {
                             src={avatarUrl} 
                             alt="Profile" 
                             onError={(e) => {
-                              console.error('Avatar image failed to load:', e);
+                              console.error('TopNav: Avatar image failed to load:', e);
                               const target = e.target as HTMLImageElement;
                               target.style.display = 'none';
                             }}
