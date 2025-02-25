@@ -21,11 +21,15 @@ export const TopNav = () => {
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      }
       setLoading(false);
     });
 
@@ -33,10 +37,25 @@ export const TopNav = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchProfile = async (userId: string) => {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('id', userId)
+      .single();
+    
+    if (profile?.avatar_url) {
+      setAvatarUrl(profile.avatar_url);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -80,7 +99,7 @@ export const TopNav = () => {
                   <DropdownMenu>
                     <DropdownMenuTrigger className="focus:outline-none">
                       <Avatar className="h-8 w-8 bg-orange-500 hover:bg-orange-600 transition-colors">
-                        <AvatarImage src={undefined} />
+                        <AvatarImage src={avatarUrl || undefined} alt="Profile" />
                         <AvatarFallback>
                           {getUserInitials(session?.user?.email)}
                         </AvatarFallback>
@@ -127,7 +146,13 @@ export const TopNav = () => {
 
       <UserSettingsDialog
         isOpen={showSettingsDialog}
-        onClose={() => setShowSettingsDialog(false)}
+        onClose={() => {
+          setShowSettingsDialog(false);
+          // Refresh the profile when settings dialog is closed
+          if (session?.user) {
+            fetchProfile(session.user.id);
+          }
+        }}
       />
     </>
   );
