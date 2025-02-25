@@ -1,6 +1,6 @@
 
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Star, Calendar, FileText } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -26,7 +26,7 @@ export const ContentPreviewCard = ({
   overallScore,
 }: ContentPreviewCardProps) => {
   return (
-    <Link to={`/${categorySlug}/${slug}`} className="block group">
+    <Link to={`/${categorySlug}/content/${slug}`} className="block group">
       <Card className="overflow-hidden hover:shadow-lg transition-all duration-300">
         {featuredImage ? (
           <div className="aspect-[16/9] overflow-hidden">
