@@ -372,7 +372,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
           .from('pages')
           .select('id')
           .eq('menu_item_id', data.page_id)
-          .maybeSingle(); // Changed from single() to maybeSingle()
+          .maybeSingle();
 
         if (pageCheckError && pageCheckError.code !== 'PGRST116') {
           throw pageCheckError;
@@ -384,7 +384,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             .from('menu_items')
             .select('*')
             .eq('id', data.page_id)
-            .maybeSingle(); // Changed from single() to maybeSingle()
+            .maybeSingle();
 
           if (menuItemError) throw menuItemError;
           if (!menuItem) throw new Error("Menu item not found");
@@ -438,19 +438,20 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
           .from('review_details')
           .select('id')
           .eq('content_id', content.id)
-          .maybeSingle(); // Changed from single() to maybeSingle()
+          .maybeSingle();
 
-        const reviewData = {
+        // Convert product_specs to JSON string before saving
+        const reviewData: any = {
           content_id: content.id,
           youtube_url: data.youtube_url,
           gallery: data.gallery,
-          product_specs: data.product_specs,
+          product_specs: data.product_specs ? JSON.stringify(data.product_specs) : null,
           overall_score: data.overall_score,
         };
 
         // If review exists, include its ID in the upsert
         if (existingReview) {
-          Object.assign(reviewData, { id: existingReview.id });
+          reviewData.id = existingReview.id;
         }
 
         const { data: reviewDetails, error: reviewError } = await supabase
