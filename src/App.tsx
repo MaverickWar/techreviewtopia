@@ -17,14 +17,14 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<PageLayout><Outlet /></PageLayout>}>
-          <Route index element={<IndexPage />} />
+        <Route element={<PageLayout><Outlet /></PageLayout>}>
+          <Route path="/" element={<IndexPage />} />
           <Route path=":categorySlug" element={<CategoryPage />} />
           <Route path=":categorySlug/:subcategorySlug" element={<SubcategoryPage />} />
           <Route path=":categorySlug/content/:contentId" element={<ArticlePage />} />
           <Route path="*" element={<NotFound />} />
         </Route>
-        <Route path="admin" element={<AdminLayout />}>
+        <Route path="admin" element={<AdminLayout><Outlet /></AdminLayout>}>
           <Route index element={<AdminDashboard />} />
           <Route path="content/*" element={<ContentManager />} />
           <Route path="pages/*" element={<PagesManager />} />

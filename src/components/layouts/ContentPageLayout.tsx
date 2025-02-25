@@ -1,67 +1,24 @@
 
-import { ReactNode } from 'react';
-import { PageLayout } from './PageLayout';
-
-interface ContentHeaderProps {
-  title: string;
-  subtitle?: string;
-  category?: string;
-}
-
-const ContentHeader = ({ title, subtitle, category }: ContentHeaderProps) => (
-  <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-orange-500 text-white">
-    <div className="content-container py-16">
-      <div className="max-w-4xl mx-auto text-center">
-        {category && (
-          <span className="inline-block px-4 py-1 rounded-full bg-white/20 text-sm font-medium mb-4">
-            {category}
-          </span>
-        )}
-        <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">
-          {title}
-        </h1>
-        {subtitle && (
-          <p className="text-xl text-gray-100 max-w-2xl mx-auto">
-            {subtitle}
-          </p>
-        )}
-      </div>
-    </div>
-  </div>
-);
-
-interface ContentSectionProps {
-  children: ReactNode;
-  className?: string;
-}
-
-const ContentSection = ({ children, className }: ContentSectionProps) => (
-  <section className={`py-12 ${className || ''}`}>
-    <div className="content-container">
-      <div className="max-w-4xl mx-auto">
-        {children}
-      </div>
-    </div>
-  </section>
-);
-
 interface ContentPageLayoutProps {
-  children: ReactNode;
-  header: ContentHeaderProps;
-  className?: string;
+  children: React.ReactNode;
+  header: {
+    title: string;
+    subtitle?: string;
+  };
 }
 
-export const ContentPageLayout = ({ children, header, className }: ContentPageLayoutProps) => {
+export const ContentPageLayout = ({ children, header }: ContentPageLayoutProps) => {
   return (
-    <PageLayout>
-      <div className="min-h-screen bg-gray-50">
-        <ContentHeader {...header} />
-        <ContentSection className={className}>
-          <article className="bg-white shadow-sm rounded-lg p-8">
-            {children}
-          </article>
-        </ContentSection>
-      </div>
-    </PageLayout>
+    <div className="min-h-screen">
+      <header className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <h1 className="text-3xl font-bold text-gray-900">{header.title}</h1>
+          {header.subtitle && (
+            <p className="mt-2 text-lg text-gray-600">{header.subtitle}</p>
+          )}
+        </div>
+      </header>
+      <main>{children}</main>
+    </div>
   );
 };
