@@ -8,6 +8,8 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { ContentManager } from "@/components/admin/ContentManager";
 import { ContentForm } from "@/components/admin/ContentForm";
+import { PagesManager } from "@/components/admin/pages/PagesManager";
+import { PageForm } from "@/components/admin/pages/PageForm";
 import { UsersManager } from "@/components/admin/users/UsersManager";
 import { AuthPage } from "@/pages/auth/AuthPage";
 import { useEffect, useState } from "react";
@@ -56,6 +58,9 @@ function App() {
             <Route path="content" element={<ContentManager />} />
             <Route path="content/new" element={<ContentForm />} />
             <Route path="content/edit/:id" element={<ContentForm />} />
+            <Route path="pages" element={<PagesManager />} />
+            <Route path="pages/new" element={<PageForm />} />
+            <Route path="pages/edit/:id" element={<PageForm />} />
             <Route path="users" element={<UsersManager />} />
           </Route>
           <Route path="*" element={<NotFound />} />
