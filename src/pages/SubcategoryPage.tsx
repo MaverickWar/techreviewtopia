@@ -6,11 +6,23 @@ import { Card } from "@/components/ui/card";
 import { ContentPageLayout } from "@/components/layouts/ContentPageLayout";
 import { Star, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { MenuCategory, MenuItem, ContentType } from "@/types/navigation";
+
+interface PageData {
+  category: MenuCategory;
+  menuItem: MenuItem;
+  page: {
+    id: string;
+    page_content?: Array<{
+      content: ContentType;
+    }>;
+  } | null;
+}
 
 export const SubcategoryPage = () => {
   const { categorySlug, subcategorySlug } = useParams();
 
-  const { data: pageData, isLoading } = useQuery({
+  const { data: pageData, isLoading } = useQuery<PageData | null>({
     queryKey: ['subcategory', categorySlug, subcategorySlug],
     queryFn: async () => {
       const { data: menuCategory, error: categoryError } = await supabase
@@ -50,8 +62,8 @@ export const SubcategoryPage = () => {
       if (pageError) throw pageError;
 
       return {
-        category: menuCategory,
-        menuItem,
+        category: menuCategory as MenuCategory,
+        menuItem: menuItem as MenuItem,
         page
       };
     }
@@ -100,7 +112,7 @@ export const SubcategoryPage = () => {
     <ContentPageLayout
       header={{
         title: menuItem.name,
-        subtitle: menuItem.description,
+        subtitle: menuItem.description || undefined,
         category: category.name
       }}
     >
@@ -143,7 +155,7 @@ export const SubcategoryPage = () => {
                 )}
 
                 <Link
-                  to={`/${categorySlug}/${subcategorySlug}/${content.slug}`}
+                  to={`/${categorySlug}/${subcategorySlug}/${content.id}`}
                   className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
                 >
                   Read full {content.type} <ArrowRight size={16} />

@@ -6,11 +6,29 @@ import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { ContentPageLayout } from "@/components/layouts/ContentPageLayout";
 import { ArrowRight } from "lucide-react";
+import { MenuCategory, ContentType } from "@/types/navigation";
+
+interface PageContent {
+  content: ContentType;
+}
+
+interface PageData {
+  id: string;
+  title: string;
+  template_type?: string;
+  page_content?: PageContent[];
+}
+
+interface CategoryData {
+  category: MenuCategory;
+  page: PageData | null;
+  subcategories: MenuItem[];
+}
 
 export const CategoryPage = () => {
   const { categorySlug } = useParams();
 
-  const { data: categoryData, isLoading } = useQuery({
+  const { data: categoryData, isLoading } = useQuery<CategoryData | null>({
     queryKey: ['category', categorySlug],
     queryFn: async () => {
       const { data: menuCategory, error: menuError } = await supabase
@@ -48,8 +66,8 @@ export const CategoryPage = () => {
       if (itemsError) throw itemsError;
 
       return {
-        category: menuCategory,
-        page,
+        category: menuCategory as MenuCategory,
+        page: page as PageData | null,
         subcategories: menuItems
       };
     }
@@ -98,7 +116,7 @@ export const CategoryPage = () => {
     <ContentPageLayout
       header={{
         title: category.name,
-        subtitle: category.description || `Explore our ${category.name} collection`,
+        subtitle: `Explore our ${category.name} collection`,
       }}
     >
       {/* Featured Content Section */}
@@ -126,7 +144,7 @@ export const CategoryPage = () => {
                       <p className="text-gray-600 mb-4">{content.description}</p>
                     )}
                     <Link 
-                      to={`/${categorySlug}/${content.slug}`}
+                      to={`/${categorySlug}/${content.id}`}
                       className="text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
                     >
                       Read more <ArrowRight size={16} />
