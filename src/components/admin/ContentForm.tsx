@@ -110,35 +110,40 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             page_id,
             pages!inner(
               id,
-              menu_category_id,
-              title
+              title,
+              menu_category_id
             )
-          ),
-          review_details(*)
+          )
         `)
         .eq('id', id)
         .single();
       
-      if (contentError) {
-        console.error('Error fetching content:', contentError);
-        throw contentError;
-      }
-
-      console.log('Content data:', contentData);
+      if (contentError) throw contentError;
 
       // If this is a review, fetch rating criteria
-      if (contentData.type === 'review' && contentData.review_details?.[0]?.id) {
-        const { data: criteriaData, error: criteriaError } = await supabase
-          .from('rating_criteria')
+      if (contentData.type === 'review') {
+        const { data: reviewData, error: reviewError } = await supabase
+          .from('review_details')
           .select('*')
-          .eq('review_id', contentData.review_details[0].id);
+          .eq('content_id', contentData.id)
+          .single();
+
+        if (reviewError) throw reviewError;
+
+        if (reviewData) {
+          const { data: criteriaData, error: criteriaError } = await supabase
+            .from('rating_criteria')
+            .select('*')
+            .eq('review_id', reviewData.id);
+            
+          if (criteriaError) throw criteriaError;
           
-        if (criteriaError) throw criteriaError;
-        
-        return {
-          ...contentData,
-          rating_criteria: criteriaData || []
-        };
+          return {
+            ...contentData,
+            review_details: [reviewData],
+            rating_criteria: criteriaData || []
+          };
+        }
       }
       
       return contentData;
@@ -146,7 +151,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     enabled: !!id,
   });
 
-  // Get categories and subcategories
+  // Get categories query
   const { data: categories } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
@@ -162,7 +167,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     },
   });
 
-  // Modified subcategories query to show subcategories based on selected category
+  // Subcategories query
   const { data: subcategories } = useQuery({
     queryKey: ['subcategories', selectedCategory],
     enabled: !!selectedCategory,
@@ -190,26 +195,14 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       let parsedProductSpecs: ProductSpec[] = [];
       if (reviewDetails?.product_specs) {
         try {
-          const specs = JSON.parse(reviewDetails.product_specs as string);
-          if (Array.isArray(specs)) {
-            parsedProductSpecs = specs.map(spec => ({
-              label: String(spec.label || ''),
-              value: String(spec.value || '')
-            }));
-          }
+          parsedProductSpecs = JSON.parse(reviewDetails.product_specs as string);
         } catch (e) {
           console.error('Error parsing product specs:', e);
         }
       }
 
-      const {
-        review_details,
-        page_content,
-        ...contentData
-      } = existingContent;
-
       setFormData({
-        ...contentData,
+        ...existingContent,
         type: existingContent.type as ContentType,
         status: existingContent.status as ContentStatus,
         page_id: pageContent?.page_id || null,
@@ -217,6 +210,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         gallery: reviewDetails?.gallery || [],
         youtube_url: reviewDetails?.youtube_url || null,
         overall_score: reviewDetails?.overall_score || 0,
+        rating_criteria: existingContent.rating_criteria || [],
         review_details: reviewDetails ? {
           id: reviewDetails.id,
           content_id: reviewDetails.content_id,
@@ -226,32 +220,14 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
           overall_score: reviewDetails.overall_score || 0
         } : undefined
       });
-      
-      // Set the parent category directly from the nested pages data
+
+      // Set the parent category from the page data
       if (pageContent?.pages?.menu_category_id) {
         console.log('Setting selected category:', pageContent.pages.menu_category_id);
         setSelectedCategory(pageContent.pages.menu_category_id);
       }
     }
   }, [existingContent]);
-
-  const fetchParentCategory = async (pageId: string) => {
-    const { data, error } = await supabase
-      .from('pages')
-      .select('menu_category_id')
-      .eq('id', pageId)
-      .single();
-
-    if (!error && data?.menu_category_id) {
-      setSelectedCategory(data.menu_category_id);
-    }
-  };
-
-  // Get categories and subcategories
-  
-
-  // Modified subcategories query to show subcategories based on selected category
-  
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'featured' | 'gallery') => {
     const file = event.target.files?.[0];
@@ -487,7 +463,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
           <Separator />
 
-          {/* Basic Information */}
+          
           <Accordion type="single" collapsible defaultValue="basic">
             <AccordionItem value="basic">
               <AccordionTrigger>Basic Information</AccordionTrigger>
@@ -524,7 +500,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Categories Selection */}
+            
             <AccordionItem value="categories">
               <AccordionTrigger>Categories</AccordionTrigger>
               <AccordionContent>
@@ -535,8 +511,9 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
                       className="w-full rounded-md border border-input bg-background px-3 py-2"
                       value={selectedCategory || ''}
                       onChange={(e) => {
-                        console.log('Selected category changed to:', e.target.value);
-                        setSelectedCategory(e.target.value || null);
+                        const newCategoryId = e.target.value || null;
+                        console.log('Selected category changed to:', newCategoryId);
+                        setSelectedCategory(newCategoryId);
                         setFormData(prev => ({ ...prev, page_id: null }));
                       }}
                     >
@@ -570,12 +547,12 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Media Upload */}
+            
             <AccordionItem value="media">
               <AccordionTrigger>Media</AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-4">
-                  {/* Featured Image */}
+                  
                   <div>
                     <label className="block text-sm font-medium mb-1">Featured Image</label>
                     <div className="flex items-center gap-4">
@@ -614,7 +591,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
                     </div>
                   </div>
 
-                  {/* Gallery */}
+                  
                   <div>
                     <label className="block text-sm font-medium mb-1">Gallery</label>
                     <div className="space-y-2">
@@ -655,7 +632,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
                     </div>
                   </div>
 
-                  {/* YouTube Video */}
+                  
                   <div>
                     <label className="block text-sm font-medium mb-1">YouTube Video URL</label>
                     <div className="flex gap-2">
@@ -679,7 +656,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Review Specific Fields */}
+            
             {formData.type === 'review' && (
               <>
                 <AccordionItem value="specs">
@@ -778,7 +755,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             )}
           </Accordion>
 
-          {/* Status */}
+          
           <div>
             <label className="block text-sm font-medium mb-1">Status</label>
             <div className="flex gap-2">
