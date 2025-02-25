@@ -1,3 +1,4 @@
+
 import { Search, Bell, UserRound, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -32,53 +33,55 @@ export const TopNav = () => {
         .single();
       
       if (error) {
-        throw error;
+        console.error('TopNav: Error fetching profile:', error);
+        return;
       }
       
-      if (profile?.avatar_url) {
-        console.log('TopNav: Fetched avatar URL:', profile.avatar_url);
-        setAvatarUrl(profile.avatar_url);
-      } else {
-        console.log('TopNav: No avatar URL found in profile');
-        setAvatarUrl(null);
-      }
+      setAvatarUrl(profile?.avatar_url || null);
     } catch (error) {
-      console.error('TopNav: Error fetching profile:', error);
-      setAvatarUrl(null);
+      console.error('TopNav: Error in fetchProfile:', error);
     }
   };
 
   useEffect(() => {
+    let mounted = true;
+
     const setupAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
-        if (session?.user) {
-          console.log('TopNav: Setting up auth with user:', session.user.id);
-          await fetchProfile(session.user.id);
+        
+        if (mounted) {
+          setSession(session);
+          if (session?.user) {
+            await fetchProfile(session.user.id);
+          }
+          setLoading(false);
         }
-        setLoading(false);
       } catch (error) {
-        console.error('TopNav: Error setting up auth:', error);
-        setLoading(false);
+        console.error('TopNav: Error in setupAuth:', error);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     setupAuth();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log('TopNav: Auth state changed, session:', session?.user?.id);
-      setSession(session);
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      } else {
-        setAvatarUrl(null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (mounted) {
+        setSession(session);
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+        } else {
+          setAvatarUrl(null);
+        }
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -101,6 +104,66 @@ export const TopNav = () => {
     return email ? email.substring(0, 2).toUpperCase() : 'U';
   };
 
+  const renderProfileMenu = () => {
+    if (loading) {
+      return <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse" />;
+    }
+
+    if (!session) {
+      return (
+        <button 
+          className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-orange-500 hover:bg-orange-600 transition-colors"
+          onClick={() => setShowAuthModal(true)}
+        >
+          <UserRound size={18} />
+          <span>Login</span>
+        </button>
+      );
+    }
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="focus:outline-none">
+            <Avatar className="h-8 w-8 bg-orange-500 hover:bg-orange-600 transition-colors cursor-pointer">
+              {avatarUrl ? (
+                <AvatarImage 
+                  src={avatarUrl} 
+                  alt="Profile"
+                  className="object-cover" 
+                />
+              ) : (
+                <AvatarFallback>
+                  {getUserInitials(session?.user?.email)}
+                </AvatarFallback>
+              )}
+            </Avatar>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>My Account</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => setShowSettingsDialog(true)}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+            <span className="ml-auto text-xs text-muted-foreground">Upload avatar</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link to="/admin">
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <span>Admin Dashboard</span>
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={handleLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Log out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
   return (
     <>
       <div className="bg-slate-900 text-white py-2">
@@ -117,59 +180,7 @@ export const TopNav = () => {
               <button className="p-2 hover:text-orange-400">
                 <Bell size={18} />
               </button>
-              
-              {loading ? (
-                <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse" />
-              ) : session ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="focus:outline-none">
-                    <Avatar className="h-8 w-8 bg-orange-500 hover:bg-orange-600 transition-colors">
-                      {avatarUrl && (
-                        <AvatarImage 
-                          src={avatarUrl} 
-                          alt="Profile" 
-                          onError={(e) => {
-                            console.error('TopNav: Avatar image failed to load:', e);
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                          }}
-                        />
-                      )}
-                      <AvatarFallback>
-                        {getUserInitials(session?.user?.email)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={() => setShowSettingsDialog(true)}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                      <span className="ml-auto text-xs text-muted-foreground">Upload avatar</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin">
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        <span>Admin Dashboard</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={handleLogout}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Log out</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <button 
-                  className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-orange-500 hover:bg-orange-600 transition-colors"
-                  onClick={() => setShowAuthModal(true)}
-                >
-                  <UserRound size={18} />
-                  <span>Login</span>
-                </button>
-              )}
+              {renderProfileMenu()}
             </div>
           </div>
         </div>
@@ -184,7 +195,6 @@ export const TopNav = () => {
         isOpen={showSettingsDialog}
         onClose={() => {
           setShowSettingsDialog(false);
-          // Refresh the profile when settings dialog is closed
           if (session?.user) {
             fetchProfile(session.user.id);
           }
