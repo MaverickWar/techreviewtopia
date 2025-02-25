@@ -13,7 +13,6 @@ import {
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { ImportContent } from "./ImportContent";
 import { ContentType } from "@/types/navigation";
 
 // Type guard to check if the type is valid
@@ -79,12 +78,9 @@ export const ContentManager = () => {
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Content Manager</h1>
-        <div className="flex gap-4">
-          <Button asChild>
-            <Link to="new">Create New Content</Link>
-          </Button>
-          <ImportContent />
-        </div>
+        <Button asChild>
+          <Link to="new">Create New Content</Link>
+        </Button>
       </div>
       <Table>
         <TableCaption>A list of your recent content.</TableCaption>
