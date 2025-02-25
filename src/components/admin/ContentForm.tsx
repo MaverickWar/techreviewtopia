@@ -188,9 +188,9 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     queryFn: async () => {
       console.log('Fetching categories');
       const { data, error } = await supabase
-        .from('pages')
-        .select('id, title')
-        .eq('page_type', 'category');
+        .from('menu_categories')
+        .select('id, name')
+        .order('order_index');
       
       if (error) throw error;
       console.log('Categories:', data);
@@ -205,10 +205,10 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     queryFn: async () => {
       console.log('Fetching subcategories for category:', selectedCategory);
       const { data, error } = await supabase
-        .from('pages')
-        .select('id, title')
-        .eq('page_type', 'subcategory')
-        .eq('menu_category_id', selectedCategory);
+        .from('menu_items')
+        .select('id, name')
+        .eq('category_id', selectedCategory)
+        .order('order_index');
       
       if (error) throw error;
       console.log('Subcategories:', data);
@@ -254,10 +254,22 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         } : undefined
       });
 
-      // Set the parent category from the page data
-      if (pageContent?.pages?.menu_category_id) {
-        console.log('Setting selected category:', pageContent.pages.menu_category_id);
-        setSelectedCategory(pageContent.pages.menu_category_id);
+      // Find and set the parent category from the menu item
+      if (pageContent?.pages?.menu_item_id) {
+        const findParentCategory = async () => {
+          const { data: menuItem } = await supabase
+            .from('menu_items')
+            .select('category_id')
+            .eq('id', pageContent.pages.menu_item_id)
+            .single();
+          
+          if (menuItem?.category_id) {
+            console.log('Setting selected category:', menuItem.category_id);
+            setSelectedCategory(menuItem.category_id);
+          }
+        };
+        
+        findParentCategory();
       }
     }
   }, [existingContent]);
@@ -572,7 +584,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
                       <option value="">Select a category</option>
                       {categories?.map((category) => (
                         <option key={category.id} value={category.id}>
-                          {category.title}
+                          {category.name}
                         </option>
                       ))}
                     </select>
@@ -589,7 +601,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
                         <option value="">Select a subcategory</option>
                         {subcategories?.map((subcategory) => (
                           <option key={subcategory.id} value={subcategory.id}>
-                            {subcategory.title}
+                            {subcategory.name}
                           </option>
                         ))}
                       </select>
