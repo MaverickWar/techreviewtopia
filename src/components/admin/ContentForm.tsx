@@ -63,23 +63,33 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     queryFn: async () => {
       console.log('Fetching subcategories for category:', selectedCategoryId);
       
-      // First, let's see what we have in the database for this category
-      const { data: debugData, error: debugError } = await supabase
+      // First get the menu category ID for the selected page
+      const { data: categoryPage, error: categoryError } = await supabase
         .from('pages')
-        .select('*')
-        .eq('page_type', 'subcategory');
-      
-      console.log('All subcategories in database:', debugData);
+        .select('menu_category_id')
+        .eq('id', selectedCategoryId)
+        .single();
 
-      // Now query for our specific category
+      if (categoryError) {
+        console.error('Category error:', categoryError);
+        throw categoryError;
+      }
+
+      console.log('Category page data:', categoryPage);
+
+      if (!categoryPage?.menu_category_id) {
+        console.log('No menu category ID found for page');
+        return [];
+      }
+
+      // Now get subcategories that match this menu category ID
       const { data: pagesData, error: pagesError } = await supabase
         .from('pages')
-        .select('id, title, menu_category_id')
+        .select('id, title')
         .eq('page_type', 'subcategory')
-        .eq('menu_category_id', selectedCategoryId);
+        .eq('menu_category_id', categoryPage.menu_category_id);
 
-      console.log('Subcategories for selected category:', pagesData);
-      console.log('Selected category ID:', selectedCategoryId);
+      console.log('Subcategories found:', pagesData);
 
       if (pagesError) {
         console.error('Pages error:', pagesError);
