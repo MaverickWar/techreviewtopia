@@ -1,4 +1,3 @@
-
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,57 +46,43 @@ export const SubcategoryPage = () => {
   const { data: pageData, isLoading } = useQuery({
     queryKey: ['subcategory', categorySlug, subcategorySlug],
     queryFn: async () => {
-      // First get the menu item to get its ID
-      const { data: menuItem, error: menuItemError } = await supabase
-        .from('menu_items')
-        .select(`
-          id,
-          name,
-          description,
-          menu_categories!inner(name)
-        `)
-        .eq('slug', subcategorySlug)
-        .eq('menu_categories.slug', categorySlug)
-        .single();
-
-      if (menuItemError) {
-        console.error('Error fetching menu item:', menuItemError);
-        return null;
-      }
-
-      if (!menuItem) {
-        console.error('No menu item found');
-        return null;
-      }
-
-      // Then get the page with all its content
-      const { data: page, error: pageError } = await supabase
+      const { data: pageData, error: pageError } = await supabase
         .from('pages')
         .select(`
           *,
-          page_content!inner(
-            content(
+          menu_items (
+            name,
+            description,
+            menu_categories (
+              name
+            )
+          ),
+          page_content (
+            content (
               *,
-              review_details(*),
-              rating_criteria(*)
+              review_details (*),
+              rating_criteria (*)
             )
           )
         `)
-        .eq('menu_item_id', menuItem.id)
-        .single();
+        .eq('menu_items.slug', subcategorySlug)
+        .eq('menu_items.menu_categories.slug', categorySlug)
+        .maybeSingle();
 
       if (pageError) {
         console.error('Error fetching page:', pageError);
         return null;
       }
 
+      if (!pageData) {
+        console.error('No page found');
+        return null;
+      }
+
       return {
-        ...page,
-        menu_items: {
-          name: menuItem.name,
-          description: menuItem.description,
-          menu_categories: menuItem.menu_categories
-        }
+        ...pageData,
+        menu_items: pageData.menu_items[0],
+        page_content: pageData.page_content
       };
     },
   });
@@ -273,9 +258,9 @@ export const SubcategoryPage = () => {
   return (
     <ContentPageLayout
       header={{
-        title: pageData.menu_items.name,
-        subtitle: pageData.menu_items.description,
-        category: pageData.menu_items.menu_categories.name
+        title: pageData.menu_items?.name || '',
+        subtitle: pageData.menu_items?.description || '',
+        category: pageData.menu_items?.menu_categories?.name || ''
       }}
     >
       <div className="space-y-8">
