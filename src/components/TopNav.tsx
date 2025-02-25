@@ -1,3 +1,4 @@
+
 import { Search, Bell, UserRound, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
@@ -11,11 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useToast } from './ui/use-toast';
-import { Avatar, AvatarFallback } from './ui/avatar';
+import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserSettingsDialog } from './settings/UserSettings';
 
 export const TopNav = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -87,11 +90,9 @@ export const TopNav = () => {
                     <DropdownMenuContent align="end" className="w-56">
                       <DropdownMenuLabel>My Account</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link to="/settings">
-                          <Settings className="mr-2 h-4 w-4" />
-                          <span>Settings</span>
-                        </Link>
+                      <DropdownMenuItem onClick={() => setShowSettingsDialog(true)}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Settings</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/admin">
@@ -123,6 +124,11 @@ export const TopNav = () => {
       <AuthModal 
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
+      />
+
+      <UserSettingsDialog
+        isOpen={showSettingsDialog}
+        onClose={() => setShowSettingsDialog(false)}
       />
     </>
   );
