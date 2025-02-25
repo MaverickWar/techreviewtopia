@@ -1,5 +1,5 @@
 
-import { Link } from "react-router-dom";
+import { Link, Route, Routes } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { ContentType } from "@/types/navigation";
+import { ContentForm } from "./ContentForm";
 
 // Type guard to check if the type is valid
 const isValidContentType = (type: string): type is ContentType['type'] => {
@@ -41,7 +42,7 @@ const transformContent = (rawContent: any): ContentType => {
   };
 };
 
-export const ContentManager = () => {
+const ContentList = () => {
   const [contentList, setContentList] = useState<ContentType[]>([]);
 
   const { data: contentData, isLoading, isError } = useQuery({
@@ -55,7 +56,6 @@ export const ContentManager = () => {
         throw new Error(error.message);
       }
 
-      // Transform the data to ensure it matches ContentType
       return data.map(transformContent);
     }
   });
@@ -110,5 +110,15 @@ export const ContentManager = () => {
         </TableBody>
       </Table>
     </div>
+  );
+};
+
+export const ContentManager = () => {
+  return (
+    <Routes>
+      <Route index element={<ContentList />} />
+      <Route path="new" element={<ContentForm />} />
+      <Route path=":id" element={<ContentForm />} />
+    </Routes>
   );
 };
