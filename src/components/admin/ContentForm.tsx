@@ -102,6 +102,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       
       console.log('Fetching content with ID:', id);
       
+      // First fetch content with page data
       const { data: contentData, error: contentError } = await supabase
         .from('content')
         .select(`
@@ -120,16 +121,18 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       
       if (contentError) throw contentError;
 
-      // If this is a review, fetch rating criteria
+      // If this is a review, fetch additional review data
       if (contentData.type === 'review') {
+        // Fetch review details
         const { data: reviewData, error: reviewError } = await supabase
           .from('review_details')
           .select('*')
           .eq('content_id', contentData.id)
-          .single();
+          .maybeSingle();
 
         if (reviewError) throw reviewError;
 
+        // If we have review details, fetch rating criteria
         if (reviewData) {
           const { data: criteriaData, error: criteriaError } = await supabase
             .from('rating_criteria')
@@ -137,16 +140,24 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             .eq('review_id', reviewData.id);
             
           if (criteriaError) throw criteriaError;
-          
+
+          // Combine all the data
           return {
             ...contentData,
-            review_details: [reviewData],
+            page_content: contentData.page_content,
+            review_details: reviewData ? [reviewData] : [],
             rating_criteria: criteriaData || []
           };
         }
       }
       
-      return contentData;
+      // Return content with empty review data if not a review
+      return {
+        ...contentData,
+        page_content: contentData.page_content,
+        review_details: [],
+        rating_criteria: []
+      };
     },
     enabled: !!id,
   });
@@ -195,7 +206,9 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       let parsedProductSpecs: ProductSpec[] = [];
       if (reviewDetails?.product_specs) {
         try {
-          parsedProductSpecs = JSON.parse(reviewDetails.product_specs as string);
+          parsedProductSpecs = Array.isArray(reviewDetails.product_specs) 
+            ? reviewDetails.product_specs 
+            : JSON.parse(reviewDetails.product_specs as string);
         } catch (e) {
           console.error('Error parsing product specs:', e);
         }
