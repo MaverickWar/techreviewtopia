@@ -12,6 +12,8 @@ import { PagesManager } from "@/components/admin/pages/PagesManager";
 import { PageForm } from "@/components/admin/pages/PageForm";
 import { UsersManager } from "@/components/admin/users/UsersManager";
 import { AuthPage } from "@/pages/auth/AuthPage";
+import { CategoryPage } from "@/pages/CategoryPage";
+import { SubcategoryPage } from "@/pages/SubcategoryPage";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -63,6 +65,9 @@ function App() {
             <Route path="pages/edit/:id" element={<PageForm />} />
             <Route path="users" element={<UsersManager />} />
           </Route>
+          {/* Dynamic category and subcategory routes */}
+          <Route path="/:categorySlug" element={<CategoryPage />} />
+          <Route path="/:categorySlug/:subcategorySlug" element={<SubcategoryPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster />

@@ -133,8 +133,27 @@ export const PageForm = ({ initialData }: PageFormProps) => {
 
       // If this is a new category page, create the menu category
       if (data.page_type === 'category' && !initialData?.id) {
-        const menuCategory = await createMenuCategory(page.id, data.title, data.slug);
-        console.log('Created menu category:', menuCategory);
+        const { data: menuCategory, error: menuCategoryError } = await supabase
+          .from('menu_categories')
+          .insert([
+            { 
+              name: data.title,
+              slug: data.slug,
+              type: 'standard'
+            }
+          ])
+          .select()
+          .single();
+
+        if (menuCategoryError) throw menuCategoryError;
+
+        // Update the page with the new menu_category_id
+        const { error: updateError } = await supabase
+          .from('pages')
+          .update({ menu_category_id: menuCategory.id })
+          .eq('id', page.id);
+
+        if (updateError) throw updateError;
       }
 
       // If this is a new subcategory page
@@ -150,8 +169,20 @@ export const PageForm = ({ initialData }: PageFormProps) => {
         if (updateError) throw updateError;
 
         // Create menu item for subcategory
-        const menuItem = await createMenuItem(data.menu_category_id, data.title, data.slug);
-        console.log('Created menu item:', menuItem);
+        const { data: menuItem, error: menuItemError } = await supabase
+          .from('menu_items')
+          .insert([
+            {
+              category_id: data.menu_category_id,
+              name: data.title,
+              slug: data.slug,
+              description: data.description
+            }
+          ])
+          .select()
+          .single();
+
+        if (menuItemError) throw menuItemError;
 
         // Update page with menu_item_id
         const { error: updatePageError } = await supabase
