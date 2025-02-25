@@ -125,7 +125,7 @@ export const importSampleContent = async () => {
 
       const { data: menuItem } = await supabase
         .from('menu_items')
-        .select('id')
+        .select('id, slug')
         .eq('slug', item.subcategory_slug)
         .eq('category_id', menuCategory?.id)
         .single();
@@ -151,7 +151,8 @@ export const importSampleContent = async () => {
             menu_item_id: menuItem.id,
             title: item.title,
             description: item.description,
-            page_type: 'subcategory'
+            page_type: 'subcategory',
+            slug: menuItem.slug // Use the menu item's slug for the page
           })
           .select()
           .single();

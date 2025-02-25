@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,13 +14,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { ImportContent } from "./ImportContent";
+import { ContentType } from "@/types/navigation";
 
 export const ContentManager = () => {
-  const [contentList, setContentList] = useState([]);
+  const [contentList, setContentList] = useState<ContentType[]>([]);
 
-  const { data: contentData, isLoading, isError, refetch } = useQuery(
-    ['content'],
-    async () => {
+  const { data: contentData, isLoading, isError } = useQuery({
+    queryKey: ['content'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('content')
         .select('*');
@@ -30,7 +32,7 @@ export const ContentManager = () => {
 
       return data;
     }
-  );
+  });
 
   useEffect(() => {
     if (contentData) {
