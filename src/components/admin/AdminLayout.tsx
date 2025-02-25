@@ -10,7 +10,8 @@ import {
   Settings,
   ChevronLeft,
   Menu,
-  LogOut
+  LogOut,
+  FileStack
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +20,7 @@ import { useToast } from "@/components/ui/use-toast";
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
   { icon: FileText, label: "Content", path: "/admin/content" },
+  { icon: FileStack, label: "Pages", path: "/admin/pages" },
   { icon: Users, label: "Users", path: "/admin/users" },
   { icon: Image, label: "Media", path: "/admin/media" },
   { icon: Settings, label: "Settings", path: "/admin/settings" },
