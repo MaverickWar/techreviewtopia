@@ -110,6 +110,137 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     getUser();
   }, []);
 
+  // Fetch existing content if we're editing
+  const { data: existingContent, isLoading } = useQuery({
+    queryKey: ['content', id],
+    queryFn: async () => {
+      if (!id) return null;
+      
+      console.log('Fetching content with ID:', id);
+      
+      // First fetch content with page data
+      const { data: contentData, error: contentError } = await supabase
+        .from('content')
+        .select(`
+          *,
+          page_content(
+            page_id,
+            pages(
+              id,
+              title,
+              menu_category_id
+            )
+          )
+        `)
+        .eq('id', id)
+        .maybeSingle();
+      
+      if (contentError) throw contentError;
+
+      if (!contentData) return null;
+
+      // If this is a review, fetch additional review data
+      if (contentData.type === 'review') {
+        // Fetch review details
+        const { data: reviewData, error: reviewError } = await supabase
+          .from('review_details')
+          .select('*')
+          .eq('content_id', contentData.id)
+          .maybeSingle();
+
+        if (reviewError) throw reviewError;
+
+        // If we have review details, fetch rating criteria
+        if (reviewData) {
+          const { data: criteriaData, error: criteriaError } = await supabase
+            .from('rating_criteria')
+            .select('*')
+            .eq('review_id', reviewData.id);
+            
+          if (criteriaError) throw criteriaError;
+
+          // Combine all the data
+          return {
+            ...contentData,
+            page_content: contentData.page_content,
+            review_details: reviewData ? [reviewData] : [],
+            rating_criteria: criteriaData || []
+          };
+        }
+      }
+      
+      // Return content with empty review data if not a review
+      return {
+        ...contentData,
+        page_content: contentData.page_content,
+        review_details: [],
+        rating_criteria: []
+      };
+    },
+    enabled: !!id,
+  });
+
+  // Update form data when content is loaded
+  useEffect(() => {
+    if (existingContent) {
+      const reviewDetails = existingContent.review_details?.[0];
+      setFormData({
+        id: existingContent.id,
+        title: existingContent.title,
+        description: existingContent.description,
+        content: existingContent.content,
+        type: existingContent.type as ContentType,
+        status: existingContent.status as ContentStatus,
+        author_id: existingContent.author_id,
+        page_id: existingContent.page_content?.[0]?.page_id || null,
+        featured_image: existingContent.featured_image,
+        gallery: reviewDetails?.gallery || [],
+        product_specs: reviewDetails?.product_specs ? JSON.parse(reviewDetails.product_specs as string) : [],
+        rating_criteria: existingContent.rating_criteria || [],
+        overall_score: reviewDetails?.overall_score || 0,
+        youtube_url: reviewDetails?.youtube_url || null,
+      });
+
+      if (existingContent.page_content?.[0]?.pages?.menu_category_id) {
+        setSelectedCategory(existingContent.page_content[0].pages.menu_category_id);
+      }
+    }
+  }, [existingContent]);
+
+  // Get categories query
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      console.log('Fetching categories');
+      const { data, error } = await supabase
+        .from('menu_categories')
+        .select('id, name')
+        .order('order_index');
+      
+      if (error) throw error;
+      console.log('Categories:', data);
+      return data;
+    },
+  });
+
+  // Subcategories query
+  const { data: subcategories } = useQuery({
+    queryKey: ['subcategories', selectedCategory],
+    enabled: !!selectedCategory,
+    queryFn: async () => {
+      console.log('Fetching subcategories for category:', selectedCategory);
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('id, name')
+        .eq('category_id', selectedCategory)
+        .order('order_index');
+      
+      if (error) throw error;
+      console.log('Subcategories:', data);
+      return data;
+    },
+  });
+
   // Image upload handler
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'featured' | 'gallery') => {
     const file = e.target.files?.[0];
@@ -209,108 +340,6 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     }));
   };
 
-  // Fetch existing content if we're editing
-  const { data: existingContent } = useQuery({
-    queryKey: ['content', id],
-    queryFn: async () => {
-      if (!id) return null;
-      
-      console.log('Fetching content with ID:', id);
-      
-      // First fetch content with page data
-      const { data: contentData, error: contentError } = await supabase
-        .from('content')
-        .select(`
-          *,
-          page_content!inner(
-            page_id,
-            pages!inner(
-              id,
-              title,
-              menu_category_id
-            )
-          )
-        `)
-        .eq('id', id)
-        .single();
-      
-      if (contentError) throw contentError;
-
-      // If this is a review, fetch additional review data
-      if (contentData.type === 'review') {
-        // Fetch review details
-        const { data: reviewData, error: reviewError } = await supabase
-          .from('review_details')
-          .select('*')
-          .eq('content_id', contentData.id)
-          .maybeSingle();
-
-        if (reviewError) throw reviewError;
-
-        // If we have review details, fetch rating criteria
-        if (reviewData) {
-          const { data: criteriaData, error: criteriaError } = await supabase
-            .from('rating_criteria')
-            .select('*')
-            .eq('review_id', reviewData.id);
-            
-          if (criteriaError) throw criteriaError;
-
-          // Combine all the data
-          return {
-            ...contentData,
-            page_content: contentData.page_content,
-            review_details: reviewData ? [reviewData] : [],
-            rating_criteria: criteriaData || []
-          };
-        }
-      }
-      
-      // Return content with empty review data if not a review
-      return {
-        ...contentData,
-        page_content: contentData.page_content,
-        review_details: [],
-        rating_criteria: []
-      };
-    },
-    enabled: !!id,
-  });
-
-  // Get categories query
-  const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: async () => {
-      console.log('Fetching categories');
-      const { data, error } = await supabase
-        .from('menu_categories')
-        .select('id, name')
-        .order('order_index');
-      
-      if (error) throw error;
-      console.log('Categories:', data);
-      return data;
-    },
-  });
-
-  // Subcategories query
-  const { data: subcategories } = useQuery({
-    queryKey: ['subcategories', selectedCategory],
-    enabled: !!selectedCategory,
-    queryFn: async () => {
-      console.log('Fetching subcategories for category:', selectedCategory);
-      const { data, error } = await supabase
-        .from('menu_items')
-        .select('id, name')
-        .eq('category_id', selectedCategory)
-        .order('order_index');
-      
-      if (error) throw error;
-      console.log('Subcategories:', data);
-      return data;
-    },
-  });
-
   const mutation = useMutation({
     mutationFn: async (data: ContentFormData) => {
       console.log("Submitting content with data:", data);
@@ -325,7 +354,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
           .from('pages')
           .select('id')
           .eq('menu_item_id', data.page_id)
-          .single();
+          .maybeSingle();
 
         if (pageCheckError && pageCheckError.code !== 'PGRST116') {
           throw pageCheckError;
@@ -459,6 +488,18 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       });
     },
   });
+
+  // Show loading state while content is being fetched
+  if (id && isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p>Loading content...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
