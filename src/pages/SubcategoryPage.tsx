@@ -82,19 +82,21 @@ export const SubcategoryPage = () => {
             {page.page_content.map(({ content }) => {
               if (!content) return null;
 
+              // Get the first review details if it exists
+              const reviewDetails = content.review_details?.[0];
+
               return (
                 <Card key={content.id} className="p-6">
                   <h2 className="text-2xl font-semibold mb-4">{content.title}</h2>
                   {content.description && (
                     <p className="text-gray-600 mb-4">{content.description}</p>
                   )}
-                  {content.type === 'review' && content.review_details && (
+                  {content.type === 'review' && reviewDetails && (
                     <div className="mt-4">
-                      {/* Add review-specific content here */}
-                      {content.review_details.overall_score && (
+                      {reviewDetails.overall_score !== null && (
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">Overall Score:</span>
-                          <span>{content.review_details.overall_score}</span>
+                          <span>{reviewDetails.overall_score}</span>
                         </div>
                       )}
                     </div>
