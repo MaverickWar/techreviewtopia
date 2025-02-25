@@ -73,14 +73,27 @@ const SubcategoryView = ({ category, onBack, onClose }: SubcategoryViewProps) =>
 
 export const MobileNav = ({ categories, onClose }: MobileNavProps) => {
   const [selectedCategory, setSelectedCategory] = useState<MenuCategory | null>(null);
+  const [isExiting, setIsExiting] = useState(false);
+
+  const handleClose = () => {
+    setIsExiting(true);
+    setTimeout(() => {
+      onClose();
+      setIsExiting(false);
+    }, 300); // Match the animation duration
+  };
+
+  const handleCategorySelect = (category: MenuCategory) => {
+    setSelectedCategory(category);
+  };
 
   return (
-    <div className="fixed inset-0 bg-white z-50 overflow-auto">
+    <div className={`fixed inset-0 bg-white z-50 overflow-auto transition-opacity duration-300 ${isExiting ? 'opacity-0' : 'opacity-100'}`}>
       {selectedCategory ? (
         <SubcategoryView 
           category={selectedCategory}
           onBack={() => setSelectedCategory(null)}
-          onClose={onClose}
+          onClose={handleClose}
         />
       ) : (
         <div className="animate-fade-in">
@@ -95,7 +108,7 @@ export const MobileNav = ({ categories, onClose }: MobileNavProps) => {
               >
                 {category.type === 'megamenu' ? (
                   <button
-                    onClick={() => setSelectedCategory(category)}
+                    onClick={() => handleCategorySelect(category)}
                     className="w-full h-full"
                   >
                     <div className="relative">
@@ -103,7 +116,7 @@ export const MobileNav = ({ categories, onClose }: MobileNavProps) => {
                         <img
                           src={getCategoryImage(category.slug)}
                           alt={category.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                       </div>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/20" />
@@ -124,17 +137,17 @@ export const MobileNav = ({ categories, onClose }: MobileNavProps) => {
                 ) : (
                   <Link
                     to={`/${category.slug}`}
-                    onClick={onClose}
-                    className="block relative"
+                    onClick={handleClose}
+                    className="block relative group"
                   >
                     <div className="aspect-[16/9] overflow-hidden">
                       <img
                         src={getCategoryImage(category.slug)}
                         alt={category.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/20" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/20 transition-opacity duration-300 group-hover:from-black/70" />
                     <div className="absolute bottom-0 left-0 right-0 p-4">
                       <h3 className="text-xl font-semibold text-white">
                         {category.name}

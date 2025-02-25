@@ -13,7 +13,7 @@ export const PageLayout = ({ children }: PageLayoutProps) => {
     <div className="min-h-screen bg-gray-50">
       <TopNav />
       <MainNav />
-      <main>
+      <main className="animate-fade-in">
         {children}
       </main>
       <Footer />
