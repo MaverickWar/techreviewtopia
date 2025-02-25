@@ -88,6 +88,26 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     }
   );
 
+  // Add user session check
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    // Get the current user's session
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log("Current user:", user);
+      if (user) {
+        setCurrentUser(user);
+        setFormData(prev => ({
+          ...prev,
+          author_id: user.id
+        }));
+      }
+    };
+
+    getUser();
+  }, []);
+
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const navigate = useNavigate();
@@ -341,8 +361,10 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
   const mutation = useMutation({
     mutationFn: async (data: ContentFormData) => {
-      if (!data.author_id) {
-        throw new Error("No author ID available");
+      console.log("Submitting content with data:", data);
+      
+      if (!data.author_id || !currentUser) {
+        throw new Error("You must be logged in to create or edit content");
       }
 
       // First, create/update the content
@@ -361,7 +383,12 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         .select()
         .single();
 
-      if (contentError) throw contentError;
+      if (contentError) {
+        console.error("Error creating/updating content:", contentError);
+        throw contentError;
+      }
+
+      console.log("Content created/updated:", content);
 
       // If this is a review, create/update review details
       if (data.type === 'review') {
@@ -369,7 +396,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
           content_id: content.id,
           youtube_url: data.youtube_url,
           gallery: data.gallery,
-          product_specs: JSON.stringify(data.product_specs),
+          product_specs: data.product_specs ? JSON.stringify(data.product_specs) : null,
           overall_score: data.overall_score,
         };
 
@@ -379,7 +406,12 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
           .select()
           .single();
 
-        if (reviewError) throw reviewError;
+        if (reviewError) {
+          console.error("Error creating/updating review details:", reviewError);
+          throw reviewError;
+        }
+
+        console.log("Review details created/updated:", reviewDetails);
 
         // Handle rating criteria
         if (data.rating_criteria?.length) {
@@ -393,7 +425,10 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             .from('rating_criteria')
             .upsert(criteriaData);
 
-          if (criteriaError) throw criteriaError;
+          if (criteriaError) {
+            console.error("Error creating/updating rating criteria:", criteriaError);
+            throw criteriaError;
+          }
         }
       }
 
@@ -407,7 +442,10 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             order_index: 0,
           });
 
-        if (pageContentError) throw pageContentError;
+        if (pageContentError) {
+          console.error("Error creating/updating page content:", pageContentError);
+          throw pageContentError;
+        }
       }
 
       return content;
@@ -421,6 +459,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       navigate("/admin/content");
     },
     onError: (error) => {
+      console.error("Mutation error:", error);
       toast({
         title: "Error",
         description: error.message,
