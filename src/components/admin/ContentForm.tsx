@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -31,11 +30,21 @@ type ContentStatus = "draft" | "published";
 interface RatingCriterion {
   name: string;
   score: number;
+  review_id?: string;
 }
 
 interface ProductSpec {
   label: string;
   value: string;
+}
+
+interface ReviewDetails {
+  id?: string;
+  content_id?: string;
+  youtube_url: string | null;
+  gallery: string[];
+  product_specs: ProductSpec[];
+  overall_score: number;
 }
 
 interface ContentFormData {
@@ -53,6 +62,7 @@ interface ContentFormData {
   product_specs?: ProductSpec[];
   rating_criteria?: RatingCriterion[];
   overall_score?: number;
+  review_details?: ReviewDetails;
 }
 
 interface ContentFormProps {
@@ -92,18 +102,22 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       
       const { data: contentData, error: contentError } = await supabase
         .from('content')
-        .select('*, page_content!inner(page_id), review_details(*)')
+        .select(`
+          *,
+          page_content!inner(page_id),
+          review_details(*)
+        `)
         .eq('id', id)
         .single();
       
       if (contentError) throw contentError;
 
       // If this is a review, fetch rating criteria
-      if (contentData.type === 'review' && contentData.review_details) {
+      if (contentData.type === 'review' && contentData.review_details?.[0]?.id) {
         const { data: criteriaData, error: criteriaError } = await supabase
           .from('rating_criteria')
           .select('*')
-          .eq('review_id', contentData.review_details.id);
+          .eq('review_id', contentData.review_details[0].id);
           
         if (criteriaError) throw criteriaError;
         
@@ -120,13 +134,16 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
   useEffect(() => {
     if (existingContent) {
+      const reviewDetails = existingContent.review_details?.[0];
+      
       setFormData({
         ...existingContent,
+        type: existingContent.type as ContentType,
         page_id: existingContent.page_content?.[0]?.page_id || null,
-        product_specs: existingContent.review_details?.product_specs || [],
-        gallery: existingContent.review_details?.gallery || [],
-        youtube_url: existingContent.review_details?.youtube_url || null,
-        overall_score: existingContent.review_details?.overall_score || 0,
+        product_specs: reviewDetails?.product_specs as ProductSpec[] || [],
+        gallery: reviewDetails?.gallery || [],
+        youtube_url: reviewDetails?.youtube_url || null,
+        overall_score: reviewDetails?.overall_score || 0,
       });
       
       if (existingContent.page_content?.[0]?.page_id) {
@@ -303,7 +320,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
           content_id: content.id,
           youtube_url: data.youtube_url,
           gallery: data.gallery,
-          product_specs: data.product_specs,
+          product_specs: JSON.stringify(data.product_specs),
           overall_score: data.overall_score,
         };
 
@@ -318,7 +335,8 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         // Handle rating criteria
         if (data.rating_criteria?.length) {
           const criteriaData = data.rating_criteria.map(criterion => ({
-            ...criterion,
+            name: criterion.name,
+            score: criterion.score,
             review_id: reviewDetails.id
           }));
 
