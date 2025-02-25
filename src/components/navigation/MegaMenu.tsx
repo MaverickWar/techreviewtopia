@@ -24,7 +24,7 @@ export const MegaMenu = ({ category }: MegaMenuProps) => {
       </button>
 
       {isOpen && (
-        <div className="absolute left-1/2 -translate-x-1/2 bg-white shadow-lg border-t z-50 min-w-[1200px]">
+        <div className="fixed left-1/2 transform -translate-x-1/2 top-16 bg-white shadow-lg border-t z-50 min-w-[1200px]">
           <div className="p-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10">
               {category.items?.map((item) => (
