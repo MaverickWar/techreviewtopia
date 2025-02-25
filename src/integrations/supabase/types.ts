@@ -59,6 +59,45 @@ export type Database = {
           },
         ]
       }
+      featured_content: {
+        Row: {
+          content_id: string | null
+          created_at: string | null
+          id: string
+          page_id: string | null
+          position: number | null
+        }
+        Insert: {
+          content_id?: string | null
+          created_at?: string | null
+          id?: string
+          page_id?: string | null
+          position?: number | null
+        }
+        Update: {
+          content_id?: string | null
+          created_at?: string | null
+          id?: string
+          page_id?: string | null
+          position?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "featured_content_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "featured_content_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_categories: {
         Row: {
           created_at: string | null
@@ -169,16 +208,57 @@ export type Database = {
           },
         ]
       }
+      page_hierarchy: {
+        Row: {
+          child_page_id: string | null
+          created_at: string | null
+          id: string
+          parent_page_id: string | null
+          position: number | null
+        }
+        Insert: {
+          child_page_id?: string | null
+          created_at?: string | null
+          id?: string
+          parent_page_id?: string | null
+          position?: number | null
+        }
+        Update: {
+          child_page_id?: string | null
+          created_at?: string | null
+          id?: string
+          parent_page_id?: string | null
+          position?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_hierarchy_child_page_id_fkey"
+            columns: ["child_page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_hierarchy_parent_page_id_fkey"
+            columns: ["parent_page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pages: {
         Row: {
           created_at: string | null
           description: string | null
           id: string
           is_active: boolean | null
+          layout_settings: Json | null
           menu_category_id: string | null
           menu_item_id: string | null
           page_type: Database["public"]["Enums"]["page_type"] | null
           slug: string
+          template_type: string | null
           title: string
           updated_at: string | null
         }
@@ -187,10 +267,12 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          layout_settings?: Json | null
           menu_category_id?: string | null
           menu_item_id?: string | null
           page_type?: Database["public"]["Enums"]["page_type"] | null
           slug: string
+          template_type?: string | null
           title: string
           updated_at?: string | null
         }
@@ -199,10 +281,12 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          layout_settings?: Json | null
           menu_category_id?: string | null
           menu_item_id?: string | null
           page_type?: Database["public"]["Enums"]["page_type"] | null
           slug?: string
+          template_type?: string | null
           title?: string
           updated_at?: string | null
         }

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { LayoutTemplate, FileText } from "lucide-react";
+import { LayoutTemplate, FileText, LayoutGrid, Image as ImageIcon } from "lucide-react";
 
 interface PageFormProps {
   initialData?: {
@@ -19,6 +19,8 @@ interface PageFormProps {
     menu_category_id?: string;
     menu_item_id?: string;
     is_active: boolean;
+    template_type?: string;
+    layout_settings?: Record<string, any>;
   };
 }
 
@@ -32,6 +34,8 @@ export const PageForm = ({ initialData }: PageFormProps) => {
       menu_category_id: undefined,
       menu_item_id: undefined,
       is_active: true,
+      template_type: "standard",
+      layout_settings: {},
     }
   );
 
@@ -39,35 +43,67 @@ export const PageForm = ({ initialData }: PageFormProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch menu categories for the dropdown
-  const { data: menuCategories } = useQuery({
-    queryKey: ['menu_categories'],
+  // Fetch existing categories for parent selection
+  const { data: categories } = useQuery({
+    queryKey: ['parent_categories'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('menu_categories')
-        .select('*')
-        .order('name');
+        .from('pages')
+        .select('id, title')
+        .eq('page_type', 'category')
+        .order('title');
       if (error) throw error;
       return data;
     }
   });
 
-  // Fetch menu items for the dropdown (if needed for subcategory)
-  const { data: menuItems } = useQuery({
-    queryKey: ['menu_items'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('menu_items')
-        .select('*')
-        .order('name');
-      if (error) throw error;
-      return data;
-    }
-  });
+  const createMenuCategory = async (pageId: string, pageTitle: string, pageSlug: string) => {
+    const { data, error } = await supabase
+      .from('menu_categories')
+      .insert([
+        { 
+          name: pageTitle,
+          slug: pageSlug,
+          type: 'standard'
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Update the page with the new menu_category_id
+    const { error: updateError } = await supabase
+      .from('pages')
+      .update({ menu_category_id: data.id })
+      .eq('id', pageId);
+
+    if (updateError) throw updateError;
+
+    return data;
+  };
+
+  const createMenuItem = async (categoryId: string, pageTitle: string, pageSlug: string) => {
+    const { data, error } = await supabase
+      .from('menu_items')
+      .insert([
+        {
+          category_id: categoryId,
+          name: pageTitle,
+          slug: pageSlug
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  };
 
   const mutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { data: result, error } = await supabase
+      // First, create or update the page
+      const { data: page, error: pageError } = await supabase
         .from("pages")
         .upsert({
           ...data,
@@ -76,8 +112,36 @@ export const PageForm = ({ initialData }: PageFormProps) => {
         .select()
         .single();
 
-      if (error) throw error;
-      return result;
+      if (pageError) throw pageError;
+
+      // If this is a new category page, create the menu category
+      if (data.page_type === 'category' && !initialData?.id) {
+        await createMenuCategory(page.id, data.title, data.slug);
+      }
+
+      // If this is a new subcategory page
+      if (data.page_type === 'subcategory' && data.menu_category_id) {
+        // Update parent category to megamenu if it's not already
+        const { error: updateError } = await supabase
+          .from('menu_categories')
+          .update({ type: 'megamenu' })
+          .eq('id', data.menu_category_id);
+
+        if (updateError) throw updateError;
+
+        // Create menu item for subcategory
+        const menuItem = await createMenuItem(data.menu_category_id, data.title, data.slug);
+
+        // Update page with menu_item_id
+        const { error: updatePageError } = await supabase
+          .from('pages')
+          .update({ menu_item_id: menuItem.id })
+          .eq('id', page.id);
+
+        if (updatePageError) throw updatePageError;
+      }
+
+      return page;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pages"] });
@@ -101,6 +165,16 @@ export const PageForm = ({ initialData }: PageFormProps) => {
     mutation.mutate(formData);
   };
 
+  // Auto-generate slug from title
+  useEffect(() => {
+    if (formData.title && !initialData?.slug) {
+      setFormData(prev => ({
+        ...prev,
+        slug: formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+      }));
+    }
+  }, [formData.title, initialData?.slug]);
+
   return (
     <Card className="max-w-4xl mx-auto">
       <form onSubmit={handleSubmit}>
@@ -116,19 +190,26 @@ export const PageForm = ({ initialData }: PageFormProps) => {
             </h2>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Type</label>
+        <CardContent className="space-y-6">
+          {/* Page Type Selection */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Page Type</label>
             <div className="flex gap-2">
               <Button
                 type="button"
                 variant={formData.page_type === "category" ? "default" : "outline"}
                 onClick={() =>
-                  setFormData((prev) => ({ ...prev, page_type: "category" }))
+                  setFormData((prev) => ({ 
+                    ...prev, 
+                    page_type: "category",
+                    menu_category_id: undefined,
+                    menu_item_id: undefined 
+                  }))
                 }
+                className="flex items-center gap-2"
               >
-                <LayoutTemplate className="mr-2 h-4 w-4" />
-                Category
+                <LayoutGrid className="h-4 w-4" />
+                Category Page
               </Button>
               <Button
                 type="button"
@@ -136,43 +217,47 @@ export const PageForm = ({ initialData }: PageFormProps) => {
                 onClick={() =>
                   setFormData((prev) => ({ ...prev, page_type: "subcategory" }))
                 }
+                className="flex items-center gap-2"
               >
-                <FileText className="mr-2 h-4 w-4" />
-                Subcategory
+                <FileText className="h-4 w-4" />
+                Subcategory Page
               </Button>
             </div>
           </div>
 
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium mb-1">
-              Title
-            </label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, title: e.target.value }))
-              }
-              required
-            />
+          {/* Title & Slug */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label htmlFor="title" className="block text-sm font-medium">
+                Title
+              </label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, title: e.target.value }))
+                }
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="slug" className="block text-sm font-medium">
+                Slug
+              </label>
+              <Input
+                id="slug"
+                value={formData.slug}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, slug: e.target.value }))
+                }
+                required
+              />
+            </div>
           </div>
 
-          <div>
-            <label htmlFor="slug" className="block text-sm font-medium mb-1">
-              Slug
-            </label>
-            <Input
-              id="slug"
-              value={formData.slug}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, slug: e.target.value }))
-              }
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium mb-1">
+          {/* Description */}
+          <div className="space-y-2">
+            <label htmlFor="description" className="block text-sm font-medium">
               Description
             </label>
             <textarea
@@ -185,54 +270,72 @@ export const PageForm = ({ initialData }: PageFormProps) => {
             />
           </div>
 
-          {formData.page_type === "category" && menuCategories && (
-            <div>
-              <label htmlFor="menuCategory" className="block text-sm font-medium mb-1">
-                Menu Category
+          {/* Parent Category Selection (for subcategories) */}
+          {formData.page_type === "subcategory" && categories && (
+            <div className="space-y-2">
+              <label htmlFor="parentCategory" className="block text-sm font-medium">
+                Parent Category
               </label>
               <select
-                id="menuCategory"
+                id="parentCategory"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={formData.menu_category_id || ""}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, menu_category_id: e.target.value || undefined }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    menu_category_id: e.target.value || undefined
+                  }))
                 }
+                required
               >
-                <option value="">Select a menu category</option>
-                {menuCategories.map((category) => (
+                <option value="">Select a parent category</option>
+                {categories.map((category) => (
                   <option key={category.id} value={category.id}>
-                    {category.name}
+                    {category.title}
                   </option>
                 ))}
               </select>
             </div>
           )}
 
-          {formData.page_type === "subcategory" && menuItems && (
-            <div>
-              <label htmlFor="menuItem" className="block text-sm font-medium mb-1">
-                Menu Item
-              </label>
-              <select
-                id="menuItem"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={formData.menu_item_id || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, menu_item_id: e.target.value || undefined }))
+          {/* Template Selection */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Template</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button
+                type="button"
+                variant={formData.template_type === "standard" ? "default" : "outline"}
+                onClick={() =>
+                  setFormData((prev) => ({ ...prev, template_type: "standard" }))
                 }
+                className="h-auto p-4 flex flex-col items-center gap-2"
               >
-                <option value="">Select a menu item</option>
-                {menuItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
+                <LayoutGrid className="h-8 w-8" />
+                <span>Standard Template</span>
+                <span className="text-xs text-muted-foreground">
+                  Basic layout with header and content sections
+                </span>
+              </Button>
+              <Button
+                type="button"
+                variant={formData.template_type === "featured" ? "default" : "outline"}
+                onClick={() =>
+                  setFormData((prev) => ({ ...prev, template_type: "featured" }))
+                }
+                className="h-auto p-4 flex flex-col items-center gap-2"
+              >
+                <ImageIcon className="h-8 w-8" />
+                <span>Featured Template</span>
+                <span className="text-xs text-muted-foreground">
+                  Hero section with featured content grid
+                </span>
+              </Button>
             </div>
-          )}
+          </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Status</label>
+          {/* Status Toggle */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Status</label>
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -255,6 +358,7 @@ export const PageForm = ({ initialData }: PageFormProps) => {
             </div>
           </div>
         </CardContent>
+
         <CardFooter className="flex justify-end gap-2">
           <Button
             type="button"
