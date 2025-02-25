@@ -1,7 +1,7 @@
 
 import { Search, Bell, UserRound, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AuthModal } from './auth/AuthModal';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -24,7 +24,7 @@ export const TopNav = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -37,48 +37,61 @@ export const TopNav = () => {
         return;
       }
       
-      setAvatarUrl(profile?.avatar_url || null);
+      // Add cache-busting timestamp to URL
+      const url = profile?.avatar_url 
+        ? `${profile.avatar_url}?t=${Date.now()}`
+        : null;
+      
+      setAvatarUrl(url);
     } catch (error) {
       console.error('TopNav: Error in fetchProfile:', error);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    let mounted = true;
+
     const setupAuth = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
-        setSession(currentSession);
-        
-        if (currentSession?.user) {
-          await fetchProfile(currentSession.user.id);
+        if (mounted) {
+          setSession(currentSession);
+          if (currentSession?.user) {
+            await fetchProfile(currentSession.user.id);
+          }
+          setLoading(false);
         }
-        
-        setLoading(false);
       } catch (error) {
         console.error('TopNav: Error in setupAuth:', error);
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     setupAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
-      setSession(currentSession);
-      if (currentSession?.user) {
-        await fetchProfile(currentSession.user.id);
-      } else {
-        setAvatarUrl(null);
+      if (mounted) {
+        setSession(currentSession);
+        if (currentSession?.user) {
+          await fetchProfile(currentSession.user.id);
+        } else {
+          setAvatarUrl(null);
+        }
       }
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchProfile]);
 
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
+      setAvatarUrl(null);
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of your account.",
@@ -122,7 +135,8 @@ export const TopNav = () => {
                 <AvatarImage 
                   src={avatarUrl} 
                   alt="Profile"
-                  className="object-cover" 
+                  className="object-cover"
+                  onError={() => setAvatarUrl(null)} // Fallback if image fails to load
                 />
               ) : (
                 <AvatarFallback>
@@ -156,6 +170,14 @@ export const TopNav = () => {
     );
   };
 
+  const handleSettingsClose = useCallback(() => {
+    setShowSettingsDialog(false);
+    // Immediate refresh of avatar
+    if (session?.user) {
+      fetchProfile(session.user.id);
+    }
+  }, [session, fetchProfile]);
+
   return (
     <>
       <div className="bg-slate-900 text-white py-2">
@@ -185,13 +207,7 @@ export const TopNav = () => {
 
       <UserSettingsDialog
         isOpen={showSettingsDialog}
-        onClose={() => {
-          setShowSettingsDialog(false);
-          // Refresh the avatar after settings dialog closes
-          if (session?.user) {
-            fetchProfile(session.user.id);
-          }
-        }}
+        onClose={handleSettingsClose}
       />
     </>
   );
