@@ -132,6 +132,18 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     enabled: !!id,
   });
 
+  const fetchParentCategory = async (pageId: string) => {
+    const { data, error } = await supabase
+      .from('pages')
+      .select('menu_category_id')
+      .eq('id', pageId)
+      .single();
+
+    if (!error && data?.menu_category_id) {
+      setSelectedCategory(data.menu_category_id);
+    }
+  };
+
   useEffect(() => {
     if (existingContent) {
       const reviewDetails = existingContent.review_details?.[0];
@@ -177,23 +189,12 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         } : undefined
       });
       
+      // Fetch parent category when page_id is available
       if (page_content?.[0]?.page_id) {
         fetchParentCategory(page_content[0].page_id);
       }
     }
   }, [existingContent]);
-
-  const fetchParentCategory = async (pageId: string) => {
-    const { data, error } = await supabase
-      .from('pages')
-      .select('menu_category_id')
-      .eq('id', pageId)
-      .single();
-
-    if (!error && data?.menu_category_id) {
-      setSelectedCategory(data.menu_category_id);
-    }
-  };
 
   // Get categories and subcategories
   const { data: categories } = useQuery({
@@ -209,6 +210,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     },
   });
 
+  // Modified subcategories query to show subcategories based on selected category
   const { data: subcategories } = useQuery({
     queryKey: ['subcategories', selectedCategory],
     enabled: !!selectedCategory,
