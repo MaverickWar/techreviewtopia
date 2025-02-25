@@ -7,12 +7,11 @@ import {
   LayoutDashboard,
   FileText,
   Users,
-  Image,
-  Settings,
   ChevronLeft,
   Menu,
   LogOut,
-  FileStack
+  FileStack,
+  HomeIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -107,7 +106,16 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
           })}
         </nav>
 
-        <div className="absolute bottom-4 left-0 right-0 px-2">
+        <div className="absolute bottom-4 left-0 right-0 px-2 space-y-2">
+          <Link
+            to="/"
+            className={cn(
+              "flex items-center space-x-3 rounded-lg px-3 py-2 transition-colors w-full text-gray-300 hover:bg-slate-800 hover:text-white"
+            )}
+          >
+            <HomeIcon className="h-5 w-5" />
+            {!collapsed && <span>Return to Website</span>}
+          </Link>
           <Button
             variant="ghost"
             className="w-full justify-start hover:bg-slate-800"

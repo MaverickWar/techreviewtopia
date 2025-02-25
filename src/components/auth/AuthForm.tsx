@@ -16,7 +16,6 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
   const { toast } = useToast();
 
   // Debug: Check for existing session on component mount
@@ -103,7 +102,6 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
         console.log("Sign in response:", { data: signInData, error: signInError });
 
         if (signInError) {
-          // Handle specific login errors
           const errorMessage = signInError.message === "Invalid login credentials"
             ? "Invalid email or password. Please try again."
             : signInError.message;
@@ -121,7 +119,6 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
         });
 
         if (onClose) onClose();
-        navigate("/admin");
       }
     } catch (error: any) {
       console.error("Auth error:", error);
