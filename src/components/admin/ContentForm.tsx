@@ -216,161 +216,6 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     },
   });
 
-  useEffect(() => {
-    if (existingContent) {
-      console.log('Setting form data from existing content:', existingContent);
-      const reviewDetails = existingContent.review_details?.[0];
-      const pageContent = existingContent.page_content?.[0];
-      
-      // Parse product specs from JSON if they exist
-      let parsedProductSpecs: ProductSpec[] = [];
-      if (reviewDetails?.product_specs) {
-        try {
-          parsedProductSpecs = Array.isArray(reviewDetails.product_specs) 
-            ? reviewDetails.product_specs 
-            : JSON.parse(reviewDetails.product_specs as string);
-        } catch (e) {
-          console.error('Error parsing product specs:', e);
-        }
-      }
-
-      setFormData({
-        ...existingContent,
-        type: existingContent.type as ContentType,
-        status: existingContent.status as ContentStatus,
-        page_id: pageContent?.page_id || null,
-        product_specs: parsedProductSpecs,
-        gallery: reviewDetails?.gallery || [],
-        youtube_url: reviewDetails?.youtube_url || null,
-        overall_score: reviewDetails?.overall_score || 0,
-        rating_criteria: existingContent.rating_criteria || [],
-        review_details: reviewDetails ? {
-          id: reviewDetails.id,
-          content_id: reviewDetails.content_id,
-          youtube_url: reviewDetails.youtube_url || null,
-          gallery: reviewDetails.gallery || [],
-          product_specs: parsedProductSpecs,
-          overall_score: reviewDetails.overall_score || 0
-        } : undefined
-      });
-
-      // Find and set the parent category from the menu item
-      if (pageContent?.pages?.menu_item_id) {
-        const findParentCategory = async () => {
-          const { data: menuItem } = await supabase
-            .from('menu_items')
-            .select('category_id')
-            .eq('id', pageContent.pages.menu_item_id)
-            .single();
-          
-          if (menuItem?.category_id) {
-            console.log('Setting selected category:', menuItem.category_id);
-            setSelectedCategory(menuItem.category_id);
-          }
-        };
-        
-        findParentCategory();
-      }
-    }
-  }, [existingContent]);
-
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'featured' | 'gallery') => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setImageUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `${type}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('content-images')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('content-images')
-        .getPublicUrl(filePath);
-
-      if (type === 'featured') {
-        setFormData(prev => ({ ...prev, featured_image: publicUrl }));
-      } else {
-        setFormData(prev => ({
-          ...prev,
-          gallery: [...(prev.gallery || []), publicUrl]
-        }));
-      }
-
-      toast({
-        title: "Success",
-        description: "Image uploaded successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to upload image",
-        variant: "destructive",
-      });
-    } finally {
-      setImageUploading(false);
-    }
-  };
-
-  const handleRemoveImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      gallery: prev.gallery?.filter((_, i) => i !== index)
-    }));
-  };
-
-  const addProductSpec = () => {
-    setFormData(prev => ({
-      ...prev,
-      product_specs: [...(prev.product_specs || []), { label: '', value: '' }]
-    }));
-  };
-
-  const updateProductSpec = (index: number, field: 'label' | 'value', value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      product_specs: prev.product_specs?.map((spec, i) => 
-        i === index ? { ...spec, [field]: value } : spec
-      )
-    }));
-  };
-
-  const removeProductSpec = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      product_specs: prev.product_specs?.filter((_, i) => i !== index)
-    }));
-  };
-
-  const addRatingCriterion = () => {
-    setFormData(prev => ({
-      ...prev,
-      rating_criteria: [...(prev.rating_criteria || []), { name: '', score: 0 }]
-    }));
-  };
-
-  const updateRatingCriterion = (index: number, field: 'name' | 'score', value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      rating_criteria: prev.rating_criteria?.map((criterion, i) => 
-        i === index ? { ...criterion, [field]: value } : criterion
-      )
-    }));
-  };
-
-  const removeRatingCriterion = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      rating_criteria: prev.rating_criteria?.filter((_, i) => i !== index)
-    }));
-  };
-
   const mutation = useMutation({
     mutationFn: async (data: ContentFormData) => {
       console.log("Submitting content with data:", data);
@@ -379,7 +224,59 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         throw new Error("You must be logged in to create or edit content");
       }
 
-      // First, create/update the content
+      // First, if we have a menu_item selected, create or get the corresponding page
+      let pageId = data.page_id;
+      if (data.page_id) {
+        // Check if a page already exists for this menu item
+        const { data: existingPage, error: pageCheckError } = await supabase
+          .from('pages')
+          .select('id')
+          .eq('menu_item_id', data.page_id)
+          .single();
+
+        if (pageCheckError && pageCheckError.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+          console.error("Error checking existing page:", pageCheckError);
+          throw pageCheckError;
+        }
+
+        if (existingPage) {
+          pageId = existingPage.id;
+        } else {
+          // Get the menu item details to create the page
+          const { data: menuItem, error: menuItemError } = await supabase
+            .from('menu_items')
+            .select('name, category_id')
+            .eq('id', data.page_id)
+            .single();
+
+          if (menuItemError) {
+            console.error("Error fetching menu item:", menuItemError);
+            throw menuItemError;
+          }
+
+          // Create the page
+          const { data: newPage, error: pageError } = await supabase
+            .from('pages')
+            .insert({
+              title: menuItem.name,
+              slug: menuItem.name.toLowerCase().replace(/\s+/g, '-'),
+              menu_item_id: data.page_id,
+              menu_category_id: menuItem.category_id,
+              page_type: 'subcategory'
+            })
+            .select()
+            .single();
+
+          if (pageError) {
+            console.error("Error creating page:", pageError);
+            throw pageError;
+          }
+
+          pageId = newPage.id;
+        }
+      }
+
+      // Then create/update the content
       const { data: content, error: contentError } = await supabase
         .from("content")
         .upsert({
@@ -444,12 +341,12 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         }
       }
 
-      // Handle page relationship
-      if (data.page_id) {
+      // Handle page relationship if we have a pageId
+      if (pageId) {
         const { error: pageContentError } = await supabase
           .from("page_content")
           .upsert({
-            page_id: data.page_id,
+            page_id: pageId,
             content_id: content.id,
             order_index: 0,
           });
