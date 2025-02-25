@@ -19,18 +19,16 @@ import { UserSettingsDialog } from './settings/UserSettings';
 export const TopNav = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
     });
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -56,7 +54,7 @@ export const TopNav = () => {
     }
   };
 
-  const getUserInitials = (email) => {
+  const getUserInitials = (email?: string) => {
     return email ? email.substring(0, 2).toUpperCase() : 'U';
   };
 
@@ -82,15 +80,16 @@ export const TopNav = () => {
                   <DropdownMenu>
                     <DropdownMenuTrigger className="focus:outline-none">
                       <Avatar className="h-8 w-8 bg-orange-500 hover:bg-orange-600 transition-colors">
+                        <AvatarImage src={undefined} />
                         <AvatarFallback>
-                          {getUserInitials(session.user.email)}
+                          {getUserInitials(session?.user?.email)}
                         </AvatarFallback>
                       </Avatar>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
                       <DropdownMenuLabel>My Account</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setShowSettingsDialog(true)}>
+                      <DropdownMenuItem onSelect={() => setShowSettingsDialog(true)}>
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Settings</span>
                       </DropdownMenuItem>
@@ -101,7 +100,7 @@ export const TopNav = () => {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={handleLogout}>
+                      <DropdownMenuItem onSelect={handleLogout}>
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Log out</span>
                       </DropdownMenuItem>
