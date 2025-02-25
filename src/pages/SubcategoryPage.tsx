@@ -37,7 +37,7 @@ interface DatabaseContent {
   page_id: string | null;
   published_at: string | null;
   review_details: ReviewDetailsType[];
-  rating_criteria: RatingCriteriaType[];
+  rating_criteria: RatingCriteriaType[] | null;  // Made nullable to handle potential errors
 }
 
 export const SubcategoryPage = () => {
@@ -97,7 +97,22 @@ export const SubcategoryPage = () => {
     </div>;
   }
 
-  const content = pageData.page_content?.map(pc => pc.content) || [];
+  const content = pageData.page_content?.map(pc => {
+    // Ensure the content has the correct shape
+    if (pc.content) {
+      const processedContent = {
+        ...pc.content,
+        rating_criteria: Array.isArray(pc.content.rating_criteria) 
+          ? pc.content.rating_criteria 
+          : [],
+        review_details: Array.isArray(pc.content.review_details) 
+          ? pc.content.review_details 
+          : []
+      };
+      return processedContent as DatabaseContent;
+    }
+    return null;
+  }).filter(Boolean) || [];
 
   const renderContent = (item: DatabaseContent) => {
     const review = item.review_details?.[0];
@@ -248,7 +263,7 @@ export const SubcategoryPage = () => {
       }}
     >
       <div className="space-y-8">
-        {content.map((item) => renderContent(item as DatabaseContent))}
+        {content.map((item) => renderContent(item))}
       </div>
     </ContentPageLayout>
   );
