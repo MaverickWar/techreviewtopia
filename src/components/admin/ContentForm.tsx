@@ -107,7 +107,16 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       }
 
       // Prepare the content data according to the required schema
-      const contentData = {
+      const contentData: {
+        id?: string;
+        title: string;
+        description: string | null;
+        content: string | null;
+        type: ContentType;
+        status: ContentStatus;
+        author_id: string;
+        page_id: string | null;
+      } = {
         title: data.title,
         description: data.description,
         content: data.content,
