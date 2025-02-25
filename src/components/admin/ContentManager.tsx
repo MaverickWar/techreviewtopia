@@ -19,11 +19,20 @@ export const ContentManager = () => {
   const { data: content, isLoading } = useQuery({
     queryKey: ['content'],
     queryFn: async () => {
+      console.log("Fetching content...");
       const query = supabase
         .from('content')
         .select(`
           *,
-          review_details(*)
+          review_details(*),
+          page_content(
+            pages(
+              title,
+              slug,
+              menu_item_id,
+              menu_category_id
+            )
+          )
         `);
 
       if (contentType !== "all") {
@@ -31,7 +40,13 @@ export const ContentManager = () => {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      
+      if (error) {
+        console.error("Error fetching content:", error);
+        throw error;
+      }
+      
+      console.log("Fetched content:", data);
       return data;
     }
   });
@@ -41,7 +56,10 @@ export const ContentManager = () => {
       const newStatus = currentStatus === 'published' ? 'draft' : 'published';
       const { data, error } = await supabase
         .from('content')
-        .update({ status: newStatus })
+        .update({ 
+          status: newStatus,
+          published_at: newStatus === 'published' ? new Date().toISOString() : null 
+        })
         .eq('id', id)
         .select()
         .single();
@@ -57,6 +75,7 @@ export const ContentManager = () => {
       });
     },
     onError: (error) => {
+      console.error("Error toggling publish status:", error);
       toast({
         title: "Error",
         description: error.message,
@@ -73,6 +92,8 @@ export const ContentManager = () => {
     item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  console.log("Filtered content:", filteredContent);
 
   return (
     <div className="p-6 space-y-6">
@@ -122,8 +143,8 @@ export const ContentManager = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
           <p>Loading...</p>
-        ) : (
-          filteredContent?.map((item) => (
+        ) : filteredContent && filteredContent.length > 0 ? (
+          filteredContent.map((item) => (
             <Card 
               key={item.id} 
               className="p-6 hover:shadow-lg transition-shadow"
@@ -184,6 +205,10 @@ export const ContentManager = () => {
               </div>
             </Card>
           ))
+        ) : (
+          <div className="col-span-full text-center py-8">
+            <p className="text-muted-foreground">No content found</p>
+          </div>
         )}
       </div>
     </div>
