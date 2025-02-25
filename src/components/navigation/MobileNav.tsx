@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, ArrowLeft } from 'lucide-react';
+import { ChevronRight, ArrowLeft, Layers } from 'lucide-react';
 import type { MenuCategory, MenuItem } from '@/types/navigation';
 
 interface MobileNavProps {
@@ -14,6 +14,17 @@ interface SubcategoryViewProps {
   onBack: () => void;
   onClose: () => void;
 }
+
+// Helper function to get category image based on slug
+const getCategoryImage = (slug: string): string => {
+  const images: Record<string, string> = {
+    technology: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d',
+    console: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e',
+    'ai-software': 'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7',
+    'outdoor-gadgets': 'https://images.unsplash.com/photo-1487887235947-a955ef187fcc'
+  };
+  return images[slug] || images.technology;
+};
 
 const SubcategoryView = ({ category, onBack, onClose }: SubcategoryViewProps) => (
   <div className="animate-slide-in-right h-full">
@@ -76,32 +87,59 @@ export const MobileNav = ({ categories, onClose }: MobileNavProps) => {
           <div className="sticky top-0 bg-white z-10 border-b">
             <h2 className="p-4 text-xl font-semibold">Menu</h2>
           </div>
-          <div className="divide-y">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
             {categories.map((category) => (
-              <div key={category.id}>
+              <div 
+                key={category.id}
+                className="glass-panel hover-card overflow-hidden"
+              >
                 {category.type === 'megamenu' ? (
                   <button
                     onClick={() => setSelectedCategory(category)}
-                    className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                    className="w-full h-full"
                   >
-                    <div>
-                      <h3 className="text-lg font-medium">{category.name}</h3>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {category.items?.length} items
-                      </p>
+                    <div className="relative">
+                      <div className="aspect-[16/9] overflow-hidden">
+                        <img
+                          src={getCategoryImage(category.slug)}
+                          alt={category.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/20" />
+                      <div className="absolute bottom-0 left-0 right-0 p-4 text-left">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xl font-semibold text-white">
+                            {category.name}
+                          </h3>
+                          <ChevronRight size={20} className="text-white" />
+                        </div>
+                        <p className="text-sm text-white/80 mt-1 flex items-center gap-1">
+                          <Layers size={16} />
+                          {category.items?.length} items
+                        </p>
+                      </div>
                     </div>
-                    <ChevronRight 
-                      size={20}
-                      className="text-gray-400"
-                    />
                   </button>
                 ) : (
                   <Link
                     to={`/${category.slug}`}
                     onClick={onClose}
-                    className="block p-4 hover:bg-gray-50 transition-colors"
+                    className="block relative"
                   >
-                    <h3 className="text-lg font-medium">{category.name}</h3>
+                    <div className="aspect-[16/9] overflow-hidden">
+                      <img
+                        src={getCategoryImage(category.slug)}
+                        alt={category.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/20" />
+                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                      <h3 className="text-xl font-semibold text-white">
+                        {category.name}
+                      </h3>
+                    </div>
                   </Link>
                 )}
               </div>
