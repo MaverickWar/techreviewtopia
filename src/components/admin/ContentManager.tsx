@@ -16,6 +16,32 @@ import { useQuery } from "@tanstack/react-query";
 import { ImportContent } from "./ImportContent";
 import { ContentType } from "@/types/navigation";
 
+// Type guard to check if the type is valid
+const isValidContentType = (type: string): type is ContentType['type'] => {
+  return type === 'article' || type === 'review';
+};
+
+// Transform raw data to match ContentType
+const transformContent = (rawContent: any): ContentType => {
+  if (!isValidContentType(rawContent.type)) {
+    throw new Error(`Invalid content type: ${rawContent.type}`);
+  }
+
+  return {
+    id: rawContent.id,
+    title: rawContent.title,
+    description: rawContent.description,
+    content: rawContent.content,
+    type: rawContent.type,
+    status: rawContent.status,
+    featured_image: rawContent.featured_image,
+    created_at: rawContent.created_at,
+    author_id: rawContent.author_id,
+    page_id: rawContent.page_id,
+    published_at: rawContent.published_at
+  };
+};
+
 export const ContentManager = () => {
   const [contentList, setContentList] = useState<ContentType[]>([]);
 
@@ -30,7 +56,8 @@ export const ContentManager = () => {
         throw new Error(error.message);
       }
 
-      return data;
+      // Transform the data to ensure it matches ContentType
+      return data.map(transformContent);
     }
   });
 
