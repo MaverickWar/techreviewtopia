@@ -3,7 +3,9 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { PageLayout } from "@/components/layouts/PageLayout";
+import { ContentPageLayout } from "@/components/layouts/ContentPageLayout";
+import { Star, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const SubcategoryPage = () => {
   const { categorySlug, subcategorySlug } = useParams();
@@ -11,7 +13,6 @@ export const SubcategoryPage = () => {
   const { data: pageData, isLoading } = useQuery({
     queryKey: ['subcategory', categorySlug, subcategorySlug],
     queryFn: async () => {
-      // First get the menu item (subcategory)
       const { data: menuCategory, error: categoryError } = await supabase
         .from('menu_categories')
         .select('*')
@@ -31,7 +32,6 @@ export const SubcategoryPage = () => {
       if (menuItemError) throw menuItemError;
       if (!menuItem) return null;
 
-      // Get the page associated with this subcategory
       const { data: page, error: pageError } = await supabase
         .from('pages')
         .select(`
@@ -58,62 +58,101 @@ export const SubcategoryPage = () => {
   });
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <ContentPageLayout
+        header={{
+          title: "Loading...",
+          subtitle: "Please wait while we load the content"
+        }}
+      >
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+        </div>
+      </ContentPageLayout>
+    );
   }
 
   if (!pageData || !pageData.menuItem) {
-    return <div>Subcategory not found</div>;
+    return (
+      <ContentPageLayout
+        header={{
+          title: "Page Not Found",
+          subtitle: "The requested page could not be found"
+        }}
+      >
+        <div className="text-center py-8">
+          <p className="text-gray-600">
+            Please check the URL and try again
+          </p>
+          <Link to="/" className="text-blue-600 hover:underline mt-4 inline-block">
+            Return to Home
+          </Link>
+        </div>
+      </ContentPageLayout>
+    );
   }
 
-  const { menuItem, page } = pageData;
+  const { category, menuItem, page } = pageData;
 
   return (
-    <PageLayout>
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8">{menuItem.name}</h1>
-        
-        {menuItem.description && (
-          <p className="text-xl text-gray-600 mb-8">{menuItem.description}</p>
-        )}
+    <ContentPageLayout
+      header={{
+        title: menuItem.name,
+        subtitle: menuItem.description,
+        category: category.name
+      }}
+    >
+      {page?.page_content?.map(({ content }) => {
+        if (!content) return null;
 
-        {/* Content Grid */}
-        {page?.page_content && page.page_content.length > 0 ? (
-          <div className="grid grid-cols-1 gap-8">
-            {page.page_content.map(({ content }) => {
-              if (!content) return null;
-
-              // Get the first review details if it exists
-              const reviewDetails = content.review_details?.[0];
-
-              return (
-                <Card key={content.id} className="p-6">
-                  <h2 className="text-2xl font-semibold mb-4">{content.title}</h2>
-                  {content.description && (
-                    <p className="text-gray-600 mb-4">{content.description}</p>
-                  )}
-                  {content.type === 'review' && reviewDetails && (
-                    <div className="mt-4">
-                      {reviewDetails.overall_score !== null && (
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">Overall Score:</span>
-                          <span>{reviewDetails.overall_score}</span>
-                        </div>
-                      )}
+        return (
+          <div key={content.id} className="mb-8 last:mb-0">
+            <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+              {content.featured_image && (
+                <div className="aspect-video w-full">
+                  <img
+                    src={content.featured_image}
+                    alt={content.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              <div className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-sm text-gray-500">
+                    {new Date(content.created_at).toLocaleDateString()}
+                  </span>
+                  {content.type === 'review' && content.review_details?.[0] && (
+                    <div className="flex items-center gap-1 text-yellow-500">
+                      <Star className="h-4 w-4 fill-current" />
+                      <span className="font-medium">
+                        {content.review_details[0].overall_score.toFixed(1)}
+                      </span>
                     </div>
                   )}
-                  {content.content && (
-                    <div className="mt-4 prose max-w-none">
-                      {content.content}
-                    </div>
-                  )}
-                </Card>
-              );
-            })}
+                </div>
+                
+                <h2 className="text-2xl font-semibold mb-3 text-gray-900">
+                  {content.title}
+                </h2>
+                
+                {content.description && (
+                  <p className="text-gray-600 mb-4">{content.description}</p>
+                )}
+
+                <Link
+                  to={`/${categorySlug}/${subcategorySlug}/${content.slug}`}
+                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Read full {content.type} <ArrowRight size={16} />
+                </Link>
+              </div>
+            </Card>
           </div>
-        ) : (
-          <p className="text-gray-600">No content available yet.</p>
-        )}
-      </div>
-    </PageLayout>
+        );
+      })}
+    </ContentPageLayout>
   );
 };

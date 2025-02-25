@@ -4,15 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { PageLayout } from "@/components/layouts/PageLayout";
+import { ContentPageLayout } from "@/components/layouts/ContentPageLayout";
+import { ArrowRight } from "lucide-react";
 
 export const CategoryPage = () => {
   const { categorySlug } = useParams();
 
-  const { data: categoryData, isLoading: categoryLoading } = useQuery({
+  const { data: categoryData, isLoading } = useQuery({
     queryKey: ['category', categorySlug],
     queryFn: async () => {
-      // First get the menu category
       const { data: menuCategory, error: menuError } = await supabase
         .from('menu_categories')
         .select('*')
@@ -22,7 +22,6 @@ export const CategoryPage = () => {
       if (menuError) throw menuError;
       if (!menuCategory) return null;
 
-      // Get the page associated with this category
       const { data: page, error: pageError } = await supabase
         .from('pages')
         .select(`
@@ -40,7 +39,6 @@ export const CategoryPage = () => {
 
       if (pageError) throw pageError;
 
-      // Get subcategories (menu items)
       const { data: menuItems, error: itemsError } = await supabase
         .from('menu_items')
         .select('*')
@@ -57,81 +55,131 @@ export const CategoryPage = () => {
     }
   });
 
-  if (categoryLoading) {
-    return <div>Loading...</div>;
+  if (isLoading) {
+    return (
+      <ContentPageLayout 
+        header={{
+          title: "Loading...",
+          subtitle: "Please wait while we load the content"
+        }}
+      >
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+        </div>
+      </ContentPageLayout>
+    );
   }
 
   if (!categoryData || !categoryData.category) {
-    return <div>Category not found</div>;
+    return (
+      <ContentPageLayout
+        header={{
+          title: "Category Not Found",
+          subtitle: "The requested category could not be found"
+        }}
+      >
+        <div className="text-center py-8">
+          <p className="text-gray-600">
+            Please check the URL and try again
+          </p>
+          <Link to="/" className="text-blue-600 hover:underline mt-4 inline-block">
+            Return to Home
+          </Link>
+        </div>
+      </ContentPageLayout>
+    );
   }
 
   const { category, page, subcategories } = categoryData;
 
   return (
-    <PageLayout>
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8">{category.name}</h1>
-
-        {/* Featured Content Section */}
-        {page?.template_type === 'featured' && page.page_content && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-semibold mb-6">Featured</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {page.page_content.map(({ content }) => (
-                content && (
-                  <Card key={content.id} className="p-6">
-                    <h3 className="font-semibold text-xl mb-2">{content.title}</h3>
+    <ContentPageLayout
+      header={{
+        title: category.name,
+        subtitle: category.description || `Explore our ${category.name} collection`,
+      }}
+    >
+      {/* Featured Content Section */}
+      {page?.template_type === 'featured' && page.page_content && (
+        <div className="mb-12">
+          <h2 className="text-2xl font-semibold mb-6 text-gray-900">Featured</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {page.page_content.map(({ content }) => (
+              content && (
+                <Card key={content.id} className="hover:shadow-lg transition-shadow">
+                  {content.featured_image && (
+                    <div className="aspect-video w-full overflow-hidden rounded-t-lg">
+                      <img 
+                        src={content.featured_image} 
+                        alt={content.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="p-6">
+                    <h3 className="font-semibold text-xl mb-2 text-gray-900">
+                      {content.title}
+                    </h3>
                     {content.description && (
                       <p className="text-gray-600 mb-4">{content.description}</p>
                     )}
-                    {/* Add more content details as needed */}
-                  </Card>
-                )
-              ))}
-            </div>
+                    <Link 
+                      to={`/${categorySlug}/${content.slug}`}
+                      className="text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+                    >
+                      Read more <ArrowRight size={16} />
+                    </Link>
+                  </div>
+                </Card>
+              )
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Subcategories Grid */}
-        {subcategories && subcategories.length > 0 && (
-          <div>
-            <h2 className="text-2xl font-semibold mb-6">Browse {category.name}</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {subcategories.map((subcategory) => (
-                <Link
-                  key={subcategory.id}
-                  to={`/${categorySlug}/${subcategory.slug}`}
-                  className="group"
-                >
-                  <Card className="overflow-hidden">
-                    {subcategory.image_url ? (
-                      <div className="aspect-video">
-                        <img
-                          src={subcategory.image_url}
-                          alt={subcategory.name}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                      </div>
-                    ) : (
-                      <div className="aspect-video bg-gray-100 flex items-center justify-center">
-                        <span className="text-gray-400">{subcategory.name}</span>
-                      </div>
-                    )}
-                    <div className="p-4">
-                      <h3 className="font-semibold text-lg group-hover:text-orange-500 transition-colors">
-                        {subcategory.name}
-                      </h3>
-                      {subcategory.description && (
-                        <p className="text-gray-600 mt-2">{subcategory.description}</p>
-                      )}
+      {/* Subcategories Grid */}
+      {subcategories && subcategories.length > 0 && (
+        <div>
+          <h2 className="text-2xl font-semibold mb-6 text-gray-900">
+            Browse {category.name}
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {subcategories.map((subcategory) => (
+              <Link
+                key={subcategory.id}
+                to={`/${categorySlug}/${subcategory.slug}`}
+                className="group"
+              >
+                <Card className="overflow-hidden h-full hover:shadow-lg transition-all duration-300">
+                  {subcategory.image_url ? (
+                    <div className="aspect-video">
+                      <img
+                        src={subcategory.image_url}
+                        alt={subcategory.name}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
                     </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
+                  ) : (
+                    <div className="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                      <span className="text-gray-600 font-medium">{subcategory.name}</span>
+                    </div>
+                  )}
+                  <div className="p-6">
+                    <h3 className="font-semibold text-lg group-hover:text-blue-600 transition-colors">
+                      {subcategory.name}
+                    </h3>
+                    {subcategory.description && (
+                      <p className="text-gray-600 mt-2 line-clamp-2">{subcategory.description}</p>
+                    )}
+                  </div>
+                </Card>
+              </Link>
+            ))}
           </div>
-        )}
-      </div>
-    </PageLayout>
+        </div>
+      )}
+    </ContentPageLayout>
   );
 };
