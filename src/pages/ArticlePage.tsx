@@ -6,6 +6,7 @@ import { ContentPageLayout } from "@/components/layouts/ContentPageLayout";
 import { Link } from "react-router-dom";
 import { Star, Calendar, User } from "lucide-react";
 import { format } from "date-fns";
+import { Database } from "@/integrations/supabase/types";
 
 interface ArticleData {
   id: string;
@@ -27,7 +28,7 @@ interface ArticleData {
 export const ArticlePage = () => {
   const { categorySlug, contentId } = useParams();
 
-  const { data: article, isLoading } = useQuery<ArticleData | null>({
+  const { data: article, isLoading } = useQuery({
     queryKey: ['article', contentId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -41,7 +42,13 @@ export const ArticlePage = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      if (!data) return null;
+
+      // Type assertion to ensure the data matches our ArticleData interface
+      return {
+        ...data,
+        type: data.type as "article" | "review"
+      } as ArticleData;
     },
   });
 
@@ -168,7 +175,7 @@ export const ArticlePage = () => {
                   {Object.entries(article.review_details[0].product_specs).map(([key, value]) => (
                     <div key={key} className="flex flex-col">
                       <dt className="text-sm font-medium text-gray-500">{key}</dt>
-                      <dd className="text-base text-gray-900">{value}</dd>
+                      <dd className="text-base text-gray-900">{String(value)}</dd>
                     </div>
                   ))}
                 </dl>

@@ -1,11 +1,12 @@
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import { PageLayout } from "@/components/layouts/PageLayout";
-import { IndexPage } from "@/pages/Index";
+import IndexPage from "@/pages/Index";
 import { CategoryPage } from "@/pages/CategoryPage";
 import { SubcategoryPage } from "@/pages/SubcategoryPage";
 import { ArticlePage } from "@/pages/ArticlePage";
-import { NotFound } from "@/pages/NotFound";
+import NotFound from "@/pages/NotFound";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { ContentManager } from "@/components/admin/ContentManager";
@@ -16,7 +17,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<PageLayout />}>
+        <Route path="/" element={<PageLayout><Outlet /></PageLayout>}>
           <Route index element={<IndexPage />} />
           <Route path=":categorySlug" element={<CategoryPage />} />
           <Route path=":categorySlug/:subcategorySlug" element={<SubcategoryPage />} />
