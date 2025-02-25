@@ -87,15 +87,17 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       overall_score: 0,
     }
   );
+  const [imageUploading, setImageUploading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Add user session check
-  const [currentUser, setCurrentUser] = useState<any>(null);
-
   useEffect(() => {
-    // Get the current user's session
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      console.log("Current user:", user);
       if (user) {
         setCurrentUser(user);
         setFormData(prev => ({
@@ -108,11 +110,104 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     getUser();
   }, []);
 
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [imageUploading, setImageUploading] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  // Image upload handler
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'featured' | 'gallery') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImageUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${crypto.randomUUID()}.${fileExt}`;
+      const { error: uploadError, data } = await supabase.storage
+        .from('images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      if (type === 'featured') {
+        setFormData(prev => ({ ...prev, featured_image: publicUrl }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          gallery: [...(prev.gallery || []), publicUrl]
+        }));
+      }
+
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to upload image",
+        variant: "destructive",
+      });
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
+  // Image removal handler
+  const handleRemoveImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      gallery: prev.gallery?.filter((_, i) => i !== index) || []
+    }));
+  };
+
+  // Product spec handlers
+  const addProductSpec = () => {
+    setFormData(prev => ({
+      ...prev,
+      product_specs: [...(prev.product_specs || []), { label: '', value: '' }]
+    }));
+  };
+
+  const updateProductSpec = (index: number, field: 'label' | 'value', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      product_specs: prev.product_specs?.map((spec, i) =>
+        i === index ? { ...spec, [field]: value } : spec
+      ) || []
+    }));
+  };
+
+  const removeProductSpec = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      product_specs: prev.product_specs?.filter((_, i) => i !== index) || []
+    }));
+  };
+
+  // Rating criterion handlers
+  const addRatingCriterion = () => {
+    setFormData(prev => ({
+      ...prev,
+      rating_criteria: [...(prev.rating_criteria || []), { name: '', score: 0 }]
+    }));
+  };
+
+  const updateRatingCriterion = (index: number, field: 'name' | 'score', value: string | number) => {
+    setFormData(prev => ({
+      ...prev,
+      rating_criteria: prev.rating_criteria?.map((criterion, i) =>
+        i === index ? { ...criterion, [field]: value } : criterion
+      ) || []
+    }));
+  };
+
+  const removeRatingCriterion = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      rating_criteria: prev.rating_criteria?.filter((_, i) => i !== index) || []
+    }));
+  };
 
   // Fetch existing content if we're editing
   const { data: existingContent } = useQuery({
