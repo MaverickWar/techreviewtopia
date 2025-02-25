@@ -16,17 +16,17 @@ export const MegaMenu = ({ category }: MegaMenuProps) => {
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
     >
-      <button className="flex items-center space-x-1 py-4 px-4 hover:text-orange-500">
+      <button className="flex items-center space-x-2 py-4 px-4 hover:text-orange-500 text-lg">
         <span>{category.name}</span>
-        <svg className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24">
+        <svg className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24">
           <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 9l6 6 6-6"/>
         </svg>
       </button>
 
       {isOpen && (
-        <div className="absolute left-1/2 -translate-x-1/2 bg-white shadow-lg border-t z-50 min-w-[600px]">
-          <div className="p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+        <div className="absolute left-1/2 -translate-x-1/2 bg-white shadow-lg border-t z-50 min-w-[1200px]">
+          <div className="p-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10">
               {category.items?.map((item) => (
                 <Link
                   key={item.id}
@@ -35,7 +35,7 @@ export const MegaMenu = ({ category }: MegaMenuProps) => {
                   onClick={() => setIsOpen(false)}
                 >
                   {item.imageUrl ? (
-                    <div className="aspect-video mb-3 overflow-hidden rounded-lg bg-gray-100">
+                    <div className="aspect-video mb-4 overflow-hidden rounded-lg bg-gray-100">
                       <img
                         src={item.imageUrl}
                         alt={item.name}
@@ -43,15 +43,15 @@ export const MegaMenu = ({ category }: MegaMenuProps) => {
                       />
                     </div>
                   ) : (
-                    <div className="aspect-video mb-3 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <span className="text-gray-400">{item.name}</span>
+                    <div className="aspect-video mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <span className="text-gray-400 text-lg">{item.name}</span>
                     </div>
                   )}
-                  <h3 className="font-medium group-hover/item:text-orange-500 transition-colors">
+                  <h3 className="font-medium text-xl group-hover/item:text-orange-500 transition-colors">
                     {item.name}
                   </h3>
                   {item.description && (
-                    <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                    <p className="text-base text-gray-600 mt-2">{item.description}</p>
                   )}
                 </Link>
               ))}
