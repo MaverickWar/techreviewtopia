@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -61,14 +60,28 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     queryKey: ['subcategories', selectedCategoryId],
     enabled: !!selectedCategoryId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('pages')
-        .select('id, title')
-        .eq('page_type', 'subcategory')
-        .eq('menu_category_id', selectedCategoryId);
-      
-      if (error) throw error;
-      return data;
+      // First get all child pages from the page_hierarchy table
+      const { data: hierarchyData, error: hierarchyError } = await supabase
+        .from('page_hierarchy')
+        .select('child_page_id')
+        .eq('parent_page_id', selectedCategoryId);
+
+      if (hierarchyError) throw hierarchyError;
+
+      // If we have child pages, get their details
+      if (hierarchyData && hierarchyData.length > 0) {
+        const childIds = hierarchyData.map(h => h.child_page_id);
+        const { data: pagesData, error: pagesError } = await supabase
+          .from('pages')
+          .select('id, title')
+          .eq('page_type', 'subcategory')
+          .in('id', childIds);
+
+        if (pagesError) throw pagesError;
+        return pagesData;
+      }
+
+      return [];
     },
   });
 
@@ -186,7 +199,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
               </select>
             </div>
 
-            {selectedCategoryId && subcategories && (
+            {selectedCategoryId && (
               <div>
                 <label className="block text-sm font-medium mb-1">Subcategory</label>
                 <select
@@ -197,7 +210,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
                   }
                 >
                   <option value="">Select a subcategory</option>
-                  {subcategories.map((subcategory) => (
+                  {subcategories?.map((subcategory) => (
                     <option key={subcategory.id} value={subcategory.id}>
                       {subcategory.title}
                     </option>
