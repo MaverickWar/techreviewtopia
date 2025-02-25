@@ -44,42 +44,34 @@ export const TopNav = () => {
   };
 
   useEffect(() => {
-    let mounted = true;
-
     const setupAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
         
-        if (mounted) {
-          setSession(session);
-          if (session?.user) {
-            await fetchProfile(session.user.id);
-          }
-          setLoading(false);
+        if (currentSession?.user) {
+          await fetchProfile(currentSession.user.id);
         }
+        
+        setLoading(false);
       } catch (error) {
         console.error('TopNav: Error in setupAuth:', error);
-        if (mounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
     setupAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (mounted) {
-        setSession(session);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        } else {
-          setAvatarUrl(null);
-        }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
+      setSession(currentSession);
+      if (currentSession?.user) {
+        await fetchProfile(currentSession.user.id);
+      } else {
+        setAvatarUrl(null);
       }
     });
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -195,6 +187,7 @@ export const TopNav = () => {
         isOpen={showSettingsDialog}
         onClose={() => {
           setShowSettingsDialog(false);
+          // Refresh the avatar after settings dialog closes
           if (session?.user) {
             fetchProfile(session.user.id);
           }
