@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { LayoutTemplate, FileText, LayoutGrid, Image as ImageIcon } from "lucide-react";
+import { LayoutTemplate, FileText, LayoutGrid, Image as ImageIcon, Loader2 } from "lucide-react";
 
 interface PageFormProps {
   initialData?: {
@@ -72,6 +73,37 @@ export const PageForm = ({ initialData }: PageFormProps) => {
       console.log('Valid categories:', validCategories);
       return validCategories;
     }
+  });
+
+  // Fetch existing menu categories and items
+  const { data: menuCategories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['menu_categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('menu_categories')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Fetch menu items when a category is selected
+  const { data: menuItems, isLoading: itemsLoading } = useQuery({
+    queryKey: ['menu_items', formData.menu_category_id],
+    queryFn: async () => {
+      if (!formData.menu_category_id) return [];
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('category_id', formData.menu_category_id)
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!formData.menu_category_id
   });
 
   const createMenuCategory = async (pageId: string, pageTitle: string, pageSlug: string) => {
@@ -155,42 +187,48 @@ export const PageForm = ({ initialData }: PageFormProps) => {
 
         if (updateError) throw updateError;
       }
-
       // If this is a new subcategory page
-      if (data.page_type === 'subcategory' && data.menu_category_id) {
+      else if (data.page_type === 'subcategory' && data.menu_category_id) {
         console.log('Creating subcategory with menu_category_id:', data.menu_category_id);
-        
-        // Update parent category to megamenu if it's not already
-        const { error: updateError } = await supabase
-          .from('menu_categories')
-          .update({ type: 'megamenu' })
-          .eq('id', data.menu_category_id);
 
-        if (updateError) throw updateError;
+        // Create menu item for subcategory if it doesn't exist
+        if (!data.menu_item_id) {
+          const { data: menuItem, error: menuItemError } = await supabase
+            .from('menu_items')
+            .insert([
+              {
+                category_id: data.menu_category_id,
+                name: data.title,
+                slug: data.slug,
+                description: data.description
+              }
+            ])
+            .select()
+            .single();
 
-        // Create menu item for subcategory
-        const { data: menuItem, error: menuItemError } = await supabase
-          .from('menu_items')
-          .insert([
-            {
-              category_id: data.menu_category_id,
+          if (menuItemError) throw menuItemError;
+
+          // Update page with menu_item_id
+          const { error: updatePageError } = await supabase
+            .from('pages')
+            .update({ menu_item_id: menuItem.id })
+            .eq('id', page.id);
+
+          if (updatePageError) throw updatePageError;
+        }
+        // If menu item exists, update it
+        else {
+          const { error: updateMenuItemError } = await supabase
+            .from('menu_items')
+            .update({
               name: data.title,
               slug: data.slug,
               description: data.description
-            }
-          ])
-          .select()
-          .single();
+            })
+            .eq('id', data.menu_item_id);
 
-        if (menuItemError) throw menuItemError;
-
-        // Update page with menu_item_id
-        const { error: updatePageError } = await supabase
-          .from('pages')
-          .update({ menu_item_id: menuItem.id })
-          .eq('id', page.id);
-
-        if (updatePageError) throw updatePageError;
+          if (updateMenuItemError) throw updateMenuItemError;
+        }
       }
 
       return page;
@@ -323,34 +361,70 @@ export const PageForm = ({ initialData }: PageFormProps) => {
             />
           </div>
 
-        {/* Updated Parent Category Selection */}
-        {formData.page_type === "subcategory" && (
-          <div className="space-y-2">
-            <label htmlFor="parentCategory" className="block text-sm font-medium">
-              Parent Category
-            </label>
-            <select
-              id="parentCategory"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={formData.menu_category_id || ""}
-              onChange={(e) => {
-                console.log('Selected category ID:', e.target.value);
-                setFormData((prev) => ({
-                  ...prev,
-                  menu_category_id: e.target.value || undefined
-                }));
-              }}
-              required
-            >
-              <option value="">Select a parent category</option>
-              {categories?.map((category) => (
-                <option key={category.id} value={category.menu_category_id}>
-                  {category.title} {/* Display the page title */}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+          {/* Menu Category Selection */}
+          {formData.page_type === "subcategory" && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">Category</label>
+                {categoriesLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Loading categories...</span>
+                  </div>
+                ) : (
+                  <select
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={formData.menu_category_id || ""}
+                    onChange={(e) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        menu_category_id: e.target.value || undefined,
+                        menu_item_id: undefined // Reset menu item when category changes
+                      }));
+                    }}
+                    required
+                  >
+                    <option value="">Select a category</option>
+                    {menuCategories?.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {formData.menu_category_id && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">Menu Item</label>
+                  {itemsLoading ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Loading items...</span>
+                    </div>
+                  ) : (
+                    <select
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={formData.menu_item_id || ""}
+                      onChange={(e) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          menu_item_id: e.target.value || undefined
+                        }));
+                      }}
+                    >
+                      <option value="">Create new item</option>
+                      {menuItems?.map(item => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Template Selection */}
           <div className="space-y-2">
