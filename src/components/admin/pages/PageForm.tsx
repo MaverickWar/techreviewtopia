@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -43,11 +42,12 @@ export const PageForm = ({ initialData }: PageFormProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fix the categories query to include menu_category_id
+  // Fix the categories query to correctly fetch categories with menu_category_id
   const { data: categories } = useQuery({
     queryKey: ['parent_categories'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First, get pages that are categories
+      const { data: categoryPages, error: pagesError } = await supabase
         .from('pages')
         .select(`
           id,
@@ -55,10 +55,14 @@ export const PageForm = ({ initialData }: PageFormProps) => {
           menu_category_id
         `)
         .eq('page_type', 'category')
-        .not('menu_category_id', 'is', null) // Fixed: Using .not('column', 'is', null) instead of .is()
         .order('title');
-      if (error) throw error;
-      return data;
+
+      if (pagesError) throw pagesError;
+
+      // Filter out pages without menu_category_id in JavaScript
+      const validCategories = categoryPages.filter(page => page.menu_category_id !== null);
+      
+      return validCategories;
     }
   });
 
@@ -294,7 +298,7 @@ export const PageForm = ({ initialData }: PageFormProps) => {
                 required
               >
                 <option value="">Select a parent category</option>
-                {categories.map((category) => (
+                {categories?.map((category) => (
                   <option key={category.id} value={category.menu_category_id}>
                     {category.title}
                   </option>
