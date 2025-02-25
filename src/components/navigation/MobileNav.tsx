@@ -47,9 +47,9 @@ const SubcategoryView = ({ category, onBack, onClose }: SubcategoryViewProps) =>
           className="group block"
         >
           <div className="aspect-video mb-2 overflow-hidden rounded-lg bg-gray-100">
-            {item.imageUrl ? (
+            {item.image_url ? (
               <img
-                src={item.imageUrl}
+                src={item.image_url}
                 alt={item.name}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               />
