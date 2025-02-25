@@ -199,6 +199,9 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         }
       }
 
+      // Ensure gallery is always an array
+      const gallery = Array.isArray(reviewDetails?.gallery) ? reviewDetails.gallery : [];
+
       setFormData({
         id: existingContent.id,
         title: existingContent.title,
@@ -208,8 +211,8 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         status: existingContent.status as ContentStatus,
         author_id: existingContent.author_id,
         page_id: existingContent.page_content?.[0]?.page_id || null,
-        featured_image: existingContent.featured_image,
-        gallery: reviewDetails?.gallery || [],
+        featured_image: existingContent.featured_image || null,
+        gallery: gallery,
         product_specs: productSpecs,
         rating_criteria: existingContent.rating_criteria || [],
         overall_score: reviewDetails?.overall_score || 0,
@@ -648,113 +651,117 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             </AccordionItem>
 
             
-            <AccordionItem value="media">
-              <AccordionTrigger>Media</AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-4">
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Featured Image</label>
-                    <div className="flex items-center gap-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('featured-image')?.click()}
-                        disabled={imageUploading}
-                      >
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload Image
-                      </Button>
-                      <input
-                        id="featured-image"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handleImageUpload(e, 'featured')}
-                      />
-                      {formData.featured_image && (
-                        <div className="relative">
-                          <img
-                            src={formData.featured_image}
-                            alt="Featured"
-                            className="h-20 w-20 object-cover rounded"
-                          />
-                          <button
-                            type="button"
-                            className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full"
-                            onClick={() => setFormData(prev => ({ ...prev, featured_image: null }))}
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Gallery</label>
-                    <div className="space-y-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('gallery-image')?.click()}
-                        disabled={imageUploading}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add to Gallery
-                      </Button>
-                      <input
-                        id="gallery-image"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handleImageUpload(e, 'gallery')}
-                      />
-                      <div className="grid grid-cols-4 gap-4 mt-4">
-                        {formData.gallery?.map((image, index) => (
-                          <div key={index} className="relative">
-                            <img
-                              src={image}
-                              alt={`Gallery ${index + 1}`}
-                              className="h-24 w-24 object-cover rounded"
-                            />
-                            <button
-                              type="button"
-                              className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full"
-                              onClick={() => handleRemoveImage(index)}
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ))}
+          <AccordionItem value="media">
+            <AccordionTrigger>Media</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4">
+                {/* Featured Image */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Featured Image</label>
+                  <div className="flex items-center gap-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('featured-image')?.click()}
+                      disabled={imageUploading}
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Image
+                    </Button>
+                    <input
+                      id="featured-image"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleImageUpload(e, 'featured')}
+                    />
+                    {formData.featured_image && (
+                      <div className="relative">
+                        <img
+                          src={formData.featured_image}
+                          alt="Featured"
+                          className="h-20 w-20 object-cover rounded"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                          onClick={() => setFormData(prev => ({ ...prev, featured_image: null }))}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
                       </div>
-                    </div>
+                    )}
                   </div>
+                </div>
 
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">YouTube Video URL</label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="url"
-                        value={formData.youtube_url || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, youtube_url: e.target.value }))}
-                        placeholder="https://youtube.com/watch?v=..."
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setFormData(prev => ({ ...prev, youtube_url: null }))}
-                        disabled={!formData.youtube_url}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                {/* Gallery */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Gallery</label>
+                  <div className="space-y-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('gallery-image')?.click()}
+                      disabled={imageUploading}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add to Gallery
+                    </Button>
+                    <input
+                      id="gallery-image"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleImageUpload(e, 'gallery')}
+                    />
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {formData.gallery?.map((image, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={image}
+                            alt={`Gallery ${index + 1}`}
+                            className="h-24 w-24 object-cover rounded"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                            onClick={() => handleRemoveImage(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
+
+                {/* YouTube URL */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">YouTube Video URL</label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="url"
+                      value={formData.youtube_url || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, youtube_url: e.target.value }))}
+                      placeholder="https://youtube.com/watch?v=..."
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setFormData(prev => ({ ...prev, youtube_url: null }))}
+                      disabled={!formData.youtube_url}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
 
             
             {formData.type === 'review' && (
