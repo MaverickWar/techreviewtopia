@@ -9,17 +9,9 @@ import {
   Star, 
   Image, 
   Code,
-  CheckCircle2,
-  ChevronDown
+  CheckCircle2
 } from "lucide-react";
 import { LayoutOption, LAYOUT_OPTIONS, ContentType } from "@/types/content";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 
 interface LayoutSelectorProps {
   contentType: ContentType;
@@ -44,9 +36,6 @@ export const LayoutSelector = ({
     }
   }, [contentType, selectedLayout, availableLayouts, onChange]);
 
-  // Get the selected layout object
-  const selectedLayoutOption = availableLayouts.find(l => l.id === selectedLayout) || availableLayouts[0];
-
   // Map layout icon string to component
   const getLayoutIcon = (iconName: string) => {
     switch (iconName) {
@@ -59,76 +48,29 @@ export const LayoutSelector = ({
     }
   };
 
-  // Small screen dropdown version
-  const renderDropdownSelector = () => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button 
-          variant="outline" 
-          className="w-full flex justify-between items-center mb-4 md:hidden"
-        >
-          <div className="flex items-center">
-            <div className="p-2 rounded-md mr-2 bg-blue-100 text-blue-600">
-              {getLayoutIcon(selectedLayoutOption.icon)}
-            </div>
-            <span>{selectedLayoutOption.name}</span>
-          </div>
-          <ChevronDown className="h-4 w-4 ml-2" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-full min-w-[200px] bg-white">
-        {availableLayouts.map((layout) => (
-          <DropdownMenuItem 
-            key={layout.id}
-            onClick={() => onChange(layout.id)}
-            className="cursor-pointer"
-          >
-            <div className="flex items-center w-full">
-              <div className={`p-1 rounded-md mr-2 ${
-                selectedLayout === layout.id 
-                  ? 'bg-blue-100 text-blue-600' 
-                  : 'bg-gray-100 text-gray-600'
-              }`}>
-                {getLayoutIcon(layout.icon)}
-              </div>
-              <span>{layout.name}</span>
-              {selectedLayout === layout.id && (
-                <CheckCircle2 className="h-4 w-4 text-blue-500 ml-auto" />
-              )}
-            </div>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Select Layout Template</h3>
       </div>
       
-      {/* Mobile dropdown */}
-      {renderDropdownSelector()}
-      
-      {/* Radio group for larger screens */}
       <RadioGroup
         value={selectedLayout}
         onValueChange={onChange}
-        className="hidden md:grid md:grid-cols-3 gap-4"
+        className="grid grid-cols-1 md:grid-cols-3 gap-4"
       >
         {availableLayouts.map((layout) => (
           <div key={layout.id} className="relative">
             <RadioGroupItem
               value={layout.id}
               id={`layout-${layout.id}`}
-              className="sr-only peer"
+              className="sr-only"
             />
             <Label
               htmlFor={`layout-${layout.id}`}
               className="cursor-pointer"
             >
-              <Card className={`h-full p-4 transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-blue-500 ${
+              <Card className={`h-full p-4 transition-all ${
                 selectedLayout === layout.id 
                   ? 'border-2 border-blue-500 shadow-md' 
                   : 'hover:border-gray-300'
