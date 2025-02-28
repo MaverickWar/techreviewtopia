@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -14,7 +15,8 @@ import {
   Plus,
   Minus,
   Upload,
-  X
+  X,
+  Layout
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -23,15 +25,15 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { LayoutSelector } from "./LayoutSelector";
+import { LayoutPreview } from "./LayoutPreview";
+import { ContentType, ContentStatus, LayoutTemplate, ArticleData } from "@/types/content";
 
-type ContentType = "article" | "review";
-type ContentStatus = "draft" | "published";
-
-interface RatingCriterion {
+type RatingCriterion = {
   name: string;
   score: number;
   review_id?: string;
-}
+};
 
 interface ProductSpec {
   label: string;
@@ -63,6 +65,8 @@ interface ContentFormData {
   rating_criteria?: RatingCriterion[];
   overall_score?: number;
   review_details?: ReviewDetails;
+  layout_template?: LayoutTemplate;
+  layout_settings?: Record<string, any>;
 }
 
 interface ContentFormProps {
@@ -85,6 +89,8 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       product_specs: [],
       rating_criteria: [],
       overall_score: 0,
+      layout_template: "classic",
+      layout_settings: {}
     }
   );
   const [imageUploading, setImageUploading] = useState(false);
@@ -217,6 +223,8 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         rating_criteria: existingContent.rating_criteria || [],
         overall_score: reviewDetails?.overall_score || 0,
         youtube_url: reviewDetails?.youtube_url || null,
+        layout_template: existingContent.layout_template as LayoutTemplate || "classic",
+        layout_settings: existingContent.layout_settings || {}
       });
 
       if (existingContent.page_content?.[0]?.pages?.menu_category_id) {
@@ -358,6 +366,14 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     }));
   };
 
+  // Handle layout template change
+  const handleLayoutChange = (layoutTemplate: string) => {
+    setFormData(prev => ({
+      ...prev,
+      layout_template: layoutTemplate as LayoutTemplate
+    }));
+  };
+
   const mutation = useMutation({
     mutationFn: async (data: ContentFormData) => {
       console.log("Submitting content with data:", data);
@@ -423,6 +439,8 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
           status: data.status,
           author_id: data.author_id,
           featured_image: data.featured_image,
+          layout_template: data.layout_template,
+          layout_settings: data.layout_settings
         })
         .select()
         .single();
@@ -542,6 +560,27 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     mutation.mutate(formData);
   };
 
+  // Preview data for layout preview
+  const previewArticle: Partial<ArticleData> = {
+    id: formData.id || "preview",
+    title: formData.title,
+    description: formData.description,
+    content: formData.content,
+    type: formData.type,
+    featured_image: formData.featured_image,
+    layout_template: formData.layout_template,
+    published_at: new Date().toISOString(),
+    review_details: formData.type === "review" ? [{
+      id: "preview",
+      content_id: formData.id || "preview",
+      youtube_url: formData.youtube_url || null,
+      gallery: formData.gallery || [],
+      product_specs: formData.product_specs || [],
+      overall_score: formData.overall_score || 0
+    }] : [],
+    rating_criteria: formData.rating_criteria
+  };
+
   return (
     <form onSubmit={handleSubmit}>
       <Card className="max-w-4xl mx-auto">
@@ -621,6 +660,44 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
               </AccordionContent>
             </AccordionItem>
 
+            {/* New Layout Accordion Item */}
+            <AccordionItem value="layout">
+              <AccordionTrigger>
+                <div className="flex items-center gap-2">
+                  <Layout className="h-4 w-4" />
+                  <span>Layout Template</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-6">
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-500 mb-4">
+                      Choose a layout template to determine how your content will be displayed to readers.
+                      Each layout is optimized for different types of content.
+                    </p>
+                  
+                    <LayoutSelector
+                      contentType={formData.type}
+                      selectedLayout={formData.layout_template || "classic"}
+                      onChange={handleLayoutChange}
+                    />
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-lg font-medium mb-3">Preview</h3>
+                    <div className="border rounded-lg overflow-hidden">
+                      <LayoutPreview
+                        article={previewArticle as ArticleData}
+                        selectedLayout={formData.layout_template || "classic"}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 italic mt-2">
+                      This is a preview of how your content will appear with the selected layout. The actual rendering may vary slightly.
+                    </p>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
             
             <AccordionItem value="categories">
               <AccordionTrigger>Categories</AccordionTrigger>
