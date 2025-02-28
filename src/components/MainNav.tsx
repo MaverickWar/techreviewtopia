@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useNavigation } from '@/hooks/useNavigation';
@@ -9,6 +9,9 @@ import { MobileNav } from './navigation/MobileNav';
 export const MainNav = () => {
   const { data: categories, isLoading } = useNavigation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+  const menuContainerRef = useRef<HTMLDivElement>(null);
 
   // Prevent scrolling when mobile menu is open
   useEffect(() => {
@@ -22,8 +25,17 @@ export const MainNav = () => {
     };
   }, [isMobileMenuOpen]);
 
+  // Handle mouse leave for the entire nav
+  const handleNavMouseLeave = () => {
+    setActiveMegaMenu(null);
+  };
+
   return (
-    <nav className="bg-white border-b sticky top-0 z-50">
+    <nav 
+      className="bg-white border-b sticky top-0 z-50"
+      onMouseLeave={handleNavMouseLeave}
+      ref={navRef}
+    >
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center">
           <Link 
@@ -34,15 +46,21 @@ export const MainNav = () => {
           </Link>
           
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center">
+          <div className="hidden md:flex items-center" ref={menuContainerRef}>
             {!isLoading && categories?.map((category) => (
               category.type === 'megamenu' ? (
-                <MegaMenu key={category.id} category={category} />
+                <MegaMenu 
+                  key={category.id} 
+                  category={category} 
+                  isActive={activeMegaMenu === category.id}
+                  onMouseEnter={() => setActiveMegaMenu(category.id)}
+                />
               ) : (
                 <Link
                   key={category.id}
                   to={`/${category.slug}`}
-                  className="py-4 px-4 hover:text-orange-500"
+                  className="py-4 px-4 hover:text-orange-500 transition-colors duration-200"
+                  onMouseEnter={() => setActiveMegaMenu(null)}
                 >
                   {category.name}
                 </Link>
@@ -60,6 +78,56 @@ export const MainNav = () => {
           </button>
         </div>
       </div>
+
+      {/* Global Mega Menu Container */}
+      {activeMegaMenu && !isLoading && categories && (
+        <div className="absolute left-0 w-full bg-white shadow-lg border-t z-50 animate-fade-in">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="py-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10">
+                {categories
+                  .find(category => category.id === activeMegaMenu)
+                  ?.items?.map((item) => (
+                    <Link
+                      key={item.id}
+                      to={`/${categories.find(c => c.id === activeMegaMenu)?.slug}/${item.slug}`}
+                      className="group/item"
+                      onClick={() => setActiveMegaMenu(null)}
+                    >
+                      {item.image_url ? (
+                        <div className="aspect-video mb-4 overflow-hidden rounded-lg bg-gray-100">
+                          <img
+                            src={item.image_url}
+                            alt={item.name}
+                            className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                      ) : (
+                        <div className="aspect-video mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
+                          <span className="text-gray-400 text-lg">{item.name}</span>
+                        </div>
+                      )}
+                      <h3 className="font-medium text-xl group-hover/item:text-orange-500 transition-colors">
+                        {item.name}
+                      </h3>
+                      {item.description && (
+                        <p className="text-base text-gray-600 mt-2">{item.description}</p>
+                      )}
+                    </Link>
+                  ))
+                }
+              </div>
+            </div>
+          </div>
+          
+          {/* Overlay for mouse events outside the mega menu */}
+          <div 
+            className="fixed inset-0 bg-black/5 -z-10"
+            onClick={() => setActiveMegaMenu(null)}
+            style={{ top: navRef.current?.offsetHeight + 'px' }}
+          />
+        </div>
+      )}
 
       {/* Enhanced Mobile Navigation */}
       {isMobileMenuOpen && !isLoading && categories && (
