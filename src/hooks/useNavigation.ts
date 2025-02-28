@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { MenuCategory, MenuItem } from '@/types/navigation';
+import type { MenuCategory, MenuItem, MenuType } from '@/types/navigation';
 
 export const useNavigation = () => {
   console.log("🔍 useNavigation hook called");
@@ -49,12 +49,12 @@ export const useNavigation = () => {
           console.warn("⚠️ No categories fetched from database");
           
           // Since we have no data yet for development/testing, return some mock data
-          return [
+          const mockData: MenuCategory[] = [
             {
               id: "mock-tech",
               name: "Technology",
               slug: "technology",
-              type: "megamenu",
+              type: "megamenu" as MenuType,
               order_index: 0,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
@@ -68,6 +68,7 @@ export const useNavigation = () => {
                   category_id: "mock-tech",
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString(),
+                  image_url: null
                 },
                 {
                   id: "mock-phones",
@@ -78,6 +79,7 @@ export const useNavigation = () => {
                   category_id: "mock-tech",
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString(),
+                  image_url: null
                 }
               ]
             },
@@ -85,13 +87,14 @@ export const useNavigation = () => {
               id: "mock-software",
               name: "Software",
               slug: "software",
-              type: "standard",
+              type: "standard" as MenuType,
               order_index: 1,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
               items: []
             }
           ];
+          return mockData;
         }
 
         // Create a map for faster item lookup
@@ -139,12 +142,12 @@ export const useNavigation = () => {
         console.error('🔥 Critical error in useNavigation hook:', error);
         // Return mock data for development when there's an error
         console.warn('⚠️ Using fallback mock data for navigation');
-        return [
+        const fallbackData: MenuCategory[] = [
           {
             id: "fallback-tech",
             name: "Technology",
             slug: "technology",
-            type: "megamenu",
+            type: "megamenu" as MenuType,
             order_index: 0,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -158,10 +161,12 @@ export const useNavigation = () => {
                 category_id: "fallback-tech",
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
+                image_url: null
               }
             ]
           }
         ];
+        return fallbackData;
       }
     },
     staleTime: 300000, // Cache for 5 minutes to improve performance
