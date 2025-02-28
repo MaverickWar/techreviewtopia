@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AuthFormProps {
   mode?: 'login' | 'register';
@@ -18,6 +19,7 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
   const [password, setPassword] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,6 +98,11 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
         if (!signInData.user) {
           throw new Error("Login failed - no user data returned");
         }
+
+        // Immediately invalidate the auth session query to force a refetch
+        await queryClient.invalidateQueries({ queryKey: ['auth-session'] });
+        // Also invalidate user profile if it exists
+        await queryClient.invalidateQueries({ queryKey: ['user-profile', signInData.user.id] });
 
         toast({
           title: "Welcome back!",

@@ -15,7 +15,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UserSettingsDialog } from './settings/UserSettings';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // News Ticker component - responsible for scrolling latest articles
 const NewsTicker = () => {
@@ -157,6 +157,7 @@ export const TopNav = () => {
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Use React Query for better caching and performance
   const { data: sessionData, isLoading: isSessionLoading } = useQuery({
@@ -198,18 +199,31 @@ export const TopNav = () => {
   // Auth state change listener
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      // Invalidate the query cache to refetch data on auth state change
-      // This is handled by React Query automatically
+      // Force refetch of session data when auth state changes
+      queryClient.invalidateQueries({ queryKey: ['auth-session'] });
+      
+      // Clear profile data if logged out
+      if (!currentSession) {
+        queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [queryClient]);
 
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
+      
+      // Immediately invalidate queries to update the UI
+      await queryClient.invalidateQueries({ queryKey: ['auth-session'] });
+      await queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      
+      // Close dropdown menu
+      setMenuOpen(false);
+      
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of your account.",
