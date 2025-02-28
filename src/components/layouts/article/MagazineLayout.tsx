@@ -6,6 +6,8 @@ import { ArticleData } from "@/types/content";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 interface MagazineLayoutProps {
   article: ArticleData;
@@ -47,7 +49,7 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
   return (
     <article className="max-w-5xl mx-auto">
       {/* Hero Banner */}
-      <div className="relative h-[70vh] min-h-[500px] w-full">
+      <div className="relative h-[60vh] min-h-[400px] w-full">
         {article.featured_image ? (
           <img
             src={article.featured_image}
@@ -71,27 +73,12 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
               </p>
             )}
             
-            {/* Author info moved below the title and description */}
+            {/* Article metadata */}
             <div className="flex items-center gap-3 text-white/90 mb-4 text-sm">
               {article.published_at && (
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
                   {format(new Date(article.published_at), 'MMMM d, yyyy')}
-                </span>
-              )}
-              <span className="w-1 h-1 rounded-full bg-white/80" />
-              {authorProfile ? (
-                <span className="flex items-center gap-1">
-                  <Avatar className="h-5 w-5">
-                    <AvatarImage src={authorProfile.avatar_url || ''} alt={authorProfile.display_name || authorProfile.email} />
-                    <AvatarFallback>{getInitials()}</AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs md:text-sm">{authorProfile.display_name || authorProfile.email}</span>
-                </span>
-              ) : (
-                <span className="flex items-center gap-1">
-                  <User className="h-3 w-3" />
-                  <span className="text-xs md:text-sm">Author</span>
                 </span>
               )}
               <span className="w-1 h-1 rounded-full bg-white/80" />
@@ -111,6 +98,27 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
       </div>
       
       <div className="max-w-3xl mx-auto px-4 py-12">
+        {/* Author Card */}
+        {authorProfile && (
+          <Card className="mb-8 overflow-hidden bg-white/80 backdrop-blur-sm border-gray-200 shadow-md">
+            <CardContent className="p-0">
+              <div className="flex flex-col sm:flex-row items-center p-4">
+                <Avatar className="h-16 w-16 border-2 border-white shadow-sm">
+                  <AvatarImage src={authorProfile.avatar_url || ''} alt={authorProfile.display_name || authorProfile.email} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-lg font-medium">{getInitials()}</AvatarFallback>
+                </Avatar>
+                
+                <div className="mt-3 sm:mt-0 sm:ml-4 text-center sm:text-left">
+                  <div className="font-medium text-gray-900">{authorProfile.display_name || authorProfile.email}</div>
+                  <div className="text-sm text-gray-500">
+                    {authorProfile.bio || "Contributing Writer"}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
         {/* Share buttons */}
         <div className="flex justify-end mb-8">
           <div className="flex gap-2">
