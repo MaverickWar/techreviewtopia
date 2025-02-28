@@ -29,7 +29,7 @@ export const AwardBanner: React.FC<AwardBannerProps> = ({ award, awardLevel }) =
   // Use awardLevel as primary source with award as fallback for backward compatibility
   const awardValue = awardLevel || award;
   
-  if (!awardValue) return null;
+  if (!awardValue || awardValue === "empty_value") return null;
   
   const awardDisplayName = getAwardDisplayName(awardValue);
 
