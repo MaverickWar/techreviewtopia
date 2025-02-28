@@ -1,9 +1,10 @@
 
 import { useState, useEffect } from 'react';
-import { Laptop, Smartphone, Gamepad, Brain } from 'lucide-react';
+import { Laptop, Smartphone, Gamepad, Brain, Award, Star, Calendar, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -19,6 +20,7 @@ interface BaseContent {
   type: 'review' | 'article';
   slug: string;
   categorySlug?: string; // Add categorySlug for routing
+  award?: string | null; // Add award property
 }
 
 interface Review extends BaseContent {
@@ -61,19 +63,41 @@ const categories = [
 
 const ContentPreview = ({ item }: { item: ContentItem }) => {
   return (
-    <article className="review-card overflow-hidden animate-fade-in bg-white">
-      <img src={item.image} alt={item.title} className="w-full h-48 object-cover" />
+    <article className="review-card overflow-hidden animate-fade-in bg-white rounded-lg shadow-md h-full">
+      <div className="relative">
+        <img src={item.image} alt={item.title} className="w-full h-48 object-cover" />
+        {item.award && (
+          <div className="absolute top-2 right-2">
+            <Badge variant="award" className="flex items-center gap-1 px-3 py-1.5 shadow-md">
+              <Award className="h-3.5 w-3.5" />
+              <span>{item.award}</span>
+            </Badge>
+          </div>
+        )}
+      </div>
       <div className="p-6">
-        <div className="category-tag mb-3">{item.category}</div>
-        <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-        <div className="text-gray-600 mb-4" dangerouslySetInnerHTML={{ __html: item.excerpt }}></div>
-        <div className="flex items-center justify-between text-sm text-gray-500">
-          <span>{item.readTime}</span>
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            item.type === 'review' 
+              ? "bg-purple-100 text-purple-700" 
+              : "bg-blue-100 text-blue-700"
+          }`}>
+            {item.type === 'review' ? "Review" : "Article"}
+          </span>
           {item.type === 'review' && (
-            <span className="bg-orange-100 text-orange-600 px-2 py-1 rounded">
-              {item.rating}/5
+            <span className="flex items-center gap-1 text-sm text-amber-500 font-medium">
+              <Star className="h-4 w-4 fill-current" />
+              {item.rating.toFixed(1)}
             </span>
           )}
+        </div>
+        <h3 className="text-xl font-bold mb-2 text-gray-800 line-clamp-2">{item.title}</h3>
+        <div className="text-gray-600 mb-4 line-clamp-2" dangerouslySetInnerHTML={{ __html: item.excerpt }}></div>
+        <div className="flex items-center justify-between text-sm text-gray-500 mt-auto">
+          <span className="flex items-center gap-1">
+            <Calendar className="h-4 w-4" />
+            {item.readTime}
+          </span>
         </div>
       </div>
     </article>
@@ -104,6 +128,7 @@ const FeaturedContentTabs = () => {
             status,
             published_at,
             author_id,
+            layout_settings,
             review_details (
               overall_score
             )
@@ -126,6 +151,9 @@ const FeaturedContentTabs = () => {
         
         const content = item.content;
         
+        // Get award from layout_settings if it exists
+        const award = content.layout_settings?.award || null;
+        
         // Base content structure
         const baseItem = {
           id: content.id,
@@ -137,7 +165,8 @@ const FeaturedContentTabs = () => {
           author: "Tech Team", // Would come from author relationship
           readTime: "5 min read", // Would be calculated
           slug: content.id, // Using ID as slug for now
-          type: content.type as 'review' | 'article'
+          type: content.type as 'review' | 'article',
+          award: award // Include award information
         };
 
         // Add to appropriate array based on type
@@ -300,12 +329,23 @@ const FeaturedContentTabs = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
           {/* Main Featured Item */}
-          <article className="md:col-span-8 review-card animate-fade-in">
+          <article className="md:col-span-8 review-card animate-fade-in rounded-xl overflow-hidden shadow-xl">
             {/* Fix the routing by adding the categorySlug */}
             <Link to={`/${mainFeatured.categorySlug}/content/${mainFeatured.slug}`} className="block">
               <div className="relative">
                 <img src={mainFeatured.image} alt={mainFeatured.title} className="w-full h-[500px] object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                
+                {/* Award Badge */}
+                {mainFeatured.award && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <Badge variant="award" className="flex items-center gap-1 px-4 py-2 text-sm shadow-lg">
+                      <Award className="h-4 w-4" />
+                      <span>{mainFeatured.award}</span>
+                    </Badge>
+                  </div>
+                )}
+                
                 <div className="absolute bottom-0 left-0 p-8 text-white">
                   <div className="category-tag mb-4">{mainFeatured.category}</div>
                   <h2 className="text-4xl font-bold mb-3">{mainFeatured.title}</h2>
@@ -317,8 +357,9 @@ const FeaturedContentTabs = () => {
                     {mainFeatured.type === 'review' && (
                       <>
                         <span>•</span>
-                        <span className="bg-orange-500 px-2 py-1 rounded">
-                          {(mainFeatured as Review).rating}/5
+                        <span className="bg-orange-500 px-2 py-1 rounded-full flex items-center gap-1">
+                          <Star className="h-3.5 w-3.5 fill-current" />
+                          {(mainFeatured as Review).rating.toFixed(1)}
                         </span>
                       </>
                     )}
@@ -329,12 +370,12 @@ const FeaturedContentTabs = () => {
           </article>
 
           {/* Secondary Features */}
-          <div className="md:col-span-4 space-y-8">
+          <div className="md:col-span-4 grid grid-cols-1 gap-6">
             {secondaryFeatured.map((item) => (
               <Link 
                 key={item.id} 
                 to={`/${item.categorySlug}/content/${item.slug}`}
-                className="block"
+                className="block h-full"
               >
                 <ContentPreview item={item} />
               </Link>
@@ -362,17 +403,25 @@ const FeaturedContentTabs = () => {
 const Index = () => {
   return (
     <>
-      {/* Hero Section */}
-      <section className="hero-gradient text-white py-20">
-        <div className="content-container">
-          <div className="text-center animate-fade-in max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight">Bringing you the latest</h1>
-            <p className="text-xl md:text-2xl text-gray-100 mb-12">daily dose of technology reviews, insights, and innovations</p>
+      {/* Hero Section with improved gradients and animations */}
+      <section className="bg-gradient-to-r from-blue-900 via-blue-800 to-purple-900 text-white py-20">
+        <div className="content-container relative">
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-400 rounded-full opacity-10 blur-3xl"></div>
+            <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-purple-400 rounded-full opacity-10 blur-3xl"></div>
+          </div>
+          <div className="text-center animate-fade-in max-w-4xl mx-auto relative z-10">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight">
+              Bringing you the latest
+            </h1>
+            <p className="text-xl md:text-2xl text-gray-100 mb-12">
+              daily dose of technology reviews, insights, and innovations
+            </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Link to="/reviews" className="bg-white text-gray-900 px-8 py-3 rounded-full font-medium hover:bg-gray-100 transition-colors">
+              <Link to="/reviews" className="bg-white text-gray-900 px-8 py-3 rounded-full font-medium hover:bg-gray-100 transition-colors shadow-lg hover:shadow-xl hover:scale-105 transition-all">
                 Latest Reviews
               </Link>
-              <Link to="/articles" className="bg-orange-500 text-white px-8 py-3 rounded-full font-medium hover:bg-orange-600 transition-colors">
+              <Link to="/articles" className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-8 py-3 rounded-full font-medium hover:from-orange-600 hover:to-amber-600 transition-colors shadow-lg hover:shadow-xl hover:scale-105 transition-all">
                 Top Articles
               </Link>
             </div>
@@ -383,15 +432,15 @@ const Index = () => {
       {/* Featured Content Section with Tabs */}
       <FeaturedContentTabs />
 
-      {/* Categories */}
+      {/* Categories with improved card design */}
       <section className="py-16 bg-gray-50">
         <div className="content-container">
-          <h2 className="text-3xl font-bold mb-12">Browse by Category</h2>
+          <h2 className="text-3xl font-bold mb-12 text-center">Browse by Category</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {categories.map((category, index) => (
               <Card 
                 key={category.id} 
-                className="border-none hover:shadow-xl transition-all duration-300 animate-fade-in"
+                className="border-none hover:shadow-xl transition-all duration-300 animate-fade-in hover:translate-y-[-5px] group"
                 style={{
                   animationDelay: `${index * 0.1}s`
                 }}
@@ -401,9 +450,70 @@ const Index = () => {
                     <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-600 transition-colors">
                       <category.icon size={32} className="text-blue-600 group-hover:text-white transition-colors" />
                     </div>
-                    <h3 className="text-xl font-semibold">{category.name}</h3>
+                    <h3 className="text-xl font-semibold group-hover:text-blue-600 transition-colors">{category.name}</h3>
                   </div>
                 </Link>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+      
+      {/* New Featured Reviews Section */}
+      <section className="py-16 bg-white">
+        <div className="content-container">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-3xl font-bold">Top-Rated Products</h2>
+            <Link to="/reviews" className="text-blue-600 hover:text-blue-800 flex items-center gap-1">
+              View all reviews
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {reviewsData.slice(0, 3).map((review, index) => (
+              <Card 
+                key={review.id} 
+                className="overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in h-full"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className="aspect-video relative overflow-hidden">
+                  <img 
+                    src={review.image} 
+                    alt={review.title} 
+                    className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+                  />
+                  {review.award && (
+                    <div className="absolute top-2 right-2">
+                      <Badge variant="award" className="flex items-center gap-1 px-3 py-1.5 shadow-md">
+                        <Award className="h-3.5 w-3.5" />
+                        <span>{review.award}</span>
+                      </Badge>
+                    </div>
+                  )}
+                  <div className="absolute top-2 left-2">
+                    <Badge variant="default" className="bg-purple-600 flex items-center gap-1">
+                      <Star className="h-3.5 w-3.5 fill-current" />
+                      <span>{review.rating.toFixed(1)}/10</span>
+                    </Badge>
+                  </div>
+                </div>
+                <CardContent className="p-6">
+                  <Link to={`/${review.categorySlug}/content/${review.slug}`}>
+                    <h3 className="text-xl font-bold mb-2 hover:text-blue-600 transition-colors">{review.title}</h3>
+                  </Link>
+                  <p className="text-gray-600 line-clamp-2">{review.excerpt}</p>
+                </CardContent>
+                <CardFooter className="px-6 pb-6 pt-0 flex justify-between items-center">
+                  <span className="text-sm text-gray-500">{review.readTime}</span>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to={`/${review.categorySlug}/content/${review.slug}`}>
+                      Read Review
+                    </Link>
+                  </Button>
+                </CardFooter>
               </Card>
             ))}
           </div>

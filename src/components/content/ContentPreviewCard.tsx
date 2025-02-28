@@ -1,8 +1,9 @@
 
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, Calendar, FileText } from "lucide-react";
+import { Star, Calendar, FileText, Award } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 interface ContentPreviewCardProps {
   slug: string;
@@ -13,6 +14,7 @@ interface ContentPreviewCardProps {
   featuredImage: string | null;
   publishedAt: string | null;
   overallScore?: number | null;
+  award?: string | null; // Added award prop
 }
 
 export const ContentPreviewCard = ({
@@ -24,29 +26,46 @@ export const ContentPreviewCard = ({
   featuredImage,
   publishedAt,
   overallScore,
+  award, // Added award prop
 }: ContentPreviewCardProps) => {
   return (
     <Link to={`/${categorySlug}/content/${slug}`} className="block group">
       <Card className="overflow-hidden hover:shadow-lg transition-all duration-300">
         {featuredImage ? (
-          <div className="aspect-[16/9] overflow-hidden">
+          <div className="aspect-[16/9] overflow-hidden relative">
             <img
               src={featuredImage}
               alt={title}
               className="w-full h-full object-cover transform transition-transform duration-300 group-hover:scale-105"
             />
+            {award && (
+              <div className="absolute top-0 right-0 m-2">
+                <Badge variant="default" className="bg-gradient-to-r from-amber-500 to-orange-500 text-white flex items-center gap-1 px-3 py-1.5 shadow-md animate-fade-in">
+                  <Award className="h-3.5 w-3.5" />
+                  <span>{award}</span>
+                </Badge>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="aspect-[16/9] bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+          <div className="aspect-[16/9] bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center relative">
             {type === "article" ? (
               <FileText className="h-12 w-12 text-gray-400" />
             ) : (
               <Star className="h-12 w-12 text-gray-400" />
             )}
+            {award && (
+              <div className="absolute top-0 right-0 m-2">
+                <Badge variant="default" className="bg-gradient-to-r from-amber-500 to-orange-500 text-white flex items-center gap-1 px-3 py-1.5 shadow-md animate-fade-in">
+                  <Award className="h-3.5 w-3.5" />
+                  <span>{award}</span>
+                </Badge>
+              </div>
+            )}
           </div>
         )}
         <CardContent className="p-6">
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
               type === "review" 
                 ? "bg-purple-100 text-purple-700" 

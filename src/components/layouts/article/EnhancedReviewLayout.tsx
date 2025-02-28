@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import { format } from "date-fns";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+
 import { ArticleData } from "@/types/content";
-import { Award, Check, ChevronRight, Clock, Info, Star, ThumbsDown, ThumbsUp, User } from "lucide-react";
+import { Star, Info, Check, AlertTriangle, Award } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AwardBanner } from "./AwardBanner";
 
 interface EnhancedReviewLayoutProps {
@@ -11,81 +11,210 @@ interface EnhancedReviewLayoutProps {
 }
 
 export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => {
-  const [activeTab, setActiveTab] = useState<string>("overview");
-  
-  const hasReviewDetails = article.type === "review" && article.review_details?.[0];
-  const reviewDetails = hasReviewDetails ? article.review_details![0] : null;
-  const overallScore = reviewDetails?.overall_score || 0;
-  
-  // Get the award from layout settings if it exists
+  // Extract layout settings award
   const award = article.layout_settings?.award;
-  console.log("EnhancedReviewLayout received article with layout_settings:", article.layout_settings);
-  console.log("Award value extracted:", award);
 
-  // Calculate rating color based on score
-  const getRatingColor = (score: number) => {
-    if (score >= 8) return "bg-green-500";
-    if (score >= 6) return "bg-blue-500";
-    if (score >= 4) return "bg-yellow-500";
-    return "bg-red-500";
+  // Extract review details
+  const reviewDetail = article.review_details?.[0] || null;
+  
+  // Format date
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
-  return (
-    <article className="max-w-7xl mx-auto">
-      {/* Hero Section */}
-      <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-        <h1 className="text-3xl font-bold mb-2">{article.title}</h1>
-        <div className="flex items-center mb-4">
-          <User className="h-5 w-5 mr-2" />
-          <span className="text-sm text-gray-600">{article.author?.display_name || "Unknown Author"}</span>
-        </div>
-        <div className="flex items-center mb-4">
-          <Clock className="h-5 w-5 mr-2" />
-          <span className="text-sm text-gray-600">{format(new Date(article.published_at || ''), 'MMMM d, yyyy')}</span>
-        </div>
-        <AwardBanner award={award} />
-      </div>
+  // Calculate overall rating color
+  const getRatingColor = (score: number) => {
+    if (score >= 8) return "text-green-500";
+    if (score >= 6) return "text-amber-500";
+    return "text-red-500";
+  };
+  
+  // Format product specifications for display
+  const formatSpecs = (specs: Record<string, any> | null) => {
+    if (!specs) return [];
+    return Object.entries(specs).map(([key, value]) => ({ key, value }));
+  };
 
-      <div className="px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Main Content - 8 columns on desktop */}
-          <div className="lg:col-span-8">
-            {article.featured_image && (
-              <img src={article.featured_image} alt={article.title} className="w-full h-auto rounded-lg mb-6" />
-            )}
-            <div className="prose max-w-none mb-6" dangerouslySetInnerHTML={{ __html: article.content || '' }} />
+  const overallScore = reviewDetail?.overall_score || 0;
+  const productSpecs = formatSpecs(reviewDetail?.product_specs);
+  const galleryImages = reviewDetail?.gallery || [];
+
+  return (
+    <div className="bg-white min-h-screen">
+      {/* Header with Featured Image */}
+      <header className="relative">
+        {article.featured_image ? (
+          <div className="w-full h-80 md:h-96 lg:h-[500px] overflow-hidden relative">
+            <img
+              src={article.featured_image}
+              alt={article.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+            <div className="absolute bottom-0 left-0 p-6 md:p-12 w-full">
+              <div className="content-container">
+                <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">{article.title}</h1>
+                {article.published_at && (
+                  <p className="text-gray-300 mb-2">
+                    Published {formatDate(article.published_at)}
+                  </p>
+                )}
+                
+                {/* Display review score prominently in header */}
+                {reviewDetail && (
+                  <div className="flex items-center mt-4">
+                    <Badge variant="default" className="bg-white text-gray-900 px-4 py-2 mr-3 shadow-lg">
+                      <span className={`text-2xl font-bold ${getRatingColor(overallScore)}`}>
+                        {overallScore.toFixed(1)}
+                      </span>
+                      <span className="text-sm text-gray-500 ml-1">/10</span>
+                    </Badge>
+                    
+                    {/* Show award badge if present */}
+                    {award && (
+                      <Badge variant="award" className="flex items-center gap-1 px-4 py-2 text-sm shadow-lg">
+                        <Award className="h-4 w-4" />
+                        <span>{award}</span>
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
+        ) : (
+          <div className="content-container py-12">
+            <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4">{article.title}</h1>
+            {article.published_at && (
+              <p className="text-gray-500 mb-2">
+                Published {formatDate(article.published_at)}
+              </p>
+            )}
+          </div>
+        )}
+      </header>
+
+      {/* Main Content */}
+      <main className="content-container py-12">
+        {/* Award Banner - placed prominently at the top */}
+        <AwardBanner award={award} />
+
+        {/* Description */}
+        {article.description && (
+          <div className="text-xl text-gray-600 mb-8" dangerouslySetInnerHTML={{ __html: article.description }} />
+        )}
+
+        {/* Review Content Tabs */}
+        <Tabs defaultValue="overview" className="mb-12">
+          <TabsList className="mb-6">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="details">Details</TabsTrigger>
+            {galleryImages.length > 0 && (
+              <TabsTrigger value="gallery">Gallery</TabsTrigger>
+            )}
+            {productSpecs.length > 0 && (
+              <TabsTrigger value="specs">Specifications</TabsTrigger>
+            )}
+          </TabsList>
           
-          {/* Sidebar - 4 columns on desktop */}
-          <div className="lg:col-span-4">
-            {hasReviewDetails && reviewDetails.product_specs && (
-              <div className="bg-white shadow-lg rounded-xl overflow-hidden mb-8">
-                <div className="bg-gray-100 py-3 px-6 border-b">
-                  <h3 className="font-semibold text-gray-900 flex items-center">
-                    <Info className="h-5 w-5 mr-2 text-blue-500" />
-                    Specifications
-                  </h3>
-                </div>
-                <div className="p-6">
-                  <table className="w-full text-sm">
-                    <tbody>
-                      {Object.entries(reviewDetails.product_specs).map(([key, value]) => (
-                        <tr key={key} className="border-b border-gray-100 last:border-0">
-                          <td className="py-2 text-gray-600 font-medium">{key}</td>
-                          <td className="py-2 text-gray-900">{String(value)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="animate-fade-in">
+            {article.content && (
+              <div className="prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: article.content }} />
+            )}
+            
+            {/* Rating Criteria */}
+            {article.rating_criteria && article.rating_criteria.length > 0 && (
+              <div className="mt-12">
+                <h2 className="text-2xl font-bold mb-6">Rating Breakdown</h2>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {article.rating_criteria.map((criterion, index) => (
+                    <Card key={criterion.name || index} className="overflow-hidden">
+                      <div className={`h-2 ${
+                        criterion.score >= 8 ? "bg-green-500" : 
+                        criterion.score >= 6 ? "bg-amber-500" : "bg-red-500"
+                      }`} style={{ width: `${criterion.score * 10}%` }}></div>
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{criterion.name}</span>
+                          <span className="text-lg font-bold">{criterion.score.toFixed(1)}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </div>
             )}
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium">
-              Check Price
-            </Button>
-          </div>
-        </div>
-      </div>
-    </article>
+          </TabsContent>
+          
+          {/* Details Tab */}
+          <TabsContent value="details" className="animate-fade-in">
+            <div className="grid gap-8 md:grid-cols-2">
+              <div>
+                <h2 className="text-2xl font-bold mb-6">Pros</h2>
+                <ul className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <li key={`pro-${i}`} className="flex items-start">
+                      <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                      <span>Pro point {i} (example)</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold mb-6">Cons</h2>
+                <ul className="space-y-2">
+                  {[1, 2].map((i) => (
+                    <li key={`con-${i}`} className="flex items-start">
+                      <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0 mt-0.5" />
+                      <span>Con point {i} (example)</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </TabsContent>
+          
+          {/* Gallery Tab */}
+          {galleryImages.length > 0 && (
+            <TabsContent value="gallery" className="animate-fade-in">
+              <h2 className="text-2xl font-bold mb-6">Product Gallery</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {galleryImages.map((image, index) => (
+                  <div key={index} className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                    <img 
+                      src={image} 
+                      alt={`${article.title} gallery image ${index + 1}`} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+          )}
+          
+          {/* Specifications Tab */}
+          {productSpecs.length > 0 && (
+            <TabsContent value="specs" className="animate-fade-in">
+              <h2 className="text-2xl font-bold mb-6">Technical Specifications</h2>
+              <div className="bg-gray-50 rounded-lg p-6">
+                <table className="w-full">
+                  <tbody>
+                    {productSpecs.map((spec, index) => (
+                      <tr key={index} className={index % 2 === 0 ? 'bg-gray-100' : ''}>
+                        <td className="py-3 px-4 font-medium">{spec.key}</td>
+                        <td className="py-3 px-4">{spec.value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </TabsContent>
+          )}
+        </Tabs>
+      </main>
+    </div>
   );
 };
