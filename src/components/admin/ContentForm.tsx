@@ -28,6 +28,7 @@ import {
 import { LayoutSelector } from "./LayoutSelector";
 import { LayoutPreview } from "./LayoutPreview";
 import { ContentType, ContentStatus, LayoutTemplate, ArticleData } from "@/types/content";
+import RichTextEditor from "@/components/editor/RichTextEditor";
 
 // Import the LayoutSettings component
 import LayoutSettings from "./LayoutSettings";
@@ -766,20 +767,21 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
                   <div>
                     <label className="block text-sm font-medium mb-1">Description</label>
-                    <textarea
-                      className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      value={formData.description || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    <RichTextEditor
+                      content={formData.description || ''}
+                      onChange={(content) => setFormData(prev => ({ ...prev, description: content }))}
+                      placeholder="Enter a brief description..."
+                      minHeight="150px"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium mb-1">Content</label>
-                    <textarea
-                      className="w-full min-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      value={formData.content || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                      required
+                    <RichTextEditor
+                      content={formData.content || ''}
+                      onChange={(content) => setFormData(prev => ({ ...prev, content: content }))}
+                      placeholder="Write your content here..."
+                      minHeight="300px"
                     />
                   </div>
                 </div>

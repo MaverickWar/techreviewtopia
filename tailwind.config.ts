@@ -1,9 +1,13 @@
 
-import type { Config } from "tailwindcss";
+import { type Config } from "tailwindcss";
+import { fontFamily } from "tailwindcss/defaultTheme";
 
 export default {
   darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  content: [
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}',
+  ],
   prefix: "",
   theme: {
     container: {
@@ -54,6 +58,9 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        sans: ["var(--font-sans)", ...fontFamily.sans],
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -63,42 +70,185 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        float: {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-10px)" },
-        },
-        "fade-in": {
-          "0%": { opacity: "0", transform: "translateY(10px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
-        },
-        "fade-out": {
-          "0%": { opacity: "1", transform: "translateY(0)" },
-          "100%": { opacity: "0", transform: "translateY(-10px)" },
-        },
-        "slide-in-right": {
-          "0%": { transform: "translateX(100%)" },
-          "100%": { transform: "translateX(0)" },
-        },
-        "slide-out-right": {
-          "0%": { transform: "translateX(0)" },
-          "100%": { transform: "translateX(100%)" },
-        },
-        marquee: {
-          "0%": { transform: "translateX(0)" },
-          "100%": { transform: "translateX(-100%)" }
-        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        float: "float 3s ease-in-out infinite",
-        "fade-in": "fade-in 0.5s ease-out",
-        "fade-out": "fade-out 0.5s ease-out",
-        "slide-in-right": "slide-in-right 0.3s ease-out",
-        "slide-out-right": "slide-out-right 0.3s ease-out",
-        "marquee": "marquee 8s linear infinite", /* Doubled from 4s to 8s (half the speed) */
+      },
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: '100%',
+            color: 'var(--tw-prose-body)',
+            '[class~="lead"]': {
+              color: 'var(--tw-prose-lead)',
+            },
+            a: {
+              color: 'var(--tw-prose-links)',
+              textDecoration: 'underline',
+              fontWeight: '500',
+            },
+            strong: {
+              color: 'var(--tw-prose-bold)',
+              fontWeight: '600',
+            },
+            'a strong': {
+              color: 'inherit',
+            },
+            'blockquote strong': {
+              color: 'inherit',
+            },
+            'thead strong': {
+              color: 'inherit',
+            },
+            table: {
+              width: '100%',
+              borderCollapse: 'collapse',
+              borderSpacing: 0,
+              marginTop: '2em',
+              marginBottom: '2em',
+            },
+            'thead th': {
+              backgroundColor: 'var(--tw-prose-th-backgrounds)',
+              borderBottom: '1px solid var(--tw-prose-th-borders)',
+              borderColor: 'inherit',
+              padding: '0.5em',
+              textAlign: 'left',
+            },
+            'thead th:first-child': {
+              paddingLeft: '0',
+            },
+            'thead th:last-child': {
+              paddingRight: '0',
+            },
+            'tbody td, tfoot td': {
+              borderBottom: '1px solid var(--tw-prose-td-borders)',
+              borderColor: 'inherit',
+              padding: '0.5em',
+            },
+            'tbody td:first-child, tfoot td:first-child': {
+              paddingLeft: '0',
+            },
+            'tbody td:last-child, tfoot td:last-child': {
+              paddingRight: '0',
+            },
+            'figure img': {
+              margin: '0',
+            },
+            'figure figcaption': {
+              color: 'var(--tw-prose-captions)',
+              fontSize: '0.875em',
+              lineHeight: '1.4285714',
+              marginTop: '0.8571429em',
+            },
+            code: {
+              backgroundColor: 'var(--tw-prose-code-bg)',
+              borderRadius: '0.25rem',
+              padding: '0.25rem 0.4rem',
+              fontWeight: '600',
+            },
+            pre: {
+              backgroundColor: 'var(--tw-prose-pre-bg)',
+              borderRadius: '0.375rem',
+              overflowX: 'auto',
+              padding: '0.75rem 1rem',
+            },
+            'pre code': {
+              backgroundColor: 'transparent',
+              borderWidth: '0',
+              borderRadius: '0',
+              padding: '0',
+              fontWeight: 'inherit',
+              color: 'inherit',
+              fontSize: 'inherit',
+              fontFamily: 'inherit',
+              lineHeight: 'inherit',
+            },
+            img: {
+              marginTop: '2em',
+              marginBottom: '2em',
+              borderRadius: '0.375rem',
+            },
+            video: {
+              marginTop: '2em',
+              marginBottom: '2em',
+            },
+            figure: {
+              marginTop: '2em',
+              marginBottom: '2em',
+            },
+            h1: {
+              color: 'var(--tw-prose-headings)',
+              fontWeight: '800',
+              fontSize: '2.25em',
+              marginTop: '0',
+              marginBottom: '0.8888889em',
+              lineHeight: '1.1111111',
+            },
+            h2: {
+              color: 'var(--tw-prose-headings)',
+              fontWeight: '700',
+              fontSize: '1.5em',
+              marginTop: '2em',
+              marginBottom: '1em',
+              lineHeight: '1.3333333',
+            },
+            h3: {
+              color: 'var(--tw-prose-headings)',
+              fontWeight: '600',
+              fontSize: '1.25em',
+              marginTop: '1.6em',
+              marginBottom: '0.6em',
+              lineHeight: '1.6',
+            },
+            h4: {
+              color: 'var(--tw-prose-headings)',
+              fontWeight: '600',
+              marginTop: '1.5em',
+              marginBottom: '0.5em',
+              lineHeight: '1.5',
+            },
+            h5: {
+              color: 'var(--tw-prose-headings)',
+              fontWeight: '600',
+              fontSize: '0.875em',
+              marginTop: '1.7142857em',
+              marginBottom: '0.5em',
+              lineHeight: '1.4285714',
+            },
+            h6: {
+              color: 'var(--tw-prose-headings)',
+              fontWeight: '600',
+              fontSize: '0.875em',
+              marginTop: '1.7142857em',
+              marginBottom: '0.5em',
+              lineHeight: '1.4285714',
+            },
+            'ul, ol': {
+              paddingLeft: '1.25em',
+            },
+            'ul ul, ul ol, ol ul, ol ol': {
+              marginTop: '0.75em',
+              marginBottom: '0.75em',
+            },
+            blockquote: {
+              fontWeight: '500',
+              fontStyle: 'italic',
+              color: 'var(--tw-prose-quotes)',
+              borderLeftWidth: '0.25rem',
+              borderLeftColor: 'var(--tw-prose-quote-borders)',
+              quotes: '"\\201C""\\201D""\\2018""\\2019"',
+              marginTop: '1.6em',
+              marginBottom: '1.6em',
+              paddingLeft: '1em',
+            },
+          },
+        },
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
-} satisfies Config;
+  plugins: [
+    require("tailwindcss-animate"),
+    require('@tailwindcss/typography'),
+  ],
+} satisfies Config
