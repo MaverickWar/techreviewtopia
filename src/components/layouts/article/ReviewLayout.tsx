@@ -127,78 +127,9 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
         
         {/* Sidebar */}
         <div className="lg:col-span-4">
-          {/* Score Card - Modified to not use sticky positioning and to have proper z-index */}
-          {hasReviewDetails && (
-            <div className="bg-white shadow-lg rounded-xl overflow-hidden mb-8">
-              <div className={`py-6 text-center text-white ${getRatingColor(overallScore)}`}>
-                <div className="text-5xl font-bold mb-1">{overallScore.toFixed(1)}</div>
-                <div className="text-sm uppercase tracking-wider">Overall Score</div>
-              </div>
-              
-              <div className="p-6 space-y-4">
-                {/* Pros and Cons */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-                    <ThumbsUp className="h-5 w-5 mr-2 text-green-500" />
-                    Pros
-                  </h3>
-                  <ul className="space-y-1">
-                    <li className="flex items-start">
-                      <Check className="h-5 w-5 mr-2 text-green-500 shrink-0 mt-0.5" />
-                      <span className="text-gray-700">Great performance</span>
-                    </li>
-                    <li className="flex items-start">
-                      <Check className="h-5 w-5 mr-2 text-green-500 shrink-0 mt-0.5" />
-                      <span className="text-gray-700">Excellent value</span>
-                    </li>
-                    <li className="flex items-start">
-                      <Check className="h-5 w-5 mr-2 text-green-500 shrink-0 mt-0.5" />
-                      <span className="text-gray-700">Premium design</span>
-                    </li>
-                  </ul>
-                </div>
-                
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-                    <ThumbsDown className="h-5 w-5 mr-2 text-red-500" />
-                    Cons
-                  </h3>
-                  <ul className="space-y-1">
-                    <li className="flex items-start">
-                      <ThumbsDown className="h-5 w-5 mr-2 text-red-500 shrink-0 mt-0.5" />
-                      <span className="text-gray-700">Limited battery life</span>
-                    </li>
-                    <li className="flex items-start">
-                      <ThumbsDown className="h-5 w-5 mr-2 text-red-500 shrink-0 mt-0.5" />
-                      <span className="text-gray-700">Higher price point</span>
-                    </li>
-                  </ul>
-                </div>
-                
-                {/* Verdict */}
-                <div className="pt-4 border-t border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-                    <Award className="h-5 w-5 mr-2 text-amber-500" />
-                    Verdict
-                  </h3>
-                  <p className="text-gray-700 text-sm">
-                    {article.description || "An excellent option that delivers solid performance and value, despite a few minor drawbacks."}
-                  </p>
-                </div>
-
-                {/* CTA Button - Adding this within the sidebar for better mobile layout */}
-                <div className="pt-4">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium">
-                    Check Price
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-          
           {/* Specifications Table */}
           {hasReviewDetails && reviewDetails.product_specs && (
-            <div className="bg-white shadow-lg rounded-xl overflow-hidden">
+            <div className="bg-white shadow-lg rounded-xl overflow-hidden mb-8">
               <div className="bg-gray-100 py-3 px-6 border-b">
                 <h3 className="font-semibold text-gray-900 flex items-center">
                   <Info className="h-5 w-5 mr-2 text-blue-500" />
@@ -219,12 +150,115 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
               </div>
             </div>
           )}
+          
+          {/* CTA Button */}
+          <div className="bg-white shadow-lg rounded-xl overflow-hidden p-6 mb-8">
+            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium">
+              Check Price
+            </Button>
+          </div>
         </div>
       </div>
       
+      {/* Detailed Ratings and Score Section - Added as a new full-width section */}
+      {hasReviewDetails && (
+        <div className="mt-12 mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Our Verdict</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            {/* Detailed Ratings - Left side */}
+            <div className="lg:col-span-8 bg-white shadow-lg rounded-xl overflow-hidden">
+              <div className="p-6">
+                <h3 className="font-semibold text-gray-900 mb-4">Detailed Ratings</h3>
+                
+                {/* Pros and Cons */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                      <ThumbsUp className="h-5 w-5 mr-2 text-green-500" />
+                      Pros
+                    </h3>
+                    <ul className="space-y-1">
+                      <li className="flex items-start">
+                        <Check className="h-5 w-5 mr-2 text-green-500 shrink-0 mt-0.5" />
+                        <span className="text-gray-700">Great performance</span>
+                      </li>
+                      <li className="flex items-start">
+                        <Check className="h-5 w-5 mr-2 text-green-500 shrink-0 mt-0.5" />
+                        <span className="text-gray-700">Excellent value</span>
+                      </li>
+                      <li className="flex items-start">
+                        <Check className="h-5 w-5 mr-2 text-green-500 shrink-0 mt-0.5" />
+                        <span className="text-gray-700">Premium design</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                      <ThumbsDown className="h-5 w-5 mr-2 text-red-500" />
+                      Cons
+                    </h3>
+                    <ul className="space-y-1">
+                      <li className="flex items-start">
+                        <ThumbsDown className="h-5 w-5 mr-2 text-red-500 shrink-0 mt-0.5" />
+                        <span className="text-gray-700">Limited battery life</span>
+                      </li>
+                      <li className="flex items-start">
+                        <ThumbsDown className="h-5 w-5 mr-2 text-red-500 shrink-0 mt-0.5" />
+                        <span className="text-gray-700">Higher price point</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                
+                {/* Rating criteria visualization - Would contain actual rating criteria */}
+                <div className="space-y-4">
+                  {article.rating_criteria?.map((criteria, index) => (
+                    <div key={index} className="w-full">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-gray-700">{criteria.name}</span>
+                        <span className="font-medium">{criteria.score.toFixed(1)}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div 
+                          className="bg-blue-600 h-2.5 rounded-full" 
+                          style={{ width: `${(criteria.score / 10) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            {/* Score Card - Right side */}
+            <div className="lg:col-span-4 bg-white shadow-lg rounded-xl overflow-hidden">
+              <div className={`py-6 text-center text-white ${getRatingColor(overallScore)}`}>
+                <div className="text-5xl font-bold mb-1">{overallScore.toFixed(1)}</div>
+                <div className="text-sm uppercase tracking-wider">Overall Score</div>
+              </div>
+              
+              <div className="p-6">
+                {/* Verdict */}
+                <div className="pt-2">
+                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                    <Award className="h-5 w-5 mr-2 text-amber-500" />
+                    Verdict
+                  </h3>
+                  <p className="text-gray-700 text-sm">
+                    {article.description || "An excellent option that delivers solid performance and value, despite a few minor drawbacks."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Gallery */}
       {hasReviewDetails && reviewDetails.gallery && reviewDetails.gallery.length > 0 && (
-        <div className="mt-12 relative z-0">
+        <div className="mt-12 mb-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Product Gallery</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {reviewDetails.gallery.map((image, index) => (
@@ -240,9 +274,9 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
         </div>
       )}
 
-      {/* Comparison Link - Making this a full-width component for better visibility */}
+      {/* Comparison Link */}
       {hasReviewDetails && (
-        <div className="mt-8 text-center">
+        <div className="text-center mb-12">
           <a href="#" className="inline-flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors">
             View full comparison
             <svg className="w-5 h-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
@@ -252,7 +286,7 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
         </div>
       )}
 
-      {/* Back to top button - Fixed positioned with proper z-index */}
+      {/* Back to top button */}
       <button 
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         className="fixed bottom-6 right-6 bg-orange-500 text-white p-3 rounded-full shadow-lg hover:bg-orange-600 transition-colors z-20"
@@ -265,4 +299,3 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
     </article>
   );
 };
-
