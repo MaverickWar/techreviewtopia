@@ -13,6 +13,7 @@ import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
+import TextAlign from '@tiptap/extension-text-align';
 import { Button } from '@/components/ui/button';
 import { 
   Bold, 
@@ -29,7 +30,8 @@ import {
   AlignLeft, 
   AlignCenter, 
   AlignRight, 
-  Table as TableIcon 
+  Table as TableIcon,
+  X 
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -98,6 +100,10 @@ export const RichTextEditor = ({
         HTMLAttributes: {
           class: 'bg-gray-100 font-bold border border-gray-300 p-2',
         },
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+        defaultAlignment: 'left',
       }),
     ],
     content,
