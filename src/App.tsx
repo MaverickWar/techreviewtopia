@@ -1,37 +1,47 @@
 
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Outlet } from "react-router-dom";
-import { PageLayout } from "@/components/layouts/PageLayout";
-import IndexPage from "@/pages/Index";
+import { Routes, Route } from "react-router-dom";
+import { Toaster } from "@/components/ui/toaster";
+import { Index } from "@/pages/Index";
+import { AuthPage } from "@/pages/auth/AuthPage";
+import { NotFound } from "@/pages/NotFound";
+import { ArticlePage } from "@/pages/ArticlePage";
 import { CategoryPage } from "@/pages/CategoryPage";
 import { SubcategoryPage } from "@/pages/SubcategoryPage";
-import ArticlePage from "@/pages/ArticlePage";
-import NotFound from "@/pages/NotFound";
-import { AdminLayout } from "@/components/admin/AdminLayout";
-import { AdminDashboard } from "@/components/admin/AdminDashboard";
-import { ContentManager } from "@/components/admin/ContentManager";
-import { PagesManager } from "@/components/admin/pages/PagesManager";
-import { UsersManager } from "@/components/admin/users/UsersManager";
+import { AdminLayout } from "./components/admin/AdminLayout";
+import { AdminDashboard } from "./components/admin/AdminDashboard";
+import { ContentManager } from "./components/admin/ContentManager";
+import { PagesManager } from "./components/admin/pages/PagesManager";
+import { PageForm } from "./components/admin/pages/PageForm";
+import { UsersManager } from "./components/admin/users/UsersManager";
+import { ViewTracker } from "./components/analytics/ViewTracker";
+
+import "./App.css";
 
 function App() {
   return (
-    <BrowserRouter>
+    <>
+      <ViewTracker />
       <Routes>
-        <Route element={<PageLayout><Outlet /></PageLayout>}>
-          <Route index element={<div className="animate-fade-in">{<IndexPage />}</div>} />
-          <Route path=":categorySlug" element={<CategoryPage />} />
-          <Route path=":categorySlug/:subcategorySlug" element={<SubcategoryPage />} />
-          <Route path=":categorySlug/content/:contentId" element={<ArticlePage />} />
-          <Route path="*" element={<NotFound />} />
-        </Route>
-        <Route path="/admin" element={<AdminLayout><Outlet /></AdminLayout>}>
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/category/:slug" element={<CategoryPage />} />
+        <Route path="/category/:categorySlug/:subcategorySlug" element={<SubcategoryPage />} />
+        <Route path="/article/:id" element={<ArticlePage />} />
+
+        {/* Admin Routes */}
+        <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
-          <Route path="content/*" element={<ContentManager />} />
-          <Route path="pages/*" element={<PagesManager />} />
+          <Route path="content" element={<ContentManager />} />
+          <Route path="pages" element={<PagesManager />} />
+          <Route path="pages/new" element={<PageForm />} />
+          <Route path="pages/edit/:id" element={<PageForm />} />
           <Route path="users" element={<UsersManager />} />
         </Route>
+
+        <Route path="*" element={<NotFound />} />
       </Routes>
-    </BrowserRouter>
+      <Toaster />
+    </>
   );
 }
 

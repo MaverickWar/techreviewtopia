@@ -40,38 +40,74 @@ export const AdminDashboard = () => {
           // If no statistics data found, gather data from other tables
           console.log("No statistics found in statistics table. Calculating from source tables...");
           
-          // Get counts from different tables
-          const usersResponse = await supabase
+          // For users, we need to get all profiles
+          const { count: usersCount, error: usersError } = await supabase
             .from('profiles')
-            .select('*', { count: 'exact' });
+            .select('*', { count: 'exact', head: true });
           
-          const articlesResponse = await supabase
+          if (usersError) {
+            console.error("Error counting users:", usersError);
+          }
+          
+          // For articles, we count published articles
+          const { count: articlesCount, error: articlesError } = await supabase
             .from('content')
-            .select('*', { count: 'exact' })
+            .select('*', { count: 'exact', head: true })
             .eq('type', 'article')
             .eq('status', 'published');
           
-          const reviewsResponse = await supabase
+          if (articlesError) {
+            console.error("Error counting articles:", articlesError);
+          }
+          
+          // For reviews, we count published reviews
+          const { count: reviewsCount, error: reviewsError } = await supabase
             .from('content')
-            .select('*', { count: 'exact' })
+            .select('*', { count: 'exact', head: true })
             .eq('type', 'review')
             .eq('status', 'published');
           
+          if (reviewsError) {
+            console.error("Error counting reviews:", reviewsError);
+          }
+          
           // Log the results for debugging
-          console.log("Users count response:", usersResponse);
-          console.log("Articles count response:", articlesResponse);
-          console.log("Reviews count response:", reviewsResponse);
+          console.log("Users count:", usersCount);
+          console.log("Articles count:", articlesCount);
+          console.log("Reviews count:", reviewsCount);
           
           // Calculate the stats
           const stats = {
-            active_users: usersResponse.count || 0,
-            total_articles: articlesResponse.count || 0,
-            total_reviews: reviewsResponse.count || 0,
-            total_comments: 0, // Placeholder for future comments feature
-            total_views: 0     // Placeholder for future views feature
+            active_users: usersCount || 0,
+            total_articles: articlesCount || 0,
+            total_reviews: reviewsCount || 0,
+            total_comments: 0, // Placeholder until we implement comments
+            total_views: 0     // Placeholder until we implement view tracking
           };
           
           console.log("Calculated statistics:", stats);
+          
+          // Store the calculated statistics in the statistics table for future use
+          for (const [type, count] of Object.entries(stats)) {
+            const { error: upsertError } = await supabase
+              .from('statistics')
+              .upsert(
+                { 
+                  type, 
+                  count,
+                  last_updated: new Date().toISOString() 
+                },
+                { 
+                  onConflict: 'type',
+                  ignoreDuplicates: false
+                }
+              );
+            
+            if (upsertError) {
+              console.error(`Error storing ${type} statistic:`, upsertError);
+            }
+          }
+          
           return stats;
         }
       } catch (err) {
@@ -79,7 +115,7 @@ export const AdminDashboard = () => {
         throw err;
       }
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     refetchOnWindowFocus: false,
   });
 
