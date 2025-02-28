@@ -9,22 +9,19 @@ export const useNavigation = () => {
     queryFn: async () => {
       console.log('Fetching navigation data');
       try {
-        // Fetch categories
-        const { data: categories, error: categoriesError } = await supabase
-          .from('menu_categories')
-          .select('*')
-          .order('order_index');
+        // Fetch categories and menu items in parallel for better performance
+        const [categoriesResponse, menuItemsResponse] = await Promise.all([
+          supabase.from('menu_categories').select('*').order('order_index'),
+          supabase.from('menu_items').select('*').order('order_index')
+        ]);
+
+        const { data: categories, error: categoriesError } = categoriesResponse;
+        const { data: menuItems, error: menuItemsError } = menuItemsResponse;
 
         if (categoriesError) {
           console.error('Error fetching menu categories:', categoriesError);
           throw categoriesError;
         }
-
-        // Fetch menu items
-        const { data: menuItems, error: menuItemsError } = await supabase
-          .from('menu_items')
-          .select('*')
-          .order('order_index');
 
         if (menuItemsError) {
           console.error('Error fetching menu items:', menuItemsError);
@@ -33,7 +30,29 @@ export const useNavigation = () => {
 
         console.log(`Fetched ${categories.length} categories and ${menuItems.length} menu items`);
 
-        // Map database fields to our TypeScript types
+        // Create a map for faster item lookup
+        const itemsByCategory: Record<string, MenuItem[]> = {};
+        
+        // Pre-process menu items into a lookup map (faster than filter in loop)
+        menuItems.forEach(item => {
+          if (!itemsByCategory[item.category_id]) {
+            itemsByCategory[item.category_id] = [];
+          }
+          
+          itemsByCategory[item.category_id].push({
+            id: item.id,
+            name: item.name,
+            slug: item.slug,
+            image_url: item.image_url,
+            description: item.description,
+            order_index: item.order_index,
+            category_id: item.category_id,
+            created_at: item.created_at,
+            updated_at: item.updated_at
+          });
+        });
+
+        // Map database fields to our TypeScript types more efficiently
         const organizedCategories = categories.map((category): MenuCategory => ({
           id: category.id,
           name: category.name,
@@ -42,19 +61,7 @@ export const useNavigation = () => {
           order_index: category.order_index,
           created_at: category.created_at,
           updated_at: category.updated_at,
-          items: menuItems
-            .filter(item => item.category_id === category.id)
-            .map((item): MenuItem => ({
-              id: item.id,
-              name: item.name,
-              slug: item.slug,
-              image_url: item.image_url,
-              description: item.description,
-              order_index: item.order_index,
-              category_id: item.category_id,
-              created_at: item.created_at,
-              updated_at: item.updated_at
-            }))
+          items: itemsByCategory[category.id] || []
         }));
 
         return organizedCategories;
@@ -63,8 +70,11 @@ export const useNavigation = () => {
         throw error;
       }
     },
-    staleTime: 60000, // Cache for 1 minute to reduce API calls
-    retry: 2,
-    refetchOnWindowFocus: false
+    staleTime: 300000, // Cache for 5 minutes to improve performance
+    cacheTime: 600000, // Keep in cache for 10 minutes
+    retry: 1, // Only retry once to avoid excessive API calls on failure
+    refetchOnWindowFocus: false,
+    refetchOnMount: false, // Don't refetch on component mount if data exists
+    refetchOnReconnect: false // Don't refetch on reconnect if data exists
   });
 };

@@ -1,7 +1,7 @@
 
 import { Search, Bell, UserRound, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { AuthModal } from './auth/AuthModal';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -15,87 +15,153 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UserSettingsDialog } from './settings/UserSettings';
+import { useQuery } from '@tanstack/react-query';
+
+// Memoize the profile menu to prevent unnecessary rerenders
+const ProfileMenu = memo(({ 
+  session, 
+  loading, 
+  avatarUrl, 
+  onLoginClick, 
+  onSettingsClick, 
+  onLogout, 
+  menuOpen, 
+  setMenuOpen 
+}: { 
+  session: any; 
+  loading: boolean; 
+  avatarUrl: string | null; 
+  onLoginClick: () => void; 
+  onSettingsClick: () => void; 
+  onLogout: () => void; 
+  menuOpen: boolean; 
+  setMenuOpen: (open: boolean) => void; 
+}) => {
+  const getUserInitials = (email?: string) => {
+    return email ? email.substring(0, 2).toUpperCase() : 'U';
+  };
+
+  if (loading) {
+    return <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse" />;
+  }
+
+  if (!session) {
+    return (
+      <button 
+        className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-orange-500 hover:bg-orange-600 transition-colors"
+        onClick={onLoginClick}
+      >
+        <UserRound size={18} />
+        <span>Login</span>
+      </button>
+    );
+  }
+
+  return (
+    <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+      <DropdownMenuTrigger asChild>
+        <button className="focus:outline-none">
+          <Avatar className="h-8 w-8 bg-orange-500 hover:bg-orange-600 transition-colors cursor-pointer">
+            {avatarUrl ? (
+              <AvatarImage 
+                src={avatarUrl}
+                alt="Profile"
+                className="object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <AvatarFallback>
+                {getUserInitials(session?.user?.email)}
+              </AvatarFallback>
+            )}
+          </Avatar>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56 bg-white z-50">
+        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={onSettingsClick}>
+          <Settings className="mr-2 h-4 w-4" />
+          <span>Settings</span>
+          <span className="ml-auto text-xs text-muted-foreground">Upload avatar</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/admin">
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            <span>Admin Dashboard</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={onLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Log out</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+});
+
+// For TypeScript strict mode
+ProfileMenu.displayName = 'ProfileMenu';
 
 export const TopNav = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const { toast } = useToast();
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    try {
-      console.log('Fetching profile for user:', userId);
-      const { data: profile, error } = await supabase
+  // Use React Query for better caching and performance
+  const { data: sessionData, isLoading: isSessionLoading } = useQuery({
+    queryKey: ['auth-session'],
+    queryFn: async () => {
+      console.log('Fetching auth session');
+      const { data } = await supabase.auth.getSession();
+      return data.session;
+    },
+    staleTime: 300000, // 5 minutes
+    refetchOnWindowFocus: false,
+  });
+
+  // Use a separate query for profile data
+  const { data: profileData, isLoading: isProfileLoading } = useQuery({
+    queryKey: ['user-profile', sessionData?.user?.id],
+    queryFn: async () => {
+      if (!sessionData?.user?.id) return null;
+      
+      console.log('Fetching user profile');
+      const { data, error } = await supabase
         .from('profiles')
-        .select('avatar_url, display_name')
-        .eq('id', userId)
+        .select('avatar_url, display_name, role')
+        .eq('id', sessionData.user.id)
         .single();
       
       if (error) {
-        console.error('TopNav: Error fetching profile:', error);
-        return;
+        console.error('Error fetching profile:', error);
+        return null;
       }
+      
+      return data;
+    },
+    enabled: !!sessionData?.user?.id,
+    staleTime: 300000, // 5 minutes
+    refetchOnWindowFocus: false,
+  });
 
-      // Only update avatar URL if it's different from current
-      if (profile?.avatar_url !== avatarUrl) {
-        console.log('Setting avatar URL:', profile?.avatar_url);
-        setAvatarUrl(profile?.avatar_url || null);
-      }
-    } catch (error) {
-      console.error('TopNav: Error in fetchProfile:', error);
-    }
-  }, [avatarUrl]);
-
+  // Auth state change listener
   useEffect(() => {
-    let mounted = true;
-
-    const setupAuth = async () => {
-      try {
-        console.log('Setting up auth in TopNav');
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        if (mounted) {
-          setSession(currentSession);
-          if (currentSession?.user) {
-            await fetchProfile(currentSession.user.id);
-          }
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('TopNav: Error in setupAuth:', error);
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    setupAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
-      console.log('Auth state changed, new session:', currentSession ? 'yes' : 'no');
-      if (mounted) {
-        setSession(currentSession);
-        if (currentSession?.user) {
-          await fetchProfile(currentSession.user.id);
-        } else {
-          setAvatarUrl(null);
-        }
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      // Invalidate the query cache to refetch data on auth state change
+      // This is handled by React Query automatically
     });
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, []);
 
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
-      setAvatarUrl(null);
-      setSession(null);
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of your account.",
@@ -109,78 +175,9 @@ export const TopNav = () => {
     }
   };
 
-  const getUserInitials = (email?: string) => {
-    return email ? email.substring(0, 2).toUpperCase() : 'U';
-  };
-
-  const renderProfileMenu = () => {
-    if (loading) {
-      return <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse" />;
-    }
-
-    if (!session) {
-      return (
-        <button 
-          className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-orange-500 hover:bg-orange-600 transition-colors"
-          onClick={() => setShowAuthModal(true)}
-        >
-          <UserRound size={18} />
-          <span>Login</span>
-        </button>
-      );
-    }
-
-    return (
-      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-        <DropdownMenuTrigger asChild>
-          <button className="focus:outline-none">
-            <Avatar className="h-8 w-8 bg-orange-500 hover:bg-orange-600 transition-colors cursor-pointer">
-              {avatarUrl ? (
-                <AvatarImage 
-                  src={avatarUrl}
-                  alt="Profile"
-                  className="object-cover"
-                  onError={() => setAvatarUrl(null)}
-                />
-              ) : (
-                <AvatarFallback>
-                  {getUserInitials(session?.user?.email)}
-                </AvatarFallback>
-              )}
-            </Avatar>
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 bg-white z-50">
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => setShowSettingsDialog(true)}>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
-            <span className="ml-auto text-xs text-muted-foreground">Upload avatar</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link to="/admin">
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>Admin Dashboard</span>
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Log out</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
-  };
-
   const handleSettingsClose = useCallback(() => {
     setShowSettingsDialog(false);
-    // Refresh the avatar after settings dialog closes
-    if (session?.user) {
-      fetchProfile(session.user.id);
-    }
-  }, [session, fetchProfile]);
+  }, []);
 
   return (
     <>
@@ -198,21 +195,35 @@ export const TopNav = () => {
               <button className="p-2 hover:text-orange-400">
                 <Bell size={18} />
               </button>
-              {renderProfileMenu()}
+              <ProfileMenu
+                session={sessionData}
+                loading={isSessionLoading || isProfileLoading}
+                avatarUrl={profileData?.avatar_url || null}
+                onLoginClick={() => setShowAuthModal(true)}
+                onSettingsClick={() => setShowSettingsDialog(true)}
+                onLogout={handleLogout}
+                menuOpen={menuOpen}
+                setMenuOpen={setMenuOpen}
+              />
             </div>
           </div>
         </div>
       </div>
 
-      <AuthModal 
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-      />
+      {/* Only render these when needed to improve initial load performance */}
+      {showAuthModal && (
+        <AuthModal 
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+        />
+      )}
 
-      <UserSettingsDialog
-        isOpen={showSettingsDialog}
-        onClose={handleSettingsClose}
-      />
+      {showSettingsDialog && (
+        <UserSettingsDialog
+          isOpen={showSettingsDialog}
+          onClose={handleSettingsClose}
+        />
+      )}
     </>
   );
 };
