@@ -22,7 +22,7 @@ export const useRealtimeContent = () => {
           
           // Instead of invalidating all content queries, only invalidate specific content
           // This prevents the form from losing content when navigating between tabs
-          if (payload.new && payload.new.id) {
+          if (payload.new && typeof payload.new === 'object' && 'id' in payload.new) {
             queryClient.invalidateQueries({ 
               queryKey: ['content', payload.new.id],
               refetchType: 'none' // Don't automatically refetch to prevent losing form state
@@ -71,7 +71,7 @@ export const useRealtimeContent = () => {
           console.log('Review details change detected:', payload);
           
           // For review details, only invalidate the content it's related to
-          if (payload.new && payload.new.content_id) {
+          if (payload.new && typeof payload.new === 'object' && 'content_id' in payload.new) {
             queryClient.invalidateQueries({
               queryKey: ['content', payload.new.content_id],
               refetchType: 'none'
