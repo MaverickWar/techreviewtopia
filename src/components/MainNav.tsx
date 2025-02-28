@@ -9,6 +9,8 @@ import { MobileNav } from './navigation/MobileNav';
 export const MainNav = () => {
   const { data: categories, isLoading } = useNavigation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
+  const navRef = useRef<HTMLDivElement>(null);
 
   // Prevent scrolling when mobile menu is open
   useEffect(() => {
@@ -22,8 +24,17 @@ export const MainNav = () => {
     };
   }, [isMobileMenuOpen]);
 
+  // Handle mouse leave for the entire nav
+  const handleNavMouseLeave = () => {
+    setActiveMegaMenu(null);
+  };
+
   return (
-    <nav className="bg-white border-b sticky top-0 z-50">
+    <nav 
+      className="bg-white border-b sticky top-0 z-50"
+      onMouseLeave={handleNavMouseLeave}
+      ref={navRef}
+    >
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center">
           <Link 
@@ -34,20 +45,35 @@ export const MainNav = () => {
           </Link>
           
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center">
+          <div className="hidden md:flex items-center relative">
             {!isLoading && categories?.map((category) => (
               category.type === 'megamenu' ? (
-                <MegaMenu key={category.id} category={category} />
+                <MegaMenu 
+                  key={category.id} 
+                  category={category} 
+                  isActive={activeMegaMenu === category.id}
+                  onMouseEnter={() => setActiveMegaMenu(category.id)}
+                />
               ) : (
                 <Link
                   key={category.id}
                   to={`/${category.slug}`}
-                  className="py-4 px-4 hover:text-orange-500"
+                  className="py-4 px-4 hover:text-orange-500 transition-colors duration-200"
+                  onMouseEnter={() => setActiveMegaMenu(null)}
                 >
                   {category.name}
                 </Link>
               )
             ))}
+
+            {/* Shared mega menu background overlay */}
+            {activeMegaMenu && (
+              <div 
+                className="fixed inset-0 bg-black/5 z-40"
+                onClick={() => setActiveMegaMenu(null)}
+                style={{ top: navRef.current ? navRef.current.offsetHeight : '64px' }}
+              />
+            )}
           </div>
 
           {/* Mobile Menu Button */}
