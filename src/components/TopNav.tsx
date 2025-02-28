@@ -22,13 +22,15 @@ export const TopNav = () => {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const { toast } = useToast();
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
+      console.log('Fetching profile for user:', userId);
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('avatar_url')
+        .select('avatar_url, display_name')
         .eq('id', userId)
         .single();
       
@@ -39,6 +41,7 @@ export const TopNav = () => {
 
       // Only update avatar URL if it's different from current
       if (profile?.avatar_url !== avatarUrl) {
+        console.log('Setting avatar URL:', profile?.avatar_url);
         setAvatarUrl(profile?.avatar_url || null);
       }
     } catch (error) {
@@ -51,6 +54,7 @@ export const TopNav = () => {
 
     const setupAuth = async () => {
       try {
+        console.log('Setting up auth in TopNav');
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (mounted) {
           setSession(currentSession);
@@ -70,6 +74,7 @@ export const TopNav = () => {
     setupAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, currentSession) => {
+      console.log('Auth state changed, new session:', currentSession ? 'yes' : 'no');
       if (mounted) {
         setSession(currentSession);
         if (currentSession?.user) {
@@ -126,7 +131,7 @@ export const TopNav = () => {
     }
 
     return (
-      <DropdownMenu>
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <DropdownMenuTrigger asChild>
           <button className="focus:outline-none">
             <Avatar className="h-8 w-8 bg-orange-500 hover:bg-orange-600 transition-colors cursor-pointer">
@@ -145,7 +150,7 @@ export const TopNav = () => {
             </Avatar>
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 bg-white">
+        <DropdownMenuContent align="end" className="w-56 bg-white z-50">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => setShowSettingsDialog(true)}>

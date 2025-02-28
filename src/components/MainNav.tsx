@@ -31,9 +31,14 @@ export const MainNav = () => {
     setActiveMegaMenu(null);
   };
 
+  // Handle menu toggle for mobile
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
   return (
     <nav 
-      className="bg-white border-b sticky top-0 z-50"
+      className="bg-white border-b sticky top-0 z-40"
       onMouseLeave={handleNavMouseLeave}
       ref={navRef}
     >
@@ -72,7 +77,7 @@ export const MainNav = () => {
           {/* Mobile Menu Button */}
           <button 
             className="md:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            onClick={toggleMobileMenu}
             aria-label="Toggle mobile menu"
           >
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
