@@ -1,96 +1,89 @@
 
+import React from "react";
 import { ArticleData } from "@/types/content";
 import { AwardBanner } from "./AwardBanner";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { User, Clock, Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface ClassicLayoutProps {
   article: ArticleData;
 }
 
-export const ClassicLayout = ({ article }: ClassicLayoutProps) => {
-  // Get the award from layout_settings
-  const award = article.layout_settings?.award;
-  const [authorName, setAuthorName] = useState<string | null>(null);
+export const ClassicLayout: React.FC<ClassicLayoutProps> = ({ article }) => {
+  // Extract award from layout settings (supporting both awardLevel and award)
+  const awardLevel = article.layout_settings?.awardLevel || article.layout_settings?.award;
+  const showAwards = article.layout_settings?.showAwards !== undefined ? 
+    article.layout_settings.showAwards : true;
+  
+  console.log("ClassicLayout - award level:", awardLevel);
+  console.log("ClassicLayout - show awards:", showAwards);
 
-  useEffect(() => {
-    const fetchAuthorData = async () => {
-      if (article.author_id) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('display_name')
-          .eq('id', article.author_id)
-          .single();
-
-        if (!error && data) {
-          setAuthorName(data.display_name);
-        }
-      }
-    };
-
-    fetchAuthorData();
-  }, [article.author_id]);
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  // Helper function to format the date
+  const formatPublishDate = (dateString: string | null) => {
+    if (!dateString) return "Recently";
+    return formatDistanceToNow(new Date(dateString), { addSuffix: true });
   };
 
   return (
-    <div className="bg-white min-h-screen">
-      {/* Header */}
-      <header className="relative">
-        {article.featured_image ? (
-          <div className="w-full h-80 md:h-96 overflow-hidden">
-            <img
-              src={article.featured_image}
-              alt={article.title}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-            <div className="absolute bottom-0 left-0 p-6 md:p-12 w-full">
-              <div className="content-container">
-                <h1 className="text-3xl md:text-5xl font-bold text-white mb-4">{article.title}</h1>
-                {article.published_at && (
-                  <p className="text-gray-300 mb-2">
-                    Published {formatDate(article.published_at)}
-                    {authorName && ` by ${authorName}`}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="content-container py-12">
-            <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4">{article.title}</h1>
-            {article.published_at && (
-              <p className="text-gray-500 mb-2">
-                Published {formatDate(article.published_at)}
-                {authorName && ` by ${authorName}`}
-              </p>
-            )}
-          </div>
-        )}
-      </header>
-
-      {/* Content */}
-      <main className="content-container py-12">
-        {/* Award Banner - Added here at the top of the content */}
-        <AwardBanner award={award} />
+    <article className="max-w-4xl mx-auto px-4 py-8">
+      {/* Award banner */}
+      {showAwards && awardLevel && (
+        <AwardBanner awardLevel={awardLevel} />
+      )}
+      
+      <header className="mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold mb-4">{article.title}</h1>
         
         {article.description && (
-          <div className="text-xl text-gray-600 mb-8" dangerouslySetInnerHTML={{ __html: article.description }} />
+          <div 
+            className="text-xl text-gray-700 mb-6 leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: article.description }}
+          />
         )}
         
-        {article.content && (
-          <div className="prose prose-blue max-w-none" dangerouslySetInnerHTML={{ __html: article.content }} />
-        )}
-      </main>
-    </div>
+        <div className="flex flex-wrap items-center text-sm text-gray-500 gap-4 mb-6">
+          <div className="flex items-center">
+            <User className="h-4 w-4 mr-1" />
+            <span>{article.author?.display_name || "Editorial Team"}</span>
+          </div>
+          
+          {article.published_at && (
+            <div className="flex items-center">
+              <Clock className="h-4 w-4 mr-1" />
+              <span>{formatPublishDate(article.published_at)}</span>
+            </div>
+          )}
+          
+          <Badge variant="outline" className="ml-auto">
+            {article.type === "review" ? "Review" : "Article"}
+          </Badge>
+        </div>
+      </header>
+      
+      {article.featured_image && (
+        <img 
+          src={article.featured_image} 
+          alt={article.title}
+          className="w-full h-auto rounded-lg mb-8 object-cover"
+        />
+      )}
+      
+      {article.content && (
+        <div 
+          className="prose prose-lg max-w-none"
+          dangerouslySetInnerHTML={{ __html: article.content }}
+        />
+      )}
+      
+      <footer className="mt-12 pt-8 border-t border-gray-200">
+        <div className="flex items-center text-sm text-gray-500">
+          <Calendar className="h-4 w-4 mr-1" />
+          <span>
+            Published: {article.published_at ? new Date(article.published_at).toLocaleDateString() : "Draft"}
+          </span>
+        </div>
+      </footer>
+    </article>
   );
 };

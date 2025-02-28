@@ -84,9 +84,23 @@ const ArticlePage = () => {
           console.error("Error fetching author details:", authorError);
         }
         
+        // Normalize layout settings if they exist
+        let normalizedLayoutSettings = contentData.layout_settings || {};
+        
+        // Ensure layout settings are an object
+        if (typeof normalizedLayoutSettings === 'string') {
+          try {
+            normalizedLayoutSettings = JSON.parse(normalizedLayoutSettings);
+          } catch (e) {
+            console.error("Error parsing layout settings:", e);
+            normalizedLayoutSettings = {};
+          }
+        }
+        
         // Combine all the data
         return {
           ...contentData,
+          layout_settings: normalizedLayoutSettings,
           review_details: reviewDetails ? [reviewDetails] : [],
           rating_criteria: ratingCriteria,
           author: authorData || null

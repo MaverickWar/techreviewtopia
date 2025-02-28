@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { ArticleData, ContentType, LayoutTemplate } from "@/types/content";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,14 +26,26 @@ export interface LayoutSettingsProps {
 // Predefined award options to ensure consistency
 const AWARD_OPTIONS = [
   { value: "", label: "No Award" },
-  { value: "Editor's Choice", label: "Editor's Choice" },
-  { value: "Best Value", label: "Best Value" },
-  { value: "Best Performance", label: "Best Performance" },
-  { value: "Highly Recommended", label: "Highly Recommended" },
-  { value: "Budget Pick", label: "Budget Pick" },
-  { value: "Premium Choice", label: "Premium Choice" },
-  { value: "Most Innovative", label: "Most Innovative" },
+  { value: "editors-choice", label: "Editor's Choice" },
+  { value: "best-value", label: "Best Value" },
+  { value: "best-performance", label: "Best Performance" },
+  { value: "highly-recommended", label: "Highly Recommended" },
+  { value: "budget-pick", label: "Budget Pick" },
+  { value: "premium-choice", label: "Premium Choice" },
+  { value: "most-innovative", label: "Most Innovative" },
 ];
+
+// Transform kebab-case to readable format
+const formatAwardLabel = (awardValue: string): string => {
+  if (!awardValue) return "";
+  
+  // Find the matching label from options
+  const option = AWARD_OPTIONS.find(opt => opt.value === awardValue);
+  return option ? option.label : awardValue
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
 
 const LayoutSettings: React.FC<LayoutSettingsProps> = ({ 
   article, 
@@ -42,29 +53,48 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
   layoutSettings,
   onChange 
 }) => {
-  const [award, setAward] = useState<string | undefined>(
-    // Use either the new layoutSettings prop or fall back to article.layout_settings
-    layoutSettings?.award || article?.layout_settings?.award
+  // Use awardLevel as the primary key with fallback to award for backward compatibility
+  const [awardLevel, setAwardLevel] = useState<string | undefined>(
+    layoutSettings?.awardLevel || 
+    layoutSettings?.award || 
+    article?.layout_settings?.awardLevel ||
+    article?.layout_settings?.award
+  );
+  
+  const [showAwards, setShowAwards] = useState<boolean>(
+    layoutSettings?.showAwards !== undefined ? 
+    layoutSettings.showAwards :
+    article?.layout_settings?.showAwards !== undefined ?
+    article.layout_settings.showAwards : 
+    true
   );
 
   useEffect(() => {
     // Update from article.layout_settings when it changes
     if (article?.layout_settings) {
-      setAward(article.layout_settings.award);
+      setAwardLevel(article.layout_settings.awardLevel || article.layout_settings.award);
+      setShowAwards(article.layout_settings.showAwards !== undefined ? 
+        article.layout_settings.showAwards : true);
     }
   }, [article?.layout_settings]);
 
   useEffect(() => {
     // Update from layoutSettings prop when it changes
     if (layoutSettings) {
-      setAward(layoutSettings.award);
+      setAwardLevel(layoutSettings.awardLevel || layoutSettings.award);
+      setShowAwards(layoutSettings.showAwards !== undefined ? 
+        layoutSettings.showAwards : true);
     }
   }, [layoutSettings]);
 
   const handleSave = async () => {
+    console.log("Saving award level:", awardLevel);
     const updatedSettings = {
       ...article.layout_settings,
-      award,
+      awardLevel,
+      showAwards,
+      // Keep award for backward compatibility
+      award: awardLevel 
     };
 
     // Save the updated layout settings to the database
@@ -85,13 +115,16 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
   };
 
   const handleChange = (value: string) => {
-    setAward(value);
+    console.log("Award changed to:", value);
+    setAwardLevel(value);
     
     // Call the onChange handler immediately for real-time updates if provided
     if (onChange) {
       const updatedSettings = {
         ...(layoutSettings || article?.layout_settings || {}),
-        award: value
+        awardLevel: value,
+        award: value, // Keep award for backward compatibility
+        showAwards
       };
       onChange(updatedSettings);
     }
@@ -107,7 +140,7 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
       <div className="mb-6">
         <label className="block text-sm font-medium mb-2">Award Badge</label>
         <Select
-          value={award || ""}
+          value={awardLevel || ""}
           onValueChange={handleChange}
         >
           <SelectTrigger className="w-full">
@@ -127,11 +160,11 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
       </div>
       
       {/* Preview */}
-      {award && (
+      {awardLevel && (
         <div className="mb-6">
           <h3 className="text-sm font-medium mb-2">Preview</h3>
           <div className="p-4 bg-gray-50 rounded-md">
-            <AwardBanner award={award} />
+            <AwardBanner awardLevel={awardLevel} />
           </div>
         </div>
       )}

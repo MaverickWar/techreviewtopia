@@ -42,12 +42,22 @@ export const LayoutSelector = ({
   // If selected layout is not valid for this content type, select the first valid option
   useEffect(() => {
     if (selectedLayout && !availableLayouts.some(l => l.id === selectedLayout)) {
-      onChange(availableLayouts[0].id);
+      if (availableLayouts.length > 0) {
+        console.log("Selected layout not valid for content type, selecting first valid option:", availableLayouts[0].id);
+        onChange(availableLayouts[0].id);
+      }
     }
   }, [contentType, selectedLayout, availableLayouts, onChange]);
 
-  // Get the selected layout object
-  const selectedLayoutOption = availableLayouts.find(l => l.id === selectedLayout) || availableLayouts[0];
+  // Get the selected layout object with error handling
+  const selectedLayoutOption = availableLayouts.find(l => l.id === selectedLayout) || 
+    (availableLayouts.length > 0 ? availableLayouts[0] : {
+      id: 'classic',
+      name: 'Classic Layout',
+      description: 'Default layout',
+      icon: 'file-text',
+      supportedTypes: ['article', 'review']
+    });
 
   // Map layout icon string to component
   const getLayoutIcon = (iconName: string) => {
@@ -60,6 +70,21 @@ export const LayoutSelector = ({
       case 'thumbs-up': return <ThumbsUp className="h-5 w-5" />;
       case 'award': return <Award className="h-5 w-5" />;
       default: return <FileText className="h-5 w-5" />;
+    }
+  };
+
+  // Handle layout change with error checking
+  const handleLayoutChange = (layoutId: string) => {
+    console.log("Changing layout to:", layoutId);
+    // Verify the layout is valid before changing
+    if (availableLayouts.some(l => l.id === layoutId)) {
+      onChange(layoutId);
+    } else {
+      console.error("Invalid layout selected:", layoutId);
+      // Fall back to first available layout
+      if (availableLayouts.length > 0) {
+        onChange(availableLayouts[0].id);
+      }
     }
   };
 
@@ -84,7 +109,7 @@ export const LayoutSelector = ({
         {availableLayouts.map((layout) => (
           <DropdownMenuItem 
             key={layout.id}
-            onClick={() => onChange(layout.id)}
+            onClick={() => handleLayoutChange(layout.id)}
             className="cursor-pointer"
           >
             <div className="flex items-center w-full">
@@ -106,6 +131,16 @@ export const LayoutSelector = ({
     </DropdownMenu>
   );
 
+  // If no layouts are available, show a helpful message
+  if (availableLayouts.length === 0) {
+    return (
+      <div className="p-4 bg-amber-50 text-amber-800 rounded-md">
+        No layout templates are available for this content type.
+        Using default layout.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -118,7 +153,7 @@ export const LayoutSelector = ({
       {/* Radio group for larger screens */}
       <RadioGroup
         value={selectedLayout}
-        onValueChange={onChange}
+        onValueChange={handleLayoutChange}
         className="hidden md:grid md:grid-cols-3 gap-4"
       >
         {availableLayouts.map((layout) => (
