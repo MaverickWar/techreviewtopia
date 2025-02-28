@@ -1,7 +1,7 @@
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Outlet } from "react-router-dom";
 import { PageLayout } from "@/components/layouts/PageLayout";
+import { Outlet } from "react-router-dom";
 import IndexPage from "@/pages/Index";
 import { CategoryPage } from "@/pages/CategoryPage";
 import { SubcategoryPage } from "@/pages/SubcategoryPage";
@@ -18,7 +18,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<PageLayout><Outlet /></PageLayout>}>
-          <Route index element={<div className="animate-fade-in">{<IndexPage />}</div>} />
+          <Route index element={<div className="animate-fade-in"><IndexPage /></div>} />
           <Route path=":categorySlug" element={<CategoryPage />} />
           <Route path=":categorySlug/:subcategorySlug" element={<SubcategoryPage />} />
           <Route path=":categorySlug/content/:contentId" element={<ArticlePage />} />
