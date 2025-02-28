@@ -208,6 +208,25 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       // Ensure gallery is always an array
       const gallery = Array.isArray(reviewDetails?.gallery) ? reviewDetails.gallery : [];
 
+      // Ensure layout_settings is always an object
+      let layoutSettings: Record<string, any> = {};
+      if (existingContent.layout_settings) {
+        try {
+          // If it's a string, try to parse it, otherwise use it if it's already an object
+          layoutSettings = typeof existingContent.layout_settings === 'string'
+            ? JSON.parse(existingContent.layout_settings)
+            : (existingContent.layout_settings as Record<string, any>) || {};
+        } catch (error) {
+          console.error('Error parsing layout settings:', error);
+          layoutSettings = {};
+        }
+
+        // If it's still not an object after parsing, set to empty object
+        if (typeof layoutSettings !== 'object' || layoutSettings === null) {
+          layoutSettings = {};
+        }
+      }
+
       setFormData({
         id: existingContent.id,
         title: existingContent.title,
@@ -224,7 +243,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         overall_score: reviewDetails?.overall_score || 0,
         youtube_url: reviewDetails?.youtube_url || null,
         layout_template: existingContent.layout_template as LayoutTemplate || "classic",
-        layout_settings: existingContent.layout_settings || {}
+        layout_settings: layoutSettings
       });
 
       if (existingContent.page_content?.[0]?.pages?.menu_category_id) {
@@ -427,6 +446,11 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         }
       }
 
+      // Ensure layout_settings is an object before saving
+      const layoutSettings = typeof data.layout_settings === 'object' && data.layout_settings !== null 
+        ? data.layout_settings 
+        : {};
+
       // Create/update the content
       const { data: content, error: contentError } = await supabase
         .from("content")
@@ -440,7 +464,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
           author_id: data.author_id,
           featured_image: data.featured_image,
           layout_template: data.layout_template,
-          layout_settings: data.layout_settings
+          layout_settings: layoutSettings
         })
         .select()
         .single();
@@ -660,7 +684,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
               </AccordionContent>
             </AccordionItem>
 
-            {/* New Layout Accordion Item */}
+            {/* Layout Accordion Item */}
             <AccordionItem value="layout">
               <AccordionTrigger>
                 <div className="flex items-center gap-2">
