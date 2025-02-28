@@ -152,7 +152,24 @@ const FeaturedContentTabs = () => {
         const content = item.content;
         
         // Get award from layout_settings if it exists
-        const award = content.layout_settings?.award || null;
+        let award: string | null = null;
+        
+        // Safely parse layout_settings to extract award property
+        if (content.layout_settings) {
+          try {
+            // If layout_settings is a string, parse it
+            const settings = typeof content.layout_settings === 'string'
+              ? JSON.parse(content.layout_settings)
+              : content.layout_settings;
+              
+            // Check if settings is an object and has award property
+            if (settings && typeof settings === 'object' && 'award' in settings) {
+              award = settings.award as string;
+            }
+          } catch (e) {
+            console.error("Error parsing layout_settings:", e);
+          }
+        }
         
         // Base content structure
         const baseItem = {
@@ -401,6 +418,89 @@ const FeaturedContentTabs = () => {
 };
 
 const Index = () => {
+  // Define top-rated reviews data for display in the "Top-Rated Products" section
+  const [topRatedReviews, setTopRatedReviews] = useState<Review[]>([]);
+  
+  // Fetch top-rated reviews
+  const { data: reviewData, isLoading: isLoadingReviews } = useQuery({
+    queryKey: ['topRatedReviews'],
+    queryFn: async () => {
+      // Fetch content items that are reviews, with high ratings
+      const { data, error } = await supabase
+        .from('content')
+        .select(`
+          id,
+          title,
+          description,
+          featured_image,
+          layout_settings,
+          review_details (
+            overall_score
+          )
+        `)
+        .eq('type', 'review')
+        .order('published_at', { ascending: false })
+        .limit(3);
+
+      if (error) {
+        console.error("Error fetching top rated reviews:", error);
+        return [];
+      }
+
+      // Transform to our Review type
+      return data.map(item => {
+        // Safely extract award from layout_settings
+        let award: string | null = null;
+        if (item.layout_settings) {
+          try {
+            // If layout_settings is a string, parse it
+            const settings = typeof item.layout_settings === 'string'
+              ? JSON.parse(item.layout_settings)
+              : item.layout_settings;
+              
+            // Check if settings is an object and has award property
+            if (settings && typeof settings === 'object' && 'award' in settings) {
+              award = settings.award as string;
+            }
+          } catch (e) {
+            console.error("Error parsing layout_settings:", e);
+          }
+        }
+        
+        // Get score safely
+        let score = 0;
+        if (item.review_details && 
+            Array.isArray(item.review_details) && 
+            item.review_details.length > 0 && 
+            item.review_details[0].overall_score !== null) {
+          score = Number(item.review_details[0].overall_score) || 0;
+        }
+        
+        return {
+          id: item.id,
+          title: item.title,
+          excerpt: item.description || "No description available",
+          image: item.featured_image || "https://images.unsplash.com/photo-1550751827-4bd374c3f58b",
+          category: "Technology",
+          categorySlug: "technology",
+          author: "Tech Team",
+          readTime: "5 min read",
+          type: 'review' as const,
+          slug: item.id,
+          rating: score,
+          award: award
+        };
+      });
+    }
+  });
+
+  // Update top rated reviews when data is fetched
+  useEffect(() => {
+    if (reviewData) {
+      setTopRatedReviews(reviewData);
+    }
+  }, [reviewData]);
+
   return (
     <>
       {/* Hero Section with improved gradients and animations */}
@@ -459,7 +559,7 @@ const Index = () => {
         </div>
       </section>
       
-      {/* New Featured Reviews Section */}
+      {/* Top-Rated Products Section */}
       <section className="py-16 bg-white">
         <div className="content-container">
           <div className="flex justify-between items-center mb-8">
@@ -473,7 +573,7 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {reviewsData.slice(0, 3).map((review, index) => (
+            {topRatedReviews.slice(0, 3).map((review, index) => (
               <Card 
                 key={review.id} 
                 className="overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in h-full"

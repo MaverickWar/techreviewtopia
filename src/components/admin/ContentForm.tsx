@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -446,6 +447,19 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       ...prev,
       layout_settings: settings
     }));
+  };
+
+  // Add the missing handleSaveLayoutSettings function
+  const handleSaveLayoutSettings = (settings: Record<string, any>) => {
+    console.log("Layout settings saved:", settings);
+    setFormData(prev => ({
+      ...prev,
+      layout_settings: settings
+    }));
+    toast({
+      title: "Layout settings saved",
+      description: "The layout settings have been updated.",
+    });
   };
 
   // Helper function to handle review data
