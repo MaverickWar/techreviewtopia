@@ -48,8 +48,8 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
 
   return (
     <article>
-      {/* Hero Banner - full width */}
-      <div className="relative h-[70vh] min-h-[500px] w-full mb-8">
+      {/* Hero Banner - full width with responsive height */}
+      <div className="relative w-full mb-8 h-[50vh] md:h-[70vh] min-h-[300px] md:min-h-[500px]">
         {article.featured_image ? (
           <img
             src={article.featured_image}
@@ -61,21 +61,21 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
         )}
         <div className="absolute inset-0 bg-black/50" />
         
-        {/* Adjusted padding and positioning */}
+        {/* Adjusted padding and positioning for better mobile display */}
         <div className="absolute inset-0 flex flex-col justify-end content-container">
-          <div className="max-w-4xl pb-20">
-            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+          <div className="max-w-4xl pb-10 md:pb-20">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-3 md:mb-6 leading-tight">
               {article.title}
             </h1>
             
             {article.description && (
-              <p className="text-lg md:text-xl text-white/90 mb-6 leading-relaxed">
+              <p className="text-base sm:text-lg md:text-xl text-white/90 mb-3 md:mb-6 leading-relaxed line-clamp-3 md:line-clamp-none">
                 {article.description}
               </p>
             )}
             
-            {/* Article metadata */}
-            <div className="flex items-center gap-3 text-white/90 mb-8 mt-4 text-sm">
+            {/* Article metadata with responsive spacing */}
+            <div className="flex flex-wrap items-center gap-2 md:gap-3 text-white/90 mb-4 md:mb-8 text-xs md:text-sm">
               {article.published_at && (
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
@@ -98,7 +98,7 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
           <Card className="mb-8 overflow-hidden bg-white/80 backdrop-blur-sm border-gray-200 shadow-md">
             <CardContent className="p-0">
               <div className="flex flex-col sm:flex-row items-center p-4">
-                <Avatar className="h-16 w-16 border-2 border-white shadow-sm">
+                <Avatar className="h-12 w-12 sm:h-16 sm:w-16 border-2 border-white shadow-sm">
                   <AvatarImage src={authorProfile.avatar_url || ''} alt={authorProfile.display_name || authorProfile.email} />
                   <AvatarFallback className="bg-primary/10 text-primary text-lg font-medium">{getInitials()}</AvatarFallback>
                 </Avatar>
