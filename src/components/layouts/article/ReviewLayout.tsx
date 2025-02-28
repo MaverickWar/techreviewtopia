@@ -161,9 +161,27 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
         </div>
       </div>
       
-      {/* Separate Ratings and Score Section - Full width with two columns */}
-      {hasReviewDetails && (
+      {/* Gallery - Moved up, before ratings */}
+      {hasReviewDetails && reviewDetails.gallery && reviewDetails.gallery.length > 0 && (
         <div className="mt-12 mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Product Gallery</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {reviewDetails.gallery.map((image, index) => (
+              <div key={index} className="aspect-square rounded-lg overflow-hidden">
+                <img
+                  src={image}
+                  alt={`Product image ${index + 1}`}
+                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Separate Ratings and Score Section - Always at the bottom, together */}
+      {hasReviewDetails && (
+        <div className="mt-12 pb-12 border-t pt-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Our Verdict</h2>
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -172,8 +190,26 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
               <div className="p-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Detailed Ratings</h3>
                 
+                {/* Rating criteria visualization */}
+                <div className="space-y-5 mb-8">
+                  {article.rating_criteria?.map((criteria, index) => (
+                    <div key={index} className="w-full">
+                      <div className="flex justify-between mb-2">
+                        <span className="text-gray-700 font-medium">{criteria.name}</span>
+                        <span className="font-semibold">{criteria.score.toFixed(1)}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div 
+                          className="bg-blue-600 h-3 rounded-full" 
+                          style={{ width: `${(criteria.score / 10) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
                 {/* Pros and Cons - Grid layout for better mobile display */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Pros */}
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
@@ -214,24 +250,6 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
                     </ul>
                   </div>
                 </div>
-                
-                {/* Rating criteria visualization */}
-                <div className="space-y-4 mt-6">
-                  {article.rating_criteria?.map((criteria, index) => (
-                    <div key={index} className="w-full">
-                      <div className="flex justify-between mb-1">
-                        <span className="text-gray-700">{criteria.name}</span>
-                        <span className="font-medium">{criteria.score.toFixed(1)}</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div 
-                          className="bg-blue-600 h-2.5 rounded-full" 
-                          style={{ width: `${(criteria.score / 10) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
             
@@ -239,7 +257,7 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
             <div className="lg:col-span-4 bg-white shadow-lg rounded-xl overflow-hidden">
               <div className={`py-6 text-center text-white ${getRatingColor(overallScore)}`}>
                 <div className="text-5xl font-bold mb-1">{overallScore.toFixed(1)}</div>
-                <div className="text-sm uppercase tracking-wider">Overall Score</div>
+                <div className="text-sm uppercase tracking-wider">OVERALL SCORE</div>
               </div>
               
               <div className="p-6">
@@ -258,24 +276,6 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
           </div>
         </div>
       )}
-      
-      {/* Gallery */}
-      {hasReviewDetails && reviewDetails.gallery && reviewDetails.gallery.length > 0 && (
-        <div className="mt-12 mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Product Gallery</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {reviewDetails.gallery.map((image, index) => (
-              <div key={index} className="aspect-square rounded-lg overflow-hidden">
-                <img
-                  src={image}
-                  alt={`Product image ${index + 1}`}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Comparison Link */}
       {hasReviewDetails && (
@@ -288,11 +288,20 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
           </a>
         </div>
       )}
+      
+      {/* Newsletter subscription CTA */}
+      <div className="bg-blue-50 rounded-xl p-8 text-center mb-12">
+        <h3 className="text-xl font-bold mb-2">Want to see more reviews like this?</h3>
+        <p className="text-gray-600 mb-4 max-w-xl mx-auto">Subscribe to our newsletter for the latest product reviews and tech news.</p>
+        <button className="bg-blue-600 hover:bg-blue-700 transition-colors text-white px-6 py-2 rounded-lg font-medium">
+          Subscribe Now
+        </button>
+      </div>
 
-      {/* Back to top button */}
+      {/* Back to top button - Increased z-index */}
       <button 
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        className="fixed bottom-6 right-6 bg-orange-500 text-white p-3 rounded-full shadow-lg hover:bg-orange-600 transition-colors z-10"
+        className="fixed bottom-6 right-6 bg-orange-500 text-white p-3 rounded-full shadow-lg hover:bg-orange-600 transition-colors z-50"
         aria-label="Back to top"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
