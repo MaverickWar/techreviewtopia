@@ -71,7 +71,10 @@ export const ContentPreviewCard = ({
             {title}
           </h3>
           {description && (
-            <p className="text-gray-600 line-clamp-2">{description}</p>
+            <div 
+              className="text-gray-600 line-clamp-2"
+              dangerouslySetInnerHTML={{ __html: description }}
+            />
           )}
         </CardContent>
       </Card>

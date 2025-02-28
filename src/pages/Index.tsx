@@ -66,7 +66,7 @@ const ContentPreview = ({ item }: { item: ContentItem }) => {
       <div className="p-6">
         <div className="category-tag mb-3">{item.category}</div>
         <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-        <p className="text-gray-600 mb-4">{item.excerpt}</p>
+        <div className="text-gray-600 mb-4" dangerouslySetInnerHTML={{ __html: item.excerpt }}></div>
         <div className="flex items-center justify-between text-sm text-gray-500">
           <span>{item.readTime}</span>
           {item.type === 'review' && (
@@ -309,7 +309,7 @@ const FeaturedContentTabs = () => {
                 <div className="absolute bottom-0 left-0 p-8 text-white">
                   <div className="category-tag mb-4">{mainFeatured.category}</div>
                   <h2 className="text-4xl font-bold mb-3">{mainFeatured.title}</h2>
-                  <p className="text-gray-200 text-lg mb-4">{mainFeatured.excerpt}</p>
+                  <div className="text-gray-200 text-lg mb-4" dangerouslySetInnerHTML={{ __html: mainFeatured.excerpt }}></div>
                   <div className="flex items-center gap-4 text-sm">
                     <span>{mainFeatured.author}</span>
                     <span>•</span>
