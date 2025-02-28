@@ -49,7 +49,7 @@
 
 .ticker-container .animate-marquee {
   display: inline-block;
-  animation: ticker 4.8s linear infinite; /* Further reduced from 12s to 4.8s (another 2.5x faster) */
+  animation: ticker 9.6s linear infinite; /* Doubled from 4.8s to 9.6s (half the speed) */
 }
 
 @keyframes ticker {

@@ -96,7 +96,7 @@ export default {
         "fade-out": "fade-out 0.5s ease-out",
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "slide-out-right": "slide-out-right 0.3s ease-out",
-        "marquee": "marquee 4s linear infinite", /* Further reduced from 10s to 4s (another 2.5x faster) */
+        "marquee": "marquee 8s linear infinite", /* Doubled from 4s to 8s (half the speed) */
       },
     },
   },
