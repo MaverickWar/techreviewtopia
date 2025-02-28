@@ -10,9 +10,13 @@ import { MagazineLayout } from "@/components/layouts/article/MagazineLayout";
 import { ReviewLayout } from "@/components/layouts/article/ReviewLayout";
 import { GalleryLayout } from "@/components/layouts/article/GalleryLayout";
 import { TechnicalLayout } from "@/components/layouts/article/TechnicalLayout";
+import { useRealtimeContent } from "@/hooks/useRealtimeContent";
 
 const ArticlePage = () => {
   const { contentId, categorySlug } = useParams<{ contentId: string, categorySlug: string }>();
+  
+  // Set up realtime updates
+  useRealtimeContent();
   
   // Fetch article data
   const { data: article, isLoading, error } = useQuery({
@@ -35,6 +39,7 @@ const ArticlePage = () => {
         throw error;
       }
       
+      console.log("Fetched article with layout template:", data?.layout_template);
       return data as unknown as ArticleData;
     },
     enabled: !!contentId
@@ -43,6 +48,7 @@ const ArticlePage = () => {
   // Determine which layout to use
   const getLayoutComponent = (article: ArticleData) => {
     const layoutTemplate = article.layout_template || 'classic';
+    console.log("Using layout template:", layoutTemplate);
     
     switch (layoutTemplate) {
       case 'magazine':

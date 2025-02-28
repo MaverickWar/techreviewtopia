@@ -145,6 +145,8 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
       if (!contentData) return null;
 
+      console.log('Loaded content with layout template:', contentData.layout_template);
+
       // If this is a review, fetch additional review data
       if (contentData.type === 'review') {
         // Fetch review details
@@ -227,6 +229,10 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         }
       }
 
+      // Get the layout template from existing content
+      const layoutTemplate = existingContent.layout_template || 'classic';
+      console.log('Setting layout template from existing content:', layoutTemplate);
+
       setFormData({
         id: existingContent.id,
         title: existingContent.title,
@@ -242,7 +248,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         rating_criteria: existingContent.rating_criteria || [],
         overall_score: reviewDetails?.overall_score || 0,
         youtube_url: reviewDetails?.youtube_url || null,
-        layout_template: existingContent.layout_template as LayoutTemplate || "classic",
+        layout_template: layoutTemplate as LayoutTemplate,
         layout_settings: layoutSettings
       });
 
@@ -387,6 +393,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
   // Handle layout template change
   const handleLayoutChange = (layoutTemplate: string) => {
+    console.log("Layout template changed to:", layoutTemplate);
     setFormData(prev => ({
       ...prev,
       layout_template: layoutTemplate as LayoutTemplate
@@ -396,6 +403,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
   const mutation = useMutation({
     mutationFn: async (data: ContentFormData) => {
       console.log("Submitting content with data:", data);
+      console.log("Layout template being saved:", data.layout_template);
       
       if (!data.author_id || !currentUser) {
         throw new Error("You must be logged in to create or edit content");
@@ -474,6 +482,8 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         throw contentError;
       }
 
+      console.log("Content saved with layout template:", content.layout_template);
+
       // If this is a review, create/update review details
       if (data.type === 'review') {
         const { data: existingReview } = await supabase
@@ -549,7 +559,8 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
       return content;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Content saved successfully with layout:", data.layout_template);
       queryClient.invalidateQueries({ queryKey: ["content"] });
       toast({
         title: `Content ${id ? "updated" : "created"} successfully`,
@@ -581,6 +592,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Submitting form with layout template:", formData.layout_template);
     mutation.mutate(formData);
   };
 
