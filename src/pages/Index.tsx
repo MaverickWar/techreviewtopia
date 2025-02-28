@@ -18,6 +18,7 @@ interface BaseContent {
   readTime: string;
   type: 'review' | 'article';
   slug: string;
+  categorySlug?: string; // Add categorySlug for routing
 }
 
 interface Review extends BaseContent {
@@ -130,6 +131,7 @@ const FeaturedContentTabs = () => {
           id: content.id,
           title: content.title,
           category: "Technology", // Default category, would come from category relationship
+          categorySlug: "technology", // Default category slug for routing
           image: content.featured_image || "https://images.unsplash.com/photo-1550751827-4bd374c3f58b",
           excerpt: content.description || "No description available",
           author: "Tech Team", // Would come from author relationship
@@ -299,7 +301,8 @@ const FeaturedContentTabs = () => {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
           {/* Main Featured Item */}
           <article className="md:col-span-8 review-card animate-fade-in">
-            <Link to={`/content/${mainFeatured.slug}`} className="block">
+            {/* Fix the routing by adding the categorySlug */}
+            <Link to={`/${mainFeatured.categorySlug}/content/${mainFeatured.slug}`} className="block">
               <div className="relative">
                 <img src={mainFeatured.image} alt={mainFeatured.title} className="w-full h-[500px] object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
@@ -330,7 +333,7 @@ const FeaturedContentTabs = () => {
             {secondaryFeatured.map((item) => (
               <Link 
                 key={item.id} 
-                to={`/content/${item.slug}`}
+                to={`/${item.categorySlug}/content/${item.slug}`}
                 className="block"
               >
                 <ContentPreview item={item} />
