@@ -87,12 +87,6 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
                 <span className="text-xs md:text-sm">8 min read</span>
               </span>
             </div>
-            
-            {article.type === "review" && article.review_details?.[0]?.overall_score && (
-              <div className="inline-block bg-amber-500 text-white px-4 py-2 rounded-full font-semibold text-lg">
-                {article.review_details[0].overall_score.toFixed(1)}/10
-              </div>
-            )}
           </div>
         </div>
       </div>
