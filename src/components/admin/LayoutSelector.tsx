@@ -45,7 +45,7 @@ export const LayoutSelector = ({
     layout => layout.supportedTypes.includes(contentType)
   );
   
-  console.log("🔍 LayoutSelector - Available layouts:", availableLayouts.map(l => l.id));
+  console.log("🔍 LayoutSelector - Available layouts:", availableLayouts.map(l => `${l.id} (${l.name})`));
 
   // If selected layout is not valid for this content type, select the first valid option
   useEffect(() => {
@@ -62,7 +62,12 @@ export const LayoutSelector = ({
       renderCount.current += 1;
       console.log(`🔍 LayoutSelector - Render count: ${renderCount.current}`);
       
-      if (selectedLayout && !availableLayouts.some(l => l.id === selectedLayout)) {
+      if (!selectedLayout) {
+        console.log("🔍 No layout selected, selecting first available:", availableLayouts[0]?.id);
+        if (availableLayouts.length > 0) {
+          onChange(availableLayouts[0].id);
+        }
+      } else if (!availableLayouts.some(l => l.id === selectedLayout)) {
         if (availableLayouts.length > 0) {
           console.log("🔍 Selected layout not valid for content type, selecting first valid option:", availableLayouts[0].id);
           onChange(availableLayouts[0].id);
@@ -80,14 +85,22 @@ export const LayoutSelector = ({
   // Get the selected layout object with error handling
   let selectedLayoutOption;
   try {
-    selectedLayoutOption = availableLayouts.find(l => l.id === selectedLayout) || 
-      (availableLayouts.length > 0 ? availableLayouts[0] : {
+    selectedLayoutOption = availableLayouts.find(l => l.id === selectedLayout);
+    
+    if (!selectedLayoutOption && availableLayouts.length > 0) {
+      console.log("⚠️ Selected layout not found in available layouts, using first available");
+      selectedLayoutOption = availableLayouts[0];
+    } else if (!selectedLayoutOption) {
+      console.log("⚠️ No layouts available, using fallback");
+      selectedLayoutOption = {
         id: 'classic',
         name: 'Classic Layout',
         description: 'Default layout',
         icon: 'file-text',
         supportedTypes: ['article', 'review']
-      });
+      };
+    }
+    
     console.log("🔍 Selected layout option:", selectedLayoutOption);
   } catch (error) {
     console.error("❌ ERROR getting selected layout option:", error);
@@ -127,7 +140,7 @@ export const LayoutSelector = ({
     console.log("🔍 Changing layout to:", layoutId);
     try {
       // Verify the layout is valid before changing
-      if (availableLayouts.some(l => l.id === layoutId)) {
+      if (layoutId && availableLayouts.some(l => l.id === layoutId)) {
         console.log("✅ Layout is valid, setting to:", layoutId);
         onChange(layoutId);
       } else {
@@ -160,9 +173,9 @@ export const LayoutSelector = ({
             >
               <div className="flex items-center">
                 <div className="p-2 rounded-md mr-2 bg-blue-100 text-blue-600">
-                  {getLayoutIcon(selectedLayoutOption.icon)}
+                  {selectedLayoutOption && getLayoutIcon(selectedLayoutOption.icon)}
                 </div>
-                <span>{selectedLayoutOption.name}</span>
+                <span>{selectedLayoutOption ? selectedLayoutOption.name : "Select Layout"}</span>
               </div>
               <ChevronDown className="h-4 w-4 ml-2" />
             </Button>
@@ -200,7 +213,7 @@ export const LayoutSelector = ({
       // Provide a fallback to prevent crashes
       return (
         <div className="p-4 bg-amber-50 text-amber-800 rounded-md">
-          Error rendering layout selector. Try refreshing the page.
+          Error rendering layout selector dropdown. Try refreshing the page.
           <pre className="text-xs mt-2 p-2 bg-amber-100 rounded">
             {String(error)}
           </pre>
@@ -233,10 +246,14 @@ export const LayoutSelector = ({
         
         {/* Radio group for larger screens */}
         <RadioGroup
-          value={selectedLayout}
+          value={selectedLayout || ""}
           onValueChange={(value) => {
             console.log("🔍 Radio group value changed:", value);
-            handleLayoutChange(value);
+            if (value) {
+              handleLayoutChange(value);
+            } else {
+              console.warn("⚠️ Empty value from radio group");
+            }
           }}
           className="hidden md:grid md:grid-cols-3 gap-4"
         >
