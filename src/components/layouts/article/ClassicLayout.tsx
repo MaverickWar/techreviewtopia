@@ -12,9 +12,9 @@ interface ClassicLayoutProps {
 
 export const ClassicLayout: React.FC<ClassicLayoutProps> = ({ article }) => {
   return (
-    <article className="max-w-4xl mx-auto p-4 md:p-8">
+    <article className="max-w-4xl mx-auto p-4 md:p-8 relative">
       {/* Header */}
-      <header className="mb-8">
+      <header className="mb-8 relative z-10">
         <h1 className="text-3xl md:text-4xl font-bold mb-4">{article.title}</h1>
         
         {article.description && (
@@ -47,7 +47,7 @@ export const ClassicLayout: React.FC<ClassicLayoutProps> = ({ article }) => {
 
       {/* Featured Image */}
       {article.featured_image && (
-        <div className="mb-8">
+        <div className="mb-8 relative z-0">
           <img
             src={article.featured_image}
             alt={article.title}
@@ -58,19 +58,30 @@ export const ClassicLayout: React.FC<ClassicLayoutProps> = ({ article }) => {
 
       {/* Content */}
       <div 
-        className="prose prose-lg max-w-none" 
+        className="prose prose-lg max-w-none relative z-0" 
         dangerouslySetInnerHTML={{ __html: article.content || "" }}
       />
       
       <Separator className="my-8" />
       
       {/* Footer */}
-      <footer className="text-sm text-gray-500">
+      <footer className="text-sm text-gray-500 relative z-0">
         <p>Article ID: {article.id}</p>
         {article.published_at && (
           <p>Published: {new Date(article.published_at).toLocaleDateString()}</p>
         )}
       </footer>
+
+      {/* Back to top button - Fixed positioned with proper z-index */}
+      <button 
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="fixed bottom-6 right-6 bg-gray-800 text-white p-3 rounded-full shadow-lg hover:bg-gray-700 transition-colors z-20"
+        aria-label="Back to top"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      </button>
     </article>
   );
 };

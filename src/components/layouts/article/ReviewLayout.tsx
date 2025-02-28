@@ -5,6 +5,7 @@ import { ArticleData } from "@/types/content";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 interface ReviewLayoutProps {
   article: ArticleData;
@@ -56,7 +57,7 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
   const overallScore = reviewDetails?.overall_score || 0;
 
   return (
-    <article className="max-w-6xl mx-auto px-4 py-8">
+    <article className="max-w-6xl mx-auto px-4 py-8 relative">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Main Content Column */}
         <div className="lg:col-span-8">
@@ -128,7 +129,7 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
         <div className="lg:col-span-4">
           {/* Score Card */}
           {hasReviewDetails && (
-            <div className="bg-white shadow-lg rounded-xl overflow-hidden mb-8 sticky top-8">
+            <div className="bg-white shadow-lg rounded-xl overflow-hidden mb-8 lg:sticky lg:top-8 z-10">
               <div className={`py-6 text-center text-white ${getRatingColor(overallScore)}`}>
                 <div className="text-5xl font-bold mb-1">{overallScore.toFixed(1)}</div>
                 <div className="text-sm uppercase tracking-wider">Overall Score</div>
@@ -184,13 +185,20 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
                     {article.description || "An excellent option that delivers solid performance and value, despite a few minor drawbacks."}
                   </p>
                 </div>
+
+                {/* CTA Button - Adding this within the sidebar for better mobile layout */}
+                <div className="pt-4">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium">
+                    Check Price
+                  </Button>
+                </div>
               </div>
             </div>
           )}
           
           {/* Specifications Table */}
           {hasReviewDetails && reviewDetails.product_specs && (
-            <div className="bg-white shadow-lg rounded-xl overflow-hidden">
+            <div className="bg-white shadow-lg rounded-xl overflow-hidden z-10">
               <div className="bg-gray-100 py-3 px-6 border-b">
                 <h3 className="font-semibold text-gray-900 flex items-center">
                   <Info className="h-5 w-5 mr-2 text-blue-500" />
@@ -216,7 +224,7 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
       
       {/* Gallery */}
       {hasReviewDetails && reviewDetails.gallery && reviewDetails.gallery.length > 0 && (
-        <div className="mt-12">
+        <div className="mt-12 relative z-0">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Product Gallery</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {reviewDetails.gallery.map((image, index) => (
@@ -231,6 +239,29 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
           </div>
         </div>
       )}
+
+      {/* Comparison Link - Making this a full-width component for better visibility */}
+      {hasReviewDetails && (
+        <div className="mt-8 text-center">
+          <a href="#" className="inline-flex items-center text-blue-600 font-medium hover:text-blue-800 transition-colors">
+            View full comparison
+            <svg className="w-5 h-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </a>
+        </div>
+      )}
+
+      {/* Back to top button - Fixed positioned with proper z-index */}
+      <button 
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="fixed bottom-6 right-6 bg-orange-500 text-white p-3 rounded-full shadow-lg hover:bg-orange-600 transition-colors z-20"
+        aria-label="Back to top"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+        </svg>
+      </button>
     </article>
   );
 };

@@ -91,7 +91,7 @@ export const LayoutPreview = ({
   };
 
   return (
-    <Card className="mt-6 p-4 border">
+    <Card className="mt-6 p-4 border relative">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Layout Preview</h3>
         
@@ -127,7 +127,7 @@ export const LayoutPreview = ({
       </div>
       
       {/* Preview Controls */}
-      <div className="bg-gray-50 rounded-md p-3 mb-4 flex flex-wrap gap-4">
+      <div className="bg-gray-50 rounded-md p-3 mb-4 flex flex-wrap gap-4 relative z-10">
         <div className="flex items-center gap-2 flex-1 min-w-[200px]">
           <ZoomOut className="h-4 w-4 text-gray-500" />
           <Slider 
@@ -164,9 +164,9 @@ export const LayoutPreview = ({
       </div>
       
       {/* Preview Container */}
-      <div className="border rounded-md h-[500px] overflow-auto bg-gray-100 flex justify-center items-start p-4">
+      <div className="border rounded-md h-[500px] overflow-auto bg-gray-100 flex justify-center items-start p-4 relative">
         <div
-          className="bg-white shadow-md origin-top-left transition-all duration-200"
+          className="bg-white shadow-md origin-top-left transition-all duration-200 relative"
           style={{
             width: dimensions.width,
             height: previewDevice === "desktop" ? "auto" : dimensions.height,
@@ -175,8 +175,20 @@ export const LayoutPreview = ({
             transformOrigin: "top left",
           }}
         >
-          <div className="h-full overflow-auto">
-            {renderLayout(previewArticle, selectedLayout)}
+          {/* Add this wrapper to prevent layout shifts during scaling */}
+          <div className="h-full overflow-auto relative">
+            {/* Disable back-to-top buttons in preview */}
+            <div className="preview-content">
+              {renderLayout(previewArticle, selectedLayout)}
+            </div>
+            {/* Override any fixed position elements that might cause issues in the preview */}
+            <style>
+              {`
+                .preview-content button[aria-label="Back to top"] {
+                  display: none !important;
+                }
+              `}
+            </style>
           </div>
         </div>
       </div>
