@@ -218,9 +218,9 @@ export const MainNav = () => {
             </div>
           </div>
           
-          {/* Overlay for mouse events outside the mega menu */}
+          {/* Invisible overlay for catching clicks outside menu */}
           <div 
-            className="fixed inset-0 bg-black/5 -z-10"
+            className="fixed inset-0 -z-10"
             onClick={() => setActiveMegaMenu(null)}
             style={{ top: navRef.current?.offsetHeight + 'px' }}
           />

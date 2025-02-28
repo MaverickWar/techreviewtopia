@@ -65,15 +65,16 @@
 
 /* Animations */
 .animate-fade-in {
-  animation: fadeIn 0.3s ease-out forwards;
+  animation: fadeIn 0.25s ease-out forwards;
   will-change: opacity, transform;
   backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(5px);
   }
   to {
     opacity: 1;
