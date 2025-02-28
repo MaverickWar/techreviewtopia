@@ -246,13 +246,15 @@ export const LayoutSelector = ({
         
         {/* Radio group for larger screens */}
         <RadioGroup
-          value={selectedLayout || ""}
+          value={selectedLayout || "classic"} // Ensure we always have a default value
           onValueChange={(value) => {
             console.log("🔍 Radio group value changed:", value);
             if (value) {
               handleLayoutChange(value);
             } else {
               console.warn("⚠️ Empty value from radio group");
+              // If somehow we get an empty value, fall back to classic
+              handleLayoutChange("classic");
             }
           }}
           className="hidden md:grid md:grid-cols-3 gap-4"
