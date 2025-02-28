@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -811,8 +810,10 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
                     />
                   </div>
                   
-                  {/* Add Layout Settings Component */}
+                  {/* Fixed LayoutSettings Component - Pass all required props */}
                   <LayoutSettings
+                    article={previewArticle as ArticleData}
+                    onSave={handleSaveLayoutSettings}
                     layoutTemplate={formData.layout_template || "classic"}
                     contentType={formData.type}
                     layoutSettings={formData.layout_settings || {}}
