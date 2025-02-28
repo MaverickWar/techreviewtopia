@@ -32,8 +32,32 @@ const categories = [
   }
 ];
 
+// Define proper interfaces for our content types
+interface BaseContent {
+  id: number;
+  title: string;
+  category: string;
+  image: string;
+  excerpt: string;
+  author: string;
+  readTime: string;
+  type: 'review' | 'article';
+  slug: string;
+}
+
+interface Review extends BaseContent {
+  type: 'review';
+  rating: number;
+}
+
+interface Article extends BaseContent {
+  type: 'article';
+}
+
+type ContentItem = Review | Article;
+
 // This would normally come from a database query, but we'll use mock data for now
-const featuredReviewsData = [{
+const featuredReviewsData: Review[] = [{
   id: 1,
   title: "iPhone 15 Pro Review",
   category: "Smartphones",
@@ -69,7 +93,7 @@ const featuredReviewsData = [{
 }];
 
 // Mock data for articles
-const featuredArticlesData = [{
+const featuredArticlesData: Article[] = [{
   id: 101,
   title: "The Future of AI in Consumer Technology",
   category: "AI & Software",
@@ -107,7 +131,7 @@ const contentData = {
   articles: featuredArticlesData
 };
 
-const ContentPreview = ({ item }: { item: any }) => {
+const ContentPreview = ({ item }: { item: ContentItem }) => {
   return (
     <article className="review-card overflow-hidden animate-fade-in bg-white">
       <img src={item.image} alt={item.title} className="w-full h-48 object-cover" />
@@ -177,7 +201,7 @@ const FeaturedContentTabs = () => {
                       <>
                         <span>•</span>
                         <span className="bg-orange-500 px-2 py-1 rounded">
-                          {mainFeatured.rating}/5
+                          {(mainFeatured as Review).rating}/5
                         </span>
                       </>
                     )}
