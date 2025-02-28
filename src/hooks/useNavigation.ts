@@ -75,6 +75,10 @@ export const useNavigation = () => {
     retry: 1, // Only retry once to avoid excessive API calls on failure
     refetchOnWindowFocus: false,
     refetchOnMount: false, // Don't refetch on component mount if data exists
-    refetchOnReconnect: false // Don't refetch on reconnect if data exists
+    refetchOnReconnect: false, // Don't refetch on reconnect if data exists
+    initialData: () => {
+      // Provide empty initial data to prevent loading state flicker
+      return [];
+    }
   });
 };

@@ -76,8 +76,19 @@ export const MainNav = () => {
   const { data: categories, isLoading } = useNavigation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
+  const [isInitialRender, setIsInitialRender] = useState(true);
   const navRef = useRef<HTMLDivElement>(null);
   const menuContainerRef = useRef<HTMLDivElement>(null);
+
+  // Mark initial render as complete after component mounts
+  useEffect(() => {
+    if (isInitialRender) {
+      // Use requestAnimationFrame to ensure this happens after the first paint
+      requestAnimationFrame(() => {
+        setIsInitialRender(false);
+      });
+    }
+  }, [isInitialRender]);
 
   // Prevent scrolling when mobile menu is open
   useEffect(() => {
@@ -101,26 +112,27 @@ export const MainNav = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  // Early return for loading state to prevent layout shifts
+  // Loading state with fixed height to prevent layout shifts
   if (isLoading) {
     return (
       <nav className="bg-white border-b sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between items-center">
-            <Link 
-              to="/" 
-              className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent py-4"
-            >
-              Tech365
-            </Link>
+          <div className="flex justify-between items-center h-16">
+            <div className="flex-shrink-0">
+              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Tech365
+              </span>
+            </div>
             <div className="hidden md:flex items-center space-x-4">
               {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+                <div key={i} className="h-4 w-20 bg-gray-200 rounded"></div>
               ))}
             </div>
-            <button className="md:hidden p-2 rounded-full">
-              <Menu size={24} />
-            </button>
+            <div className="md:hidden">
+              <button className="p-2 rounded-full">
+                <Menu size={24} />
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -165,8 +177,8 @@ export const MainNav = () => {
         </div>
       </div>
 
-      {/* Global Mega Menu Container - Only render when active */}
-      {activeMegaMenu && categories && (
+      {/* Global Mega Menu Container - Only render when active and not in initial render state */}
+      {activeMegaMenu && categories && !isInitialRender && (
         <div className="absolute left-0 w-full bg-white shadow-lg border-t z-50 animate-fade-in">
           <div className="max-w-7xl mx-auto px-4">
             <div className="py-8">

@@ -1,6 +1,7 @@
 
-import { useRef } from 'react';
-import type { MenuCategory } from '@/types/navigation';
+import { useState } from 'react';
+import { type MenuCategory } from '@/types/navigation';
+import { ChevronDown } from 'lucide-react';
 
 interface MegaMenuProps {
   category: MenuCategory;
@@ -9,26 +10,26 @@ interface MegaMenuProps {
 }
 
 export const MegaMenu = ({ category, isActive, onMouseEnter }: MegaMenuProps) => {
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  
+  // Set loaded state after first render
+  useState(() => {
+    setHasLoaded(true);
+  });
 
   return (
-    <div 
-      className="relative"
+    <button
       onMouseEnter={onMouseEnter}
+      className={`
+        py-4 px-4 flex items-center gap-1 transition-colors
+        ${isActive ? 'text-orange-500' : 'hover:text-orange-500'}
+      `}
+      aria-expanded={isActive}
     >
-      <button 
-        ref={buttonRef}
-        className={`flex items-center space-x-2 py-4 px-4 transition-colors duration-200 ${isActive ? 'text-orange-500' : 'hover:text-orange-500'}`}
-        aria-expanded={isActive}
-      >
-        <span>{category.name}</span>
-        <svg 
-          className={`w-5 h-5 transition-transform duration-200 ${isActive ? 'rotate-180' : ''}`} 
-          viewBox="0 0 24 24"
-        >
-          <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 9l6 6 6-6"/>
-        </svg>
-      </button>
-    </div>
+      <span>{category.name}</span>
+      <ChevronDown 
+        className={`h-4 w-4 transition-transform duration-300 ${isActive ? 'rotate-180' : ''}`} 
+      />
+    </button>
   );
 };
