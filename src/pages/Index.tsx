@@ -140,10 +140,20 @@ const FeaturedContentTabs = () => {
 
         // Add to appropriate array based on type
         if (content.type === 'review') {
+          // Fix the specific error on line 146 - convert overall_score properly
+          // Ensure we're properly handling the review_details data which may be coming in different formats
+          let score = 0;
+          if (content.review_details && content.review_details.length > 0) {
+            const reviewDetail = content.review_details[0];
+            if (reviewDetail && typeof reviewDetail === 'object' && 'overall_score' in reviewDetail) {
+              score = Number(reviewDetail.overall_score) || 0;
+            }
+          }
+          
           const review: Review = {
             ...baseItem,
             type: 'review',
-            rating: content.review_details?.[0]?.overall_score || 0
+            rating: score
           };
           reviews.push(review);
         } else if (content.type === 'article') {
