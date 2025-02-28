@@ -61,35 +61,6 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
         
         <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-16">
           <div className="max-w-3xl">
-            <div className="flex items-center gap-3 text-white/90 mb-4 text-sm">
-              {article.published_at && (
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  {format(new Date(article.published_at), 'MMMM d, yyyy')}
-                </span>
-              )}
-              <span className="w-1 h-1 rounded-full bg-white/80" />
-              {authorProfile ? (
-                <span className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src={authorProfile.avatar_url || ''} alt={authorProfile.display_name || authorProfile.email} />
-                    <AvatarFallback>{getInitials()}</AvatarFallback>
-                  </Avatar>
-                  <span>{authorProfile.display_name || authorProfile.email}</span>
-                </span>
-              ) : (
-                <span className="flex items-center gap-1">
-                  <User className="h-4 w-4" />
-                  Author
-                </span>
-              )}
-              <span className="w-1 h-1 rounded-full bg-white/80" />
-              <span className="flex items-center gap-1">
-                <BookOpen className="h-4 w-4" />
-                8 min read
-              </span>
-            </div>
-            
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
               {article.title}
             </h1>
@@ -99,6 +70,36 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
                 {article.description}
               </p>
             )}
+            
+            {/* Author info moved below the title and description */}
+            <div className="flex items-center gap-3 text-white/90 mb-4 text-sm">
+              {article.published_at && (
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {format(new Date(article.published_at), 'MMMM d, yyyy')}
+                </span>
+              )}
+              <span className="w-1 h-1 rounded-full bg-white/80" />
+              {authorProfile ? (
+                <span className="flex items-center gap-1">
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={authorProfile.avatar_url || ''} alt={authorProfile.display_name || authorProfile.email} />
+                    <AvatarFallback>{getInitials()}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs md:text-sm">{authorProfile.display_name || authorProfile.email}</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1">
+                  <User className="h-3 w-3" />
+                  <span className="text-xs md:text-sm">Author</span>
+                </span>
+              )}
+              <span className="w-1 h-1 rounded-full bg-white/80" />
+              <span className="flex items-center gap-1">
+                <BookOpen className="h-3 w-3" />
+                <span className="text-xs md:text-sm">8 min read</span>
+              </span>
+            </div>
             
             {article.type === "review" && article.review_details?.[0]?.overall_score && (
               <div className="inline-block bg-amber-500 text-white px-4 py-2 rounded-full font-semibold text-lg">
