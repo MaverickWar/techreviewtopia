@@ -1,172 +1,147 @@
 
-import { Star, Calendar, User, Check, X, ArrowRight } from "lucide-react";
-import { format } from "date-fns";
+import React from "react";
 import { ArticleData } from "@/types/content";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { formatDistanceToNow } from "date-fns";
+import { User, Clock, Info, ThumbsUp, ThumbsDown } from "lucide-react";
 import { AwardBanner } from "./AwardBanner";
 
 interface BasicReviewLayoutProps {
   article: ArticleData;
 }
 
-export const BasicReviewLayout = ({ article }: BasicReviewLayoutProps) => {
-  const [authorProfile, setAuthorProfile] = useState<any>(null);
-
-  useEffect(() => {
-    const fetchAuthorProfile = async () => {
-      if (article.author_id) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', article.author_id)
-          .maybeSingle();
-        
-        if (!error && data) {
-          setAuthorProfile(data);
-        }
-      }
-    };
-
-    fetchAuthorProfile();
-  }, [article.author_id]);
-
-  // Generate initials for avatar fallback
-  const getInitials = () => {
-    if (authorProfile?.display_name) {
-      return authorProfile.display_name
-        .split(' ')
-        .map((part: string) => part[0])
-        .join('')
-        .toUpperCase();
-    }
-    return 'AU';
-  };
-
-  // Calculate rating color based on score
-  const getRatingColor = (score: number) => {
-    if (score >= 8) return "bg-green-500";
-    if (score >= 6) return "bg-blue-500";
-    if (score >= 4) return "bg-yellow-500";
-    return "bg-red-500";
-  };
-
-  const hasReviewDetails = article.type === "review" && article.review_details?.[0];
-  const reviewDetails = hasReviewDetails ? article.review_details![0] : null;
-  const overallScore = reviewDetails?.overall_score || 0;
+export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article }) => {
+  // Extract award from layout settings
+  // Check for both awardLevel (new) and award (legacy)
+  const awardLevel = article.layout_settings?.awardLevel || article.layout_settings?.award;
+  const showAwards = article.layout_settings?.showAwards !== undefined ? 
+    article.layout_settings.showAwards : true;
   
-  // Get the award from layout settings if it exists
-  const award = article.layout_settings?.award;
   console.log("BasicReviewLayout received article with layout_settings:", article.layout_settings);
-  console.log("Award value extracted:", award);
+  console.log("Award value extracted:", {
+    awardLevel,
+    showAwards
+  });
+
+  // Get review details if available
+  const reviewDetails = article.review_details?.[0];
+  
+  // Helper function to format the date
+  const formatPublishDate = (dateString: string | null) => {
+    if (!dateString) return "Recently";
+    return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+  };
 
   return (
-    <article className="max-w-4xl mx-auto px-4 py-6">
-      {/* Header */}
-      <header className="mb-6">
-        <h1 className="text-3xl md:text-4xl font-bold mb-3">{article.title}</h1>
+    <article className="max-w-4xl mx-auto px-4 py-8">
+      {/* Award banner - Add support for both award and awardLevel */}
+      {showAwards && awardLevel && (
+        <AwardBanner awardLevel={awardLevel} />
+      )}
+      
+      <header className="mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold mb-4">{article.title}</h1>
         
         {article.description && (
           <div 
-            className="text-gray-600 text-lg mb-4"
+            className="text-lg text-gray-700 mb-4"
             dangerouslySetInnerHTML={{ __html: article.description }}
           />
         )}
         
-        <div className="flex flex-wrap items-center text-sm text-gray-500 gap-4">
-          {article.published_at && (
-            <span className="flex items-center">
-              <Calendar className="h-4 w-4 mr-1" />
-              {format(new Date(article.published_at), 'MMMM d, yyyy')}
-            </span>
-          )}
+        <div className="flex flex-wrap items-center text-sm text-gray-500 gap-4 mb-4">
+          <div className="flex items-center">
+            <User className="h-4 w-4 mr-1" />
+            <span>{article.author?.display_name || "Editorial Team"}</span>
+          </div>
           
-          {authorProfile && (
-            <span className="flex items-center">
-              <Avatar className="h-6 w-6 mr-2">
-                <AvatarImage src={authorProfile.avatar_url || ''} />
-                <AvatarFallback>{getInitials()}</AvatarFallback>
-              </Avatar>
-              <span>{authorProfile.display_name || 'Author'}</span>
-            </span>
+          {article.published_at && (
+            <div className="flex items-center">
+              <Clock className="h-4 w-4 mr-1" />
+              <span>{formatPublishDate(article.published_at)}</span>
+            </div>
           )}
         </div>
       </header>
       
-      {/* Award Banner */}
-      <AwardBanner award={award} />
+      {article.featured_image && (
+        <img 
+          src={article.featured_image} 
+          alt={article.title}
+          className="w-full h-auto rounded-lg mb-8 object-cover"
+        />
+      )}
       
-      {/* Score and Featured Image Section */}
-      <div className="flex flex-col sm:flex-row gap-6 mb-8">
-        {article.featured_image && (
-          <div className="sm:flex-1">
-            <img 
-              src={article.featured_image} 
-              alt={article.title} 
-              className="w-full h-auto rounded-lg"
-            />
-          </div>
-        )}
-        
-        {hasReviewDetails && (
-          <div className="sm:w-64 flex-shrink-0">
-            <div className="border rounded-lg overflow-hidden">
-              <div className={`py-4 px-6 text-center text-white ${getRatingColor(overallScore)}`}>
-                <div className="text-4xl font-bold">{overallScore.toFixed(1)}</div>
-                <div className="font-medium">Overall Score</div>
-              </div>
-              
-              <div className="p-4 bg-gray-50">
-                <h3 className="font-medium mb-3">Quick Review</h3>
-                
-                <div className="space-y-1">
-                  <div className="flex items-center text-green-600">
-                    <Check className="h-4 w-4 mr-2" />
-                    <span className="text-sm">Great value</span>
-                  </div>
-                  <div className="flex items-center text-green-600">
-                    <Check className="h-4 w-4 mr-2" />
-                    <span className="text-sm">Easy setup</span>
-                  </div>
-                  <div className="flex items-center text-red-600">
-                    <X className="h-4 w-4 mr-2" />
-                    <span className="text-sm">Limited battery life</span>
-                  </div>
-                </div>
-              </div>
+      {/* Simple rating display */}
+      {reviewDetails?.overall_score !== undefined && (
+        <div className="bg-gray-100 p-4 rounded-lg mb-8">
+          <h2 className="text-lg font-semibold mb-2">Overall Rating</h2>
+          <div className="flex items-center">
+            <div className="text-3xl font-bold text-blue-600 mr-2">
+              {reviewDetails.overall_score.toFixed(1)}
             </div>
-          </div>
-        )}
-      </div>
-      
-      {/* Main Content */}
-      <div className="prose max-w-none mb-8">
-        <div dangerouslySetInnerHTML={{ __html: article.content || '' }} />
-      </div>
-      
-      {/* Basic Specs */}
-      {hasReviewDetails && reviewDetails.product_specs && (
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4">Specifications</h2>
-          <div className="border rounded-lg overflow-hidden">
-            <div className="grid grid-cols-2 divide-y divide-gray-100">
-              {Object.entries(reviewDetails.product_specs).map(([key, value], index) => (
-                <div key={index} className={`p-3 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
-                  <span className="font-medium">{key}:</span> {String(value)}
-                </div>
-              ))}
-            </div>
+            <div className="text-gray-500">/ 10</div>
           </div>
         </div>
       )}
       
-      {/* CTA */}
-      <div className="bg-gray-100 p-4 rounded-lg text-center mt-6">
-        <p className="mb-2">Want to know more about this product?</p>
-        <button className="inline-flex items-center text-blue-600 font-medium">
-          Read full review <ArrowRight className="h-4 w-4 ml-1" />
-        </button>
+      {/* Main content */}
+      {article.content && (
+        <div 
+          className="prose max-w-none mb-12"
+          dangerouslySetInnerHTML={{ __html: article.content }}
+        />
+      )}
+      
+      {/* Simple pros and cons */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="bg-green-50 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold mb-2 flex items-center">
+            <ThumbsUp className="h-5 w-5 text-green-600 mr-2" />
+            Pros
+          </h3>
+          <ul className="space-y-2">
+            <li className="flex items-start">
+              <span className="text-green-600 mr-2">✓</span>
+              <span>Good value for money</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-green-600 mr-2">✓</span>
+              <span>Solid construction</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-green-600 mr-2">✓</span>
+              <span>Easy to use</span>
+            </li>
+          </ul>
+        </div>
+        
+        <div className="bg-red-50 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold mb-2 flex items-center">
+            <ThumbsDown className="h-5 w-5 text-red-600 mr-2" />
+            Cons
+          </h3>
+          <ul className="space-y-2">
+            <li className="flex items-start">
+              <span className="text-red-600 mr-2">✗</span>
+              <span>Limited features</span>
+            </li>
+            <li className="flex items-start">
+              <span className="text-red-600 mr-2">✗</span>
+              <span>Battery life could be better</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      
+      {/* Verdict */}
+      <div className="bg-blue-50 p-6 rounded-lg mb-8">
+        <h3 className="text-lg font-semibold mb-2 flex items-center">
+          <Info className="h-5 w-5 text-blue-600 mr-2" />
+          Verdict
+        </h3>
+        <p className="text-gray-700">
+          Overall, this is a solid product that offers good value for money. While it has some limitations, it performs well for its intended purpose and is easy to use.
+        </p>
       </div>
     </article>
   );
