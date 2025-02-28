@@ -127,9 +127,9 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
         
         {/* Sidebar */}
         <div className="lg:col-span-4">
-          {/* Score Card */}
+          {/* Score Card - Modified to not use sticky positioning and to have proper z-index */}
           {hasReviewDetails && (
-            <div className="bg-white shadow-lg rounded-xl overflow-hidden mb-8 lg:sticky lg:top-8 z-10">
+            <div className="bg-white shadow-lg rounded-xl overflow-hidden mb-8">
               <div className={`py-6 text-center text-white ${getRatingColor(overallScore)}`}>
                 <div className="text-5xl font-bold mb-1">{overallScore.toFixed(1)}</div>
                 <div className="text-sm uppercase tracking-wider">Overall Score</div>
@@ -198,7 +198,7 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
           
           {/* Specifications Table */}
           {hasReviewDetails && reviewDetails.product_specs && (
-            <div className="bg-white shadow-lg rounded-xl overflow-hidden z-10">
+            <div className="bg-white shadow-lg rounded-xl overflow-hidden">
               <div className="bg-gray-100 py-3 px-6 border-b">
                 <h3 className="font-semibold text-gray-900 flex items-center">
                   <Info className="h-5 w-5 mr-2 text-blue-500" />
@@ -265,3 +265,4 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
     </article>
   );
 };
+
