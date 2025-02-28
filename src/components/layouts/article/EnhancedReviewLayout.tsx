@@ -18,6 +18,7 @@ import { ArticleData } from "@/types/content";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 interface EnhancedReviewLayoutProps {
   article: ArticleData;
@@ -188,101 +189,11 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
           <div className="prose prose-lg max-w-none mb-10">
             <div dangerouslySetInnerHTML={{ __html: article.content || '' }} />
           </div>
-          
-          {/* Detailed Ratings */}
-          {article.rating_criteria && article.rating_criteria.length > 0 && (
-            <div className="mb-10">
-              <h2 className="text-2xl font-bold mb-4">Detailed Ratings</h2>
-              <div className="space-y-3">
-                {article.rating_criteria.map((criterion, index) => (
-                  <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                    <div className="flex justify-between mb-2">
-                      <span className="font-medium">{criterion.name}</span>
-                      <span className="font-bold">{criterion.score.toFixed(1)}</span>
-                    </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-blue-500 rounded-full"
-                        style={{ width: `${(criterion.score / 10) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
         
-        {/* Sidebar */}
+        {/* Sidebar - Move from sticky to static position */}
         <div className="lg:col-span-4">
-          {/* Score Card */}
-          {hasReviewDetails && (
-            <div className="bg-white shadow-lg rounded-xl overflow-hidden mb-8 sticky top-8">
-              <div className={`py-6 text-center text-white ${getRatingColor(overallScore)}`}>
-                <div className="text-5xl font-bold mb-1">{overallScore.toFixed(1)}</div>
-                <div className="text-sm uppercase tracking-wider">Overall Score</div>
-              </div>
-              
-              <div className="p-6 space-y-6">
-                {/* Verdict */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-                    <Award className="h-5 w-5 mr-2 text-yellow-500" />
-                    Verdict
-                  </h3>
-                  <p className="text-gray-700">
-                    {article.description || "An excellent product that delivers great value despite a few minor drawbacks."}
-                  </p>
-                </div>
-                
-                {/* Pros and Cons */}
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-                    <ThumbsUp className="h-5 w-5 mr-2 text-green-500" />
-                    Pros
-                  </h3>
-                  <ul className="space-y-1">
-                    <li className="flex items-start">
-                      <Check className="h-5 w-5 mr-2 text-green-500 shrink-0 mt-0.5" />
-                      <span className="text-gray-700">Excellent performance</span>
-                    </li>
-                    <li className="flex items-start">
-                      <Check className="h-5 w-5 mr-2 text-green-500 shrink-0 mt-0.5" />
-                      <span className="text-gray-700">High-quality materials</span>
-                    </li>
-                    <li className="flex items-start">
-                      <Check className="h-5 w-5 mr-2 text-green-500 shrink-0 mt-0.5" />
-                      <span className="text-gray-700">Great value for money</span>
-                    </li>
-                  </ul>
-                </div>
-                
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-                    <ThumbsDown className="h-5 w-5 mr-2 text-red-500" />
-                    Cons
-                  </h3>
-                  <ul className="space-y-1">
-                    <li className="flex items-start">
-                      <ThumbsDown className="h-5 w-5 mr-2 text-red-500 shrink-0 mt-0.5" />
-                      <span className="text-gray-700">Battery life could be better</span>
-                    </li>
-                    <li className="flex items-start">
-                      <ThumbsDown className="h-5 w-5 mr-2 text-red-500 shrink-0 mt-0.5" />
-                      <span className="text-gray-700">Limited connectivity options</span>
-                    </li>
-                  </ul>
-                </div>
-                
-                {/* Buy Button */}
-                <button className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition">
-                  Check Price
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {/* Specifications Table */}
+          {/* Product Specifications Table - Moved up in the sidebar */}
           {hasReviewDetails && reviewDetails.product_specs && (
             <div className="bg-white shadow-lg rounded-xl overflow-hidden mb-8">
               <div className="bg-gray-100 py-3 px-6 border-b">
@@ -306,8 +217,8 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
             </div>
           )}
           
-          {/* Comparison Chart */}
-          <div className="bg-white shadow-lg rounded-xl overflow-hidden">
+          {/* Comparison Chart - Also moved up from the bottom */}
+          <div className="bg-white shadow-lg rounded-xl overflow-hidden mb-8">
             <div className="bg-gray-100 py-3 px-6 border-b">
               <h3 className="font-semibold text-gray-900 flex items-center">
                 <BarChart className="h-5 w-5 mr-2 text-purple-500" />
@@ -357,6 +268,130 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
               </div>
             </div>
           </div>
+
+          {/* Score Card - Moved to the bottom of the sidebar */}
+          {hasReviewDetails && (
+            <div className="bg-white shadow-lg rounded-xl overflow-hidden mb-8">
+              <div className={`py-6 text-center text-white ${getRatingColor(overallScore)}`}>
+                <div className="text-5xl font-bold mb-1">{overallScore.toFixed(1)}</div>
+                <div className="text-sm uppercase tracking-wider">Overall Score</div>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* Verdict */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                    <Award className="h-5 w-5 mr-2 text-yellow-500" />
+                    Verdict
+                  </h3>
+                  <p className="text-gray-700">
+                    {article.description || "An excellent product that delivers great value despite a few minor drawbacks."}
+                  </p>
+                </div>
+                
+                {/* Pros and Cons - Using a grid layout for better mobile display */}
+                <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                      <ThumbsUp className="h-5 w-5 mr-2 text-green-500" />
+                      Pros
+                    </h3>
+                    <ul className="space-y-1">
+                      <li className="flex items-start">
+                        <Check className="h-5 w-5 mr-2 text-green-500 shrink-0 mt-0.5" />
+                        <span className="text-gray-700">Excellent performance</span>
+                      </li>
+                      <li className="flex items-start">
+                        <Check className="h-5 w-5 mr-2 text-green-500 shrink-0 mt-0.5" />
+                        <span className="text-gray-700">High-quality materials</span>
+                      </li>
+                      <li className="flex items-start">
+                        <Check className="h-5 w-5 mr-2 text-green-500 shrink-0 mt-0.5" />
+                        <span className="text-gray-700">Great value for money</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div className="bg-red-50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                      <ThumbsDown className="h-5 w-5 mr-2 text-red-500" />
+                      Cons
+                    </h3>
+                    <ul className="space-y-1">
+                      <li className="flex items-start">
+                        <ThumbsDown className="h-5 w-5 mr-2 text-red-500 shrink-0 mt-0.5" />
+                        <span className="text-gray-700">Battery life could be better</span>
+                      </li>
+                      <li className="flex items-start">
+                        <ThumbsDown className="h-5 w-5 mr-2 text-red-500 shrink-0 mt-0.5" />
+                        <span className="text-gray-700">Limited connectivity options</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                
+                {/* Buy Button */}
+                <Button className="w-full" size="lg">
+                  Check Price
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Ratings Section - Now Moved to the Bottom of the Page */}
+      <div className="mt-12">
+        <h2 className="text-2xl font-bold mb-6">Detailed Ratings and Analysis</h2>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Detailed Ratings */}
+          {article.rating_criteria && article.rating_criteria.length > 0 && (
+            <div className="bg-white shadow-lg rounded-xl overflow-hidden">
+              <div className="bg-gray-100 py-3 px-6 border-b">
+                <h3 className="font-semibold text-gray-900">Detailed Ratings</h3>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
+                  {article.rating_criteria.map((criterion, index) => (
+                    <div key={index} className="bg-gray-50 p-4 rounded-lg">
+                      <div className="flex justify-between mb-2">
+                        <span className="font-medium">{criterion.name}</span>
+                        <span className="font-bold">{criterion.score.toFixed(1)}</span>
+                      </div>
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full ${getRatingColor(criterion.score)}`}
+                          style={{ width: `${(criterion.score / 10) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Overall Rating Summary Card - Duplicated for desktop layout consistency */}
+          {hasReviewDetails && (
+            <div className="bg-white shadow-lg rounded-xl overflow-hidden lg:block hidden">
+              <div className={`py-8 text-center text-white ${getRatingColor(overallScore)}`}>
+                <div className="text-6xl font-bold mb-1">{overallScore.toFixed(1)}</div>
+                <div className="text-sm uppercase tracking-wider">Overall Score</div>
+              </div>
+              
+              <div className="p-6">
+                <h3 className="font-semibold text-gray-900 mb-2">Final Verdict</h3>
+                <p className="text-gray-700 mb-4">
+                  {article.description || "An excellent product that delivers great value despite a few minor drawbacks."}
+                </p>
+                
+                <Button className="w-full">
+                  Check Price
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       
@@ -364,9 +399,9 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
       <div className="mt-12 bg-gradient-to-r from-blue-100 to-indigo-100 p-6 rounded-xl text-center">
         <h3 className="text-xl font-bold mb-2">Want to see more reviews like this?</h3>
         <p className="text-gray-600 mb-4">Subscribe to our newsletter for the latest product reviews and tech news.</p>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg transition">
+        <Button>
           Subscribe Now
-        </button>
+        </Button>
       </div>
     </article>
   );
