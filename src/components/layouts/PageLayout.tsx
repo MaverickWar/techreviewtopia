@@ -9,6 +9,7 @@ interface PageLayoutProps {
 }
 
 export const PageLayout = ({ children }: PageLayoutProps) => {
+  console.log("PageLayout rendering");
   return (
     <div className="min-h-screen bg-gray-50">
       <TopNav />
