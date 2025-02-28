@@ -88,9 +88,10 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
         </div>
         
         {article.description && (
-          <p className="text-xl text-gray-600">
-            {article.description}
-          </p>
+          <div 
+            className="text-xl text-gray-600"
+            dangerouslySetInnerHTML={{ __html: article.description }}
+          />
         )}
       </div>
       
@@ -267,9 +268,13 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
                     <Award className="h-5 w-5 mr-2 text-amber-500" />
                     Verdict
                   </h3>
-                  <p className="text-gray-700 text-sm">
-                    {article.description || "An excellent option that delivers solid performance and value, despite a few minor drawbacks."}
-                  </p>
+                  <div className="text-gray-700 text-sm">
+                    {article.description ? (
+                      <div dangerouslySetInnerHTML={{ __html: article.description }} />
+                    ) : (
+                      <p>An excellent option that delivers solid performance and value, despite a few minor drawbacks.</p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

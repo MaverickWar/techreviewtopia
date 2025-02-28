@@ -85,4 +85,3 @@ export const ClassicLayout: React.FC<ClassicLayoutProps> = ({ article }) => {
     </article>
   );
 };
-

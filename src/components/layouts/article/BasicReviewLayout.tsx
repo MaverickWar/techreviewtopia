@@ -62,7 +62,10 @@ export const BasicReviewLayout = ({ article }: BasicReviewLayoutProps) => {
         <h1 className="text-3xl md:text-4xl font-bold mb-3">{article.title}</h1>
         
         {article.description && (
-          <p className="text-gray-600 text-lg mb-4">{article.description}</p>
+          <div 
+            className="text-gray-600 text-lg mb-4"
+            dangerouslySetInnerHTML={{ __html: article.description }}
+          />
         )}
         
         <div className="flex flex-wrap items-center text-sm text-gray-500 gap-4">

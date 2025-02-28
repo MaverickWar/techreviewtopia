@@ -120,9 +120,9 @@ export const GalleryLayout = ({ article }: GalleryLayoutProps) => {
         </h1>
         
         {article.description && (
-          <p className="text-lg text-gray-600 mb-6">
-            {article.description}
-          </p>
+          <div className="text-lg text-gray-600 mb-6">
+            <div dangerouslySetInnerHTML={{ __html: article.description }} />
+          </div>
         )}
         
         {/* Article Meta Info */}
