@@ -33,6 +33,7 @@ export const LayoutPreview = ({
     published_at: article.published_at || new Date().toISOString(),
     author_id: article.author_id || "author",
     layout_template: selectedLayout,
+    layout_settings: article.layout_settings || {},
     review_details: article.review_details || [{
       id: "preview",
       content_id: "preview",
@@ -45,7 +46,15 @@ export const LayoutPreview = ({
       },
       overall_score: 8.5
     }],
-    rating_criteria: []
+    rating_criteria: article.rating_criteria || [
+      { name: "Performance", score: 9.0 },
+      { name: "Value", score: 8.0 },
+      { name: "Design", score: 8.5 }
+    ],
+    author: {
+      display_name: "John Doe",
+      avatar_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+    }
   };
 
   return (

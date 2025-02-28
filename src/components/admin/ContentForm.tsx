@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -28,6 +27,9 @@ import {
 import { LayoutSelector } from "./LayoutSelector";
 import { LayoutPreview } from "./LayoutPreview";
 import { ContentType, ContentStatus, LayoutTemplate, ArticleData } from "@/types/content";
+
+// Import the LayoutSettings component
+import LayoutSettings from "./LayoutSettings";
 
 type RatingCriterion = {
   name: string;
@@ -423,6 +425,15 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     }));
   };
 
+  // Handle layout settings changes
+  const handleLayoutSettingsChange = (settings: Record<string, any>) => {
+    console.log("Layout settings updated:", settings);
+    setFormData(prev => ({
+      ...prev,
+      layout_settings: settings
+    }));
+  };
+
   // Helper function to handle review data
   const handleReviewData = async (contentId: string, data: ContentFormData) => {
     // Check for existing review
@@ -784,6 +795,14 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
                     />
                   </div>
                   
+                  {/* Add Layout Settings Component */}
+                  <LayoutSettings
+                    layoutTemplate={formData.layout_template || "classic"}
+                    contentType={formData.type}
+                    layoutSettings={formData.layout_settings || {}}
+                    onChange={handleLayoutSettingsChange}
+                  />
+                  
                   <div>
                     <h3 className="text-lg font-medium mb-3">Preview</h3>
                     <div className="border rounded-lg overflow-hidden">
@@ -983,116 +1002,4 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
                             variant="destructive"
                             onClick={() => removeProductSpec(index)}
                           >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={addProductSpec}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Specification
-                      </Button>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="rating">
-                  <AccordionTrigger>Rating</AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4">
-                      {formData.rating_criteria?.map((criterion, index) => (
-                        <div key={index} className="flex gap-2">
-                          <Input
-                            placeholder="Criterion"
-                            value={criterion.name}
-                            onChange={(e) => updateRatingCriterion(index, 'name', e.target.value)}
-                          />
-                          <Input
-                            type="number"
-                            min="0"
-                            max="10"
-                            step="0.1"
-                            placeholder="Score (0-10)"
-                            value={criterion.score}
-                            onChange={(e) => updateRatingCriterion(index, 'score', parseFloat(e.target.value))}
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            onClick={() => removeRatingCriterion(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={addRatingCriterion}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Rating Criterion
-                      </Button>
-
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Overall Score</label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="10"
-                          step="0.1"
-                          value={formData.overall_score || 0}
-                          onChange={(e) => setFormData(prev => ({
-                            ...prev,
-                            overall_score: parseFloat(e.target.value)
-                          }))}
-                        />
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </>
-            )}
-          </Accordion>
-
-          
-          <div>
-            <label className="block text-sm font-medium mb-1">Status</label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={formData.status === "draft" ? "default" : "outline"}
-                onClick={() => setFormData(prev => ({ ...prev, status: "draft" }))}
-              >
-                Draft
-              </Button>
-              <Button
-                type="button"
-                variant={formData.status === "published" ? "default" : "outline"}
-                onClick={() => setFormData(prev => ({ ...prev, status: "published" }))}
-              >
-                Published
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-
-        <CardFooter className="flex justify-end gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate("/admin/content")}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? "Saving..." : "Save"}
-          </Button>
-        </CardFooter>
-      </Card>
-    </form>
-  );
-};
+                            <

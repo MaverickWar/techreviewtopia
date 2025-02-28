@@ -27,6 +27,7 @@ export interface ArticleData {
   featured_image: string | null;
   published_at: string | null;
   author_id: string;
+  author?: Record<string, any> | null;
   layout_template?: LayoutTemplate;
   review_details?: ReviewDetails[];
   rating_criteria?: RatingCriterion[];

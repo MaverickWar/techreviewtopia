@@ -40,6 +40,7 @@ const ArticlePage = () => {
         }
         
         console.log("Fetched article with layout template:", contentData?.layout_template);
+        console.log("Layout settings:", contentData?.layout_settings);
         
         // For reviews, fetch the review details and rating criteria separately
         let reviewDetails = null;
@@ -72,11 +73,23 @@ const ArticlePage = () => {
           }
         }
         
+        // Get author information
+        const { data: authorData, error: authorError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', contentData.author_id)
+          .maybeSingle();
+          
+        if (authorError) {
+          console.error("Error fetching author details:", authorError);
+        }
+        
         // Combine all the data
         return {
           ...contentData,
           review_details: reviewDetails ? [reviewDetails] : [],
-          rating_criteria: ratingCriteria
+          rating_criteria: ratingCriteria,
+          author: authorData || null
         } as ArticleData;
       } catch (error) {
         console.error("Error fetching article:", error);
@@ -90,6 +103,10 @@ const ArticlePage = () => {
   const getLayoutComponent = (article: ArticleData) => {
     const layoutTemplate = article.layout_template || 'classic';
     console.log("Using layout template:", layoutTemplate);
+    
+    // Pass layout settings to the layout component
+    const layoutSettings = article.layout_settings || {};
+    console.log("Applying layout settings:", layoutSettings);
     
     switch (layoutTemplate) {
       case 'magazine':
