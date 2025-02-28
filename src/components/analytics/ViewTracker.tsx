@@ -1,29 +1,23 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 export const ViewTracker = () => {
   const location = useLocation();
-  const [isTracking, setIsTracking] = useState(false);
 
   useEffect(() => {
     const trackPageView = async () => {
-      if (isTracking) return; // Prevent duplicate tracking
-      
-      setIsTracking(true);
-      
       try {
         // First, get the current total_views count
         const { data, error } = await supabase
           .from('statistics')
           .select('count')
           .eq('type', 'total_views')
-          .maybeSingle();
+          .single();
 
-        if (error) {
+        if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
           console.error('Error fetching view count:', error);
-          setIsTracking(false);
           return;
         }
 
@@ -40,19 +34,18 @@ export const ViewTracker = () => {
               last_updated: new Date().toISOString() 
             },
             { 
-              onConflict: 'type' 
+              onConflict: 'type',
+              ignoreDuplicates: false
             }
           );
 
         if (updateError) {
           console.error('Error updating view count:', updateError);
-        } else {
-          console.log(`Page view recorded for: ${location.pathname}`);
         }
+
+        console.log(`Page view recorded for: ${location.pathname}`);
       } catch (err) {
         console.error('Error in view tracking:', err);
-      } finally {
-        setIsTracking(false);
       }
     };
 
@@ -60,7 +53,7 @@ export const ViewTracker = () => {
     if (!location.pathname.startsWith('/admin')) {
       trackPageView();
     }
-  }, [location.pathname, isTracking]);
+  }, [location.pathname]);
 
   return null; // This component doesn't render anything
 };
