@@ -10,6 +10,8 @@ import { MagazineLayout } from "@/components/layouts/article/MagazineLayout";
 import { ReviewLayout } from "@/components/layouts/article/ReviewLayout";
 import { GalleryLayout } from "@/components/layouts/article/GalleryLayout";
 import { TechnicalLayout } from "@/components/layouts/article/TechnicalLayout";
+import { BasicReviewLayout } from "@/components/layouts/article/BasicReviewLayout";
+import { EnhancedReviewLayout } from "@/components/layouts/article/EnhancedReviewLayout";
 import { useRealtimeContent } from "@/hooks/useRealtimeContent";
 
 const ArticlePage = () => {
@@ -94,6 +96,10 @@ const ArticlePage = () => {
         return <MagazineLayout article={article} />;
       case 'review':
         return <ReviewLayout article={article} />;
+      case 'basic-review':
+        return <BasicReviewLayout article={article} />;
+      case 'enhanced-review':
+        return <EnhancedReviewLayout article={article} />;
       case 'gallery':
         return <GalleryLayout article={article} />;
       case 'technical':
