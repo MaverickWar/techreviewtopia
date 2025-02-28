@@ -2,8 +2,9 @@
 import React from "react";
 import { ArticleData } from "@/types/content";
 import { formatDistanceToNow } from "date-fns";
-import { User, Clock, Info, ThumbsUp, ThumbsDown } from "lucide-react";
+import { User, Clock, Info, ThumbsUp, ThumbsDown, Star, StarHalf } from "lucide-react";
 import { AwardBanner } from "./AwardBanner";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface BasicReviewLayoutProps {
   article: ArticleData;
@@ -21,6 +22,17 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
   const showFeaturedImage = article.layout_settings?.showFeaturedImage !== undefined ? 
     article.layout_settings.showFeaturedImage : true;
   const layoutWidth = article.layout_settings?.layoutWidth || "standard";
+  const colorTheme = article.layout_settings?.colorTheme || "default";
+  const fontSize = article.layout_settings?.fontSize || "medium";
+  const headingStyle = article.layout_settings?.headingStyle || "standard";
+  const showProsConsSection = article.layout_settings?.showProsConsSection !== undefined ?
+    article.layout_settings.showProsConsSection : true;
+  const showVerdictSection = article.layout_settings?.showVerdictSection !== undefined ?
+    article.layout_settings.showVerdictSection : true;
+  const showRatingCriteria = article.layout_settings?.showRatingCriteria !== undefined ?
+    article.layout_settings.showRatingCriteria : true;
+  const ratingDisplayStyle = article.layout_settings?.ratingDisplayStyle || "numeric";
+  const sectionSpacing = article.layout_settings?.sectionSpacing || 4;
   
   console.log("BasicReviewLayout received article with layout_settings:", article.layout_settings);
   console.log("Layout settings extracted:", {
@@ -28,7 +40,15 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
     showAwards,
     contentAlignment,
     showFeaturedImage,
-    layoutWidth
+    layoutWidth,
+    colorTheme,
+    fontSize,
+    headingStyle,
+    showProsConsSection,
+    showVerdictSection,
+    showRatingCriteria,
+    ratingDisplayStyle,
+    sectionSpacing
   });
 
   // Get review details if available
@@ -61,15 +81,106 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
     }
   };
 
+  // Determine font size classes
+  const getFontSizeClasses = () => {
+    switch (fontSize) {
+      case "small": return "text-sm";
+      case "medium": return "text-base";
+      case "large": return "text-lg";
+      default: return "text-base";
+    }
+  };
+
+  // Determine heading style classes
+  const getHeadingStyleClasses = () => {
+    switch (headingStyle) {
+      case "underlined": return "border-b pb-2";
+      case "bold": return "font-extrabold";
+      case "colored": return "text-blue-600";
+      default: return "";
+    }
+  };
+
+  // Determine color theme classes
+  const getColorThemeClasses = () => {
+    switch (colorTheme) {
+      case "blue": return "bg-blue-50";
+      case "green": return "bg-green-50";
+      case "purple": return "bg-purple-50";
+      case "orange": return "bg-orange-50";
+      case "red": return "bg-red-50";
+      case "gray": return "bg-gray-50";
+      default: return "bg-white";
+    }
+  };
+
+  // Get section spacing class
+  const getSectionSpacingClass = () => {
+    return `gap-${sectionSpacing}`;
+  };
+
+  // Helper function to render rating based on display style
+  const renderRating = (score: number) => {
+    switch (ratingDisplayStyle) {
+      case "stars":
+        return (
+          <div className="flex items-center">
+            {Array.from({ length: 5 }).map((_, i) => {
+              const starValue = (i + 1) * 2;
+              if (score >= starValue) {
+                return <Star key={i} className="h-5 w-5 text-yellow-500 fill-yellow-500" />;
+              } else if (score >= starValue - 1) {
+                return <StarHalf key={i} className="h-5 w-5 text-yellow-500 fill-yellow-500" />;
+              } else {
+                return <Star key={i} className="h-5 w-5 text-yellow-500" />;
+              }
+            })}
+            <span className="ml-2 text-sm text-gray-500">({score.toFixed(1)})</span>
+          </div>
+        );
+      case "bars":
+        return (
+          <div className="w-full">
+            <div className="flex justify-between mb-1">
+              <span className="text-lg font-bold">{score.toFixed(1)}</span>
+              <span className="text-gray-500">/ 10</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-blue-600 h-2.5 rounded-full" 
+                style={{ width: `${(score / 10) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+        );
+      case "minimal":
+        return (
+          <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 font-bold">
+            {score.toFixed(1)}
+          </div>
+        );
+      case "numeric":
+      default:
+        return (
+          <div className="flex items-center">
+            <div className="text-3xl font-bold text-blue-600 mr-2">
+              {score.toFixed(1)}
+            </div>
+            <div className="text-gray-500">/ 10</div>
+          </div>
+        );
+    }
+  };
+
   return (
-    <article className={`${getMaxWidthClass()} mx-auto px-4 py-8 ${getTextAlignmentClass()}`}>
+    <article className={`${getMaxWidthClass()} mx-auto px-4 py-8 ${getTextAlignmentClass()} ${getFontSizeClasses()} ${getColorThemeClasses()}`}>
       {/* Award banner - Add support for both award and awardLevel */}
       {showAwards && awardLevel && (
         <AwardBanner awardLevel={awardLevel} />
       )}
       
       <header className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold mb-4">{article.title}</h1>
+        <h1 className={`text-2xl md:text-3xl font-bold mb-4 ${getHeadingStyleClasses()}`}>{article.title}</h1>
         
         {article.description && (
           <div 
@@ -103,13 +214,31 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
       
       {/* Simple rating display */}
       {reviewDetails?.overall_score !== undefined && (
-        <div className="bg-gray-100 p-4 rounded-lg mb-8">
-          <h2 className="text-lg font-semibold mb-2">Overall Rating</h2>
-          <div className="flex items-center">
-            <div className="text-3xl font-bold text-blue-600 mr-2">
-              {reviewDetails.overall_score.toFixed(1)}
-            </div>
-            <div className="text-gray-500">/ 10</div>
+        <div className={`${colorTheme === "default" ? "bg-gray-100" : ""} p-4 rounded-lg mb-8`}>
+          <h2 className={`text-lg font-semibold mb-2 ${getHeadingStyleClasses()}`}>Overall Rating</h2>
+          {renderRating(reviewDetails.overall_score)}
+        </div>
+      )}
+      
+      {/* Rating criteria if available and enabled */}
+      {showRatingCriteria && article.rating_criteria && article.rating_criteria.length > 0 && (
+        <div className="mb-8">
+          <h2 className={`text-lg font-semibold mb-4 ${getHeadingStyleClasses()}`}>Rating Breakdown</h2>
+          <div className={`grid grid-cols-1 md:grid-cols-2 ${getSectionSpacingClass()}`}>
+            {article.rating_criteria.map((criterion, index) => (
+              <Card key={index} className="overflow-hidden">
+                <div className={`h-2 ${
+                  criterion.score >= 8 ? "bg-green-500" : 
+                  criterion.score >= 6 ? "bg-amber-500" : "bg-red-500"
+                }`} style={{ width: `${criterion.score * 10}%` }}></div>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">{criterion.name}</span>
+                    <span className="text-lg font-bold">{criterion.score.toFixed(1)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       )}
@@ -123,56 +252,68 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
       )}
       
       {/* Simple pros and cons */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-green-50 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold mb-2 flex items-center">
-            <ThumbsUp className="h-5 w-5 text-green-600 mr-2" />
-            Pros
-          </h3>
-          <ul className="space-y-2">
-            <li className="flex items-start">
-              <span className="text-green-600 mr-2">✓</span>
-              <span>Good value for money</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-green-600 mr-2">✓</span>
-              <span>Solid construction</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-green-600 mr-2">✓</span>
-              <span>Easy to use</span>
-            </li>
-          </ul>
+      {showProsConsSection && (
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${getSectionSpacingClass()} mb-8`}>
+          <div className="bg-green-50 p-4 rounded-lg">
+            <h3 className={`text-lg font-semibold mb-2 flex items-center ${getHeadingStyleClasses()}`}>
+              <ThumbsUp className="h-5 w-5 text-green-600 mr-2" />
+              Pros
+            </h3>
+            <ul className="space-y-2">
+              <li className="flex items-start">
+                <span className="text-green-600 mr-2">✓</span>
+                <span>Good value for money</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-green-600 mr-2">✓</span>
+                <span>Solid construction</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-green-600 mr-2">✓</span>
+                <span>Easy to use</span>
+              </li>
+            </ul>
+          </div>
+          
+          <div className="bg-red-50 p-4 rounded-lg">
+            <h3 className={`text-lg font-semibold mb-2 flex items-center ${getHeadingStyleClasses()}`}>
+              <ThumbsDown className="h-5 w-5 text-red-600 mr-2" />
+              Cons
+            </h3>
+            <ul className="space-y-2">
+              <li className="flex items-start">
+                <span className="text-red-600 mr-2">✗</span>
+                <span>Limited features</span>
+              </li>
+              <li className="flex items-start">
+                <span className="text-red-600 mr-2">✗</span>
+                <span>Battery life could be better</span>
+              </li>
+            </ul>
+          </div>
         </div>
-        
-        <div className="bg-red-50 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold mb-2 flex items-center">
-            <ThumbsDown className="h-5 w-5 text-red-600 mr-2" />
-            Cons
-          </h3>
-          <ul className="space-y-2">
-            <li className="flex items-start">
-              <span className="text-red-600 mr-2">✗</span>
-              <span>Limited features</span>
-            </li>
-            <li className="flex items-start">
-              <span className="text-red-600 mr-2">✗</span>
-              <span>Battery life could be better</span>
-            </li>
-          </ul>
-        </div>
-      </div>
+      )}
       
       {/* Verdict */}
-      <div className="bg-blue-50 p-6 rounded-lg mb-8">
-        <h3 className="text-lg font-semibold mb-2 flex items-center">
-          <Info className="h-5 w-5 text-blue-600 mr-2" />
-          Verdict
-        </h3>
-        <p className="text-gray-700">
-          Overall, this is a solid product that offers good value for money. While it has some limitations, it performs well for its intended purpose and is easy to use.
-        </p>
-      </div>
+      {showVerdictSection && (
+        <div className={`bg-blue-50 p-6 rounded-lg mb-8 ${
+          colorTheme === "blue" ? "bg-blue-100" : 
+          colorTheme === "green" ? "bg-green-50" : 
+          colorTheme === "purple" ? "bg-purple-50" : 
+          colorTheme === "orange" ? "bg-orange-50" : 
+          colorTheme === "red" ? "bg-red-50" : 
+          colorTheme === "gray" ? "bg-gray-100" : 
+          "bg-blue-50"
+        }`}>
+          <h3 className={`text-lg font-semibold mb-2 flex items-center ${getHeadingStyleClasses()}`}>
+            <Info className="h-5 w-5 text-blue-600 mr-2" />
+            Verdict
+          </h3>
+          <p className="text-gray-700">
+            Overall, this is a solid product that offers good value for money. While it has some limitations, it performs well for its intended purpose and is easy to use.
+          </p>
+        </div>
+      )}
     </article>
   );
 };

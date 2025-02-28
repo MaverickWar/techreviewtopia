@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { ArticleData, ContentType, LayoutTemplate } from "@/types/content";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +10,16 @@ import {
   AlignCenter, 
   AlignRight,
   Image,
-  Layers
+  Layers,
+  Palette,
+  Type,
+  LayoutGrid,
+  Eye,
+  ThumbsUp,
+  ThumbsDown,
+  Check,
+  X,
+  Star
 } from "lucide-react";
 import { 
   Select,
@@ -29,6 +39,9 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from "@/components/ui/tooltip";
+import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 
 export interface LayoutSettingsProps {
   article: ArticleData;
@@ -63,10 +76,30 @@ const formatAwardLabel = (awardValue: string): string => {
     .join(' ');
 };
 
+// Color theme options
+const COLOR_THEME_OPTIONS = [
+  { value: "default", label: "Default" },
+  { value: "blue", label: "Blue" },
+  { value: "green", label: "Green" },
+  { value: "purple", label: "Purple" },
+  { value: "orange", label: "Orange" },
+  { value: "red", label: "Red" },
+  { value: "gray", label: "Gray" },
+];
+
+// Font options
+const FONT_SIZE_OPTIONS = [
+  { value: "small", label: "Small" },
+  { value: "medium", label: "Medium" },
+  { value: "large", label: "Large" },
+];
+
 const LayoutSettings: React.FC<LayoutSettingsProps> = ({ 
   article, 
   onSave,
   layoutSettings,
+  layoutTemplate,
+  contentType,
   onChange 
 }) => {
   // Use awardLevel as the primary key with fallback to award for backward compatibility
@@ -118,6 +151,66 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
     false
   );
 
+  // New settings
+  // Color theme
+  const [colorTheme, setColorTheme] = useState<string>(
+    layoutSettings?.colorTheme || 
+    article?.layout_settings?.colorTheme || 
+    "default"
+  );
+
+  // Typography settings
+  const [fontSize, setFontSize] = useState<string>(
+    layoutSettings?.fontSize || 
+    article?.layout_settings?.fontSize || 
+    "medium"
+  );
+
+  const [headingStyle, setHeadingStyle] = useState<string>(
+    layoutSettings?.headingStyle || 
+    article?.layout_settings?.headingStyle || 
+    "standard"
+  );
+
+  // Section visibility for reviews
+  const [showProsConsSection, setShowProsConsSection] = useState<boolean>(
+    layoutSettings?.showProsConsSection !== undefined ? 
+    layoutSettings.showProsConsSection :
+    article?.layout_settings?.showProsConsSection !== undefined ?
+    article.layout_settings.showProsConsSection : 
+    true
+  );
+
+  const [showVerdictSection, setShowVerdictSection] = useState<boolean>(
+    layoutSettings?.showVerdictSection !== undefined ? 
+    layoutSettings.showVerdictSection :
+    article?.layout_settings?.showVerdictSection !== undefined ?
+    article.layout_settings.showVerdictSection : 
+    true
+  );
+
+  const [showRatingCriteria, setShowRatingCriteria] = useState<boolean>(
+    layoutSettings?.showRatingCriteria !== undefined ? 
+    layoutSettings.showRatingCriteria :
+    article?.layout_settings?.showRatingCriteria !== undefined ?
+    article.layout_settings.showRatingCriteria : 
+    true
+  );
+
+  // Rating display style
+  const [ratingDisplayStyle, setRatingDisplayStyle] = useState<string>(
+    layoutSettings?.ratingDisplayStyle || 
+    article?.layout_settings?.ratingDisplayStyle || 
+    "numeric"
+  );
+
+  // Spacing settings
+  const [sectionSpacing, setSectionSpacing] = useState<number>(
+    layoutSettings?.sectionSpacing || 
+    article?.layout_settings?.sectionSpacing || 
+    4
+  );
+
   useEffect(() => {
     // Update from article.layout_settings when it changes
     if (article?.layout_settings) {
@@ -133,6 +226,19 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
       setLayoutWidth(article.layout_settings.layoutWidth || "standard");
       setShowTableOfContents(article.layout_settings.showTableOfContents !== undefined ?
         article.layout_settings.showTableOfContents : false);
+      
+      // New settings
+      setColorTheme(article.layout_settings.colorTheme || "default");
+      setFontSize(article.layout_settings.fontSize || "medium");
+      setHeadingStyle(article.layout_settings.headingStyle || "standard");
+      setShowProsConsSection(article.layout_settings.showProsConsSection !== undefined ?
+        article.layout_settings.showProsConsSection : true);
+      setShowVerdictSection(article.layout_settings.showVerdictSection !== undefined ?
+        article.layout_settings.showVerdictSection : true);
+      setShowRatingCriteria(article.layout_settings.showRatingCriteria !== undefined ?
+        article.layout_settings.showRatingCriteria : true);
+      setRatingDisplayStyle(article.layout_settings.ratingDisplayStyle || "numeric");
+      setSectionSpacing(article.layout_settings.sectionSpacing || 4);
     }
   }, [article?.layout_settings]);
 
@@ -151,6 +257,19 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
       setLayoutWidth(layoutSettings.layoutWidth || "standard");
       setShowTableOfContents(layoutSettings.showTableOfContents !== undefined ?
         layoutSettings.showTableOfContents : false);
+      
+      // New settings
+      setColorTheme(layoutSettings.colorTheme || "default");
+      setFontSize(layoutSettings.fontSize || "medium");
+      setHeadingStyle(layoutSettings.headingStyle || "standard");
+      setShowProsConsSection(layoutSettings.showProsConsSection !== undefined ?
+        layoutSettings.showProsConsSection : true);
+      setShowVerdictSection(layoutSettings.showVerdictSection !== undefined ?
+        layoutSettings.showVerdictSection : true);
+      setShowRatingCriteria(layoutSettings.showRatingCriteria !== undefined ?
+        layoutSettings.showRatingCriteria : true);
+      setRatingDisplayStyle(layoutSettings.ratingDisplayStyle || "numeric");
+      setSectionSpacing(layoutSettings.sectionSpacing || 4);
     }
   }, [layoutSettings]);
 
@@ -169,7 +288,16 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
       contentAlignment,
       showFeaturedImage,
       layoutWidth,
-      showTableOfContents
+      showTableOfContents,
+      // New settings
+      colorTheme,
+      fontSize,
+      headingStyle,
+      showProsConsSection,
+      showVerdictSection,
+      showRatingCriteria,
+      ratingDisplayStyle,
+      sectionSpacing
     };
 
     console.log("Updated settings:", updatedSettings);
@@ -224,6 +352,30 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
         case 'showTableOfContents':
           setShowTableOfContents(value);
           break;
+        case 'colorTheme':
+          setColorTheme(value);
+          break;
+        case 'fontSize':
+          setFontSize(value);
+          break;
+        case 'headingStyle':
+          setHeadingStyle(value);
+          break;
+        case 'showProsConsSection':
+          setShowProsConsSection(value);
+          break;
+        case 'showVerdictSection':
+          setShowVerdictSection(value);
+          break;
+        case 'showRatingCriteria':
+          setShowRatingCriteria(value);
+          break;
+        case 'ratingDisplayStyle':
+          setRatingDisplayStyle(value);
+          break;
+        case 'sectionSpacing':
+          setSectionSpacing(value);
+          break;
       }
       
       // Create the updated settings object
@@ -236,6 +388,14 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
         showFeaturedImage,
         layoutWidth,
         showTableOfContents,
+        colorTheme,
+        fontSize,
+        headingStyle,
+        showProsConsSection,
+        showVerdictSection,
+        showRatingCriteria,
+        ratingDisplayStyle,
+        sectionSpacing,
         [setting]: value
       };
     }
@@ -248,6 +408,12 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
 
   // Only render actual award banner preview if there is a real award (not empty_value)
   const shouldShowPreview = awardLevel && awardLevel !== "empty_value";
+
+  // Determine which content type specific options to show
+  const isReview = contentType === 'review' || 
+                  layoutTemplate === 'review' || 
+                  layoutTemplate === 'basic-review' || 
+                  layoutTemplate === 'enhanced-review';
 
   return (
     <div className="bg-white p-6 rounded-lg border shadow-sm">
@@ -270,6 +436,16 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
             <AlignLeft className="h-4 w-4" />
             <span>Content</span>
           </TabsTrigger>
+          <TabsTrigger value="appearance" className="flex items-center gap-1">
+            <Palette className="h-4 w-4" />
+            <span>Appearance</span>
+          </TabsTrigger>
+          {isReview && (
+            <TabsTrigger value="review" className="flex items-center gap-1">
+              <Star className="h-4 w-4" />
+              <span>Review</span>
+            </TabsTrigger>
+          )}
         </TabsList>
         
         <TabsContent value="awards" className="space-y-4">
@@ -338,6 +514,24 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
             </Select>
             <p className="text-xs text-gray-500 mt-1">
               Controls the maximum width of the content area
+            </p>
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">Section Spacing</label>
+            <div className="flex items-center gap-4">
+              <Slider 
+                value={[sectionSpacing]} 
+                min={1} 
+                max={8} 
+                step={1}
+                onValueChange={(value) => handleChange('sectionSpacing', value[0])}
+                className="flex-1"
+              />
+              <span className="text-sm font-medium w-8 text-center">{sectionSpacing}</span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Adjust spacing between content sections (1-8)
             </p>
           </div>
           
@@ -430,7 +624,205 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
               Controls the text alignment in the main content area
             </p>
           </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">Font Size</label>
+            <Select
+              value={fontSize}
+              onValueChange={(value) => handleChange('fontSize', value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select font size" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="small">Small</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="large">Large</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500 mt-1">
+              Controls the base font size for the content
+            </p>
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">Heading Style</label>
+            <Select
+              value={headingStyle}
+              onValueChange={(value) => handleChange('headingStyle', value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select heading style" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="standard">Standard</SelectItem>
+                <SelectItem value="underlined">Underlined</SelectItem>
+                <SelectItem value="bold">Extra Bold</SelectItem>
+                <SelectItem value="colored">Colored</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500 mt-1">
+              Sets the style for headings throughout the article
+            </p>
+          </div>
         </TabsContent>
+        
+        <TabsContent value="appearance" className="space-y-4">
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">Color Theme</label>
+            <Select
+              value={colorTheme}
+              onValueChange={(value) => handleChange('colorTheme', value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select color theme" />
+              </SelectTrigger>
+              <SelectContent>
+                {COLOR_THEME_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500 mt-1">
+              Sets the color scheme for the entire article
+            </p>
+          </div>
+          
+          <div className="mt-4">
+            <h3 className="text-sm font-medium mb-2">Theme Preview</h3>
+            <div className="grid grid-cols-3 gap-2">
+              {COLOR_THEME_OPTIONS.filter(t => t.value !== "default").map((theme) => (
+                <div 
+                  key={theme.value}
+                  className={`p-2 rounded cursor-pointer text-center border ${
+                    colorTheme === theme.value ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                  }`}
+                  onClick={() => handleChange('colorTheme', theme.value)}
+                >
+                  <div 
+                    className={`h-6 w-full rounded mb-1 bg-${theme.value}-500`}
+                  ></div>
+                  <span className="text-xs font-medium">{theme.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </TabsContent>
+        
+        {isReview && (
+          <TabsContent value="review" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <label className="text-sm font-medium">Pros & Cons Section</label>
+                <p className="text-xs text-gray-500">
+                  Show or hide the pros and cons comparison
+                </p>
+              </div>
+              <Switch 
+                checked={showProsConsSection} 
+                onCheckedChange={(checked) => handleChange('showProsConsSection', checked)} 
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <label className="text-sm font-medium">Verdict Section</label>
+                <p className="text-xs text-gray-500">
+                  Show or hide the final verdict section
+                </p>
+              </div>
+              <Switch 
+                checked={showVerdictSection} 
+                onCheckedChange={(checked) => handleChange('showVerdictSection', checked)} 
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <label className="text-sm font-medium">Rating Criteria</label>
+                <p className="text-xs text-gray-500">
+                  Show or hide detailed rating criteria
+                </p>
+              </div>
+              <Switch 
+                checked={showRatingCriteria} 
+                onCheckedChange={(checked) => handleChange('showRatingCriteria', checked)} 
+              />
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Rating Display Style</label>
+              <Select
+                value={ratingDisplayStyle}
+                onValueChange={(value) => handleChange('ratingDisplayStyle', value)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select display style" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="numeric">Numeric (e.g., 8.5/10)</SelectItem>
+                  <SelectItem value="stars">Stars (★★★★☆)</SelectItem>
+                  <SelectItem value="bars">Progress Bars</SelectItem>
+                  <SelectItem value="minimal">Minimal</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500 mt-1">
+                Determines how ratings are displayed in the review
+              </p>
+            </div>
+            
+            <div className="mt-4">
+              <h3 className="text-sm font-medium mb-2">Rating Style Preview</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <Card className={ratingDisplayStyle === "numeric" ? "ring-2 ring-blue-200" : ""}>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Numeric</span>
+                      <span className="text-xl font-bold">8.5<span className="text-sm text-gray-500">/10</span></span>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className={ratingDisplayStyle === "stars" ? "ring-2 ring-blue-200" : ""}>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Stars</span>
+                      <div className="flex items-center">
+                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                        <Star className="h-4 w-4 text-yellow-500" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className={ratingDisplayStyle === "bars" ? "ring-2 ring-blue-200" : ""}>
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      <span className="text-sm font-medium">Progress Bars</span>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: "85%" }}></div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className={ratingDisplayStyle === "minimal" ? "ring-2 ring-blue-200" : ""}>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Minimal</span>
+                      <Badge variant="secondary">8.5</Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
       
       <Separator className="my-6" />
