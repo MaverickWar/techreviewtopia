@@ -25,7 +25,7 @@ export interface LayoutSettingsProps {
 
 // Predefined award options to ensure consistency
 const AWARD_OPTIONS = [
-  { value: "", label: "No Award" },
+  { value: "empty_value", label: "No Award" }, // Changed empty string to "empty_value"
   { value: "editors-choice", label: "Editor's Choice" },
   { value: "best-value", label: "Best Value" },
   { value: "best-performance", label: "Best Performance" },
@@ -37,7 +37,7 @@ const AWARD_OPTIONS = [
 
 // Transform kebab-case to readable format
 const formatAwardLabel = (awardValue: string): string => {
-  if (!awardValue) return "";
+  if (!awardValue || awardValue === "empty_value") return "";
   
   // Find the matching label from options
   const option = AWARD_OPTIONS.find(opt => opt.value === awardValue);
@@ -58,7 +58,8 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
     layoutSettings?.awardLevel || 
     layoutSettings?.award || 
     article?.layout_settings?.awardLevel ||
-    article?.layout_settings?.award
+    article?.layout_settings?.award ||
+    "empty_value" // Default to "empty_value" instead of empty string
   );
   
   const [showAwards, setShowAwards] = useState<boolean>(
@@ -72,7 +73,10 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
   useEffect(() => {
     // Update from article.layout_settings when it changes
     if (article?.layout_settings) {
-      setAwardLevel(article.layout_settings.awardLevel || article.layout_settings.award);
+      const newAwardLevel = article.layout_settings.awardLevel || 
+                         article.layout_settings.award || 
+                         "empty_value"; // Default to "empty_value"
+      setAwardLevel(newAwardLevel);
       setShowAwards(article.layout_settings.showAwards !== undefined ? 
         article.layout_settings.showAwards : true);
     }
@@ -81,7 +85,10 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
   useEffect(() => {
     // Update from layoutSettings prop when it changes
     if (layoutSettings) {
-      setAwardLevel(layoutSettings.awardLevel || layoutSettings.award);
+      const newAwardLevel = layoutSettings.awardLevel || 
+                         layoutSettings.award || 
+                         "empty_value"; // Default to "empty_value"
+      setAwardLevel(newAwardLevel);
       setShowAwards(layoutSettings.showAwards !== undefined ? 
         layoutSettings.showAwards : true);
     }
@@ -89,12 +96,15 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
 
   const handleSave = async () => {
     console.log("Saving award level:", awardLevel);
+    // Convert "empty_value" back to empty string for storage if needed
+    const storeAwardLevel = awardLevel === "empty_value" ? "" : awardLevel;
+    
     const updatedSettings = {
       ...article.layout_settings,
-      awardLevel,
+      awardLevel: storeAwardLevel,
       showAwards,
       // Keep award for backward compatibility
-      award: awardLevel 
+      award: storeAwardLevel 
     };
 
     // Save the updated layout settings to the database
@@ -120,15 +130,21 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
     
     // Call the onChange handler immediately for real-time updates if provided
     if (onChange) {
+      // Convert "empty_value" back to empty string for storage if needed
+      const storeAwardLevel = value === "empty_value" ? "" : value;
+      
       const updatedSettings = {
         ...(layoutSettings || article?.layout_settings || {}),
-        awardLevel: value,
-        award: value, // Keep award for backward compatibility
+        awardLevel: storeAwardLevel,
+        award: storeAwardLevel, // Keep award for backward compatibility
         showAwards
       };
       onChange(updatedSettings);
     }
   };
+
+  // Only render actual award banner preview if there is a real award (not empty_value)
+  const shouldShowPreview = awardLevel && awardLevel !== "empty_value";
 
   return (
     <div className="bg-white p-6 rounded-lg border shadow-sm">
@@ -140,7 +156,7 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
       <div className="mb-6">
         <label className="block text-sm font-medium mb-2">Award Badge</label>
         <Select
-          value={awardLevel || ""}
+          value={awardLevel || "empty_value"}
           onValueChange={handleChange}
         >
           <SelectTrigger className="w-full">
@@ -160,7 +176,7 @@ const LayoutSettings: React.FC<LayoutSettingsProps> = ({
       </div>
       
       {/* Preview */}
-      {awardLevel && (
+      {shouldShowPreview && (
         <div className="mb-6">
           <h3 className="text-sm font-medium mb-2">Preview</h3>
           <div className="p-4 bg-gray-50 rounded-md">
