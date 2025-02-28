@@ -2,7 +2,11 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
 import { ArticleData, LayoutTemplate } from "@/types/content";
+import { Monitor, Smartphone, Tablet, RefreshCcw, ZoomIn, ZoomOut } from "lucide-react";
 
 // Layout Preview Components
 import { ClassicLayout } from "@/components/layouts/article/ClassicLayout";
@@ -57,36 +61,136 @@ export const LayoutPreview = ({
     }
   };
 
+  const [previewDevice, setPreviewDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [previewScale, setPreviewScale] = useState(0.6); // Default scale for desktop
+  const [previewRotation, setPreviewRotation] = useState(false); // For tablet/mobile orientation
+
+  // Define preview dimensions based on device
+  const getPreviewDimensions = () => {
+    switch (previewDevice) {
+      case "mobile":
+        return previewRotation 
+          ? { width: "568px", height: "320px" } // Landscape
+          : { width: "320px", height: "568px" }; // Portrait
+      case "tablet":
+        return previewRotation 
+          ? { width: "1024px", height: "768px" } // Landscape
+          : { width: "768px", height: "1024px" }; // Portrait
+      case "desktop":
+      default:
+        return { width: "100%", height: "auto", minHeight: "600px" };
+    }
+  };
+
+  const dimensions = getPreviewDimensions();
+
+  // Function to reset preview settings
+  const resetPreview = () => {
+    setPreviewScale(previewDevice === "desktop" ? 0.6 : 0.4);
+    setPreviewRotation(false);
+  };
+
   return (
     <Card className="mt-6 p-4 border">
-      <h3 className="text-lg font-semibold mb-4">Layout Preview</h3>
-      
-      <Tabs defaultValue="desktop" className="mb-4">
-        <TabsList>
-          <TabsTrigger value="desktop">Desktop</TabsTrigger>
-          <TabsTrigger value="mobile">Mobile</TabsTrigger>
-        </TabsList>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold">Layout Preview</h3>
         
-        <TabsContent value="desktop" className="mt-2">
-          <div className="border rounded-md h-[500px] overflow-auto">
-            <div className="transform scale-[0.6] origin-top-left w-[165%] h-[165%] p-4">
-              {renderLayout(previewArticle, selectedLayout)}
-            </div>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="mobile" className="mt-2">
-          <div className="border rounded-md h-[500px] overflow-auto flex justify-center">
-            <div className="w-[375px] transform scale-[0.8] origin-top h-[125%] overflow-auto p-2 border">
-              {renderLayout(previewArticle, selectedLayout)}
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => { setPreviewDevice("desktop"); setPreviewScale(0.6); setPreviewRotation(false); }}
+            className={previewDevice === "desktop" ? "bg-gray-100" : ""}
+          >
+            <Monitor className="h-4 w-4 mr-1" />
+            <span className="hidden sm:inline">Desktop</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => { setPreviewDevice("tablet"); setPreviewScale(0.4); setPreviewRotation(false); }}
+            className={previewDevice === "tablet" ? "bg-gray-100" : ""}
+          >
+            <Tablet className="h-4 w-4 mr-1" />
+            <span className="hidden sm:inline">Tablet</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => { setPreviewDevice("mobile"); setPreviewScale(0.4); setPreviewRotation(false); }}
+            className={previewDevice === "mobile" ? "bg-gray-100" : ""}
+          >
+            <Smartphone className="h-4 w-4 mr-1" />
+            <span className="hidden sm:inline">Mobile</span>
+          </Button>
+        </div>
+      </div>
       
-      <p className="text-sm text-gray-500 mt-2">
-        This is a preview of how your content will appear with the selected layout. The actual rendering may vary slightly.
-      </p>
+      {/* Preview Controls */}
+      <div className="bg-gray-50 rounded-md p-3 mb-4 flex flex-wrap gap-4">
+        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+          <ZoomOut className="h-4 w-4 text-gray-500" />
+          <Slider 
+            value={[previewScale * 100]}
+            min={20}
+            max={100}
+            step={5}
+            onValueChange={(value) => setPreviewScale(value[0] / 100)}
+            className="flex-1"
+          />
+          <ZoomIn className="h-4 w-4 text-gray-500" />
+          <span className="text-xs text-gray-500 ml-2 w-12">{Math.round(previewScale * 100)}%</span>
+        </div>
+        
+        {(previewDevice === "mobile" || previewDevice === "tablet") && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setPreviewRotation(!previewRotation)}
+          >
+            <RefreshCcw className="h-4 w-4 mr-1" />
+            Rotate
+          </Button>
+        )}
+        
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={resetPreview}
+        >
+          <RefreshCcw className="h-4 w-4 mr-1" />
+          Reset
+        </Button>
+      </div>
+      
+      {/* Preview Container */}
+      <div className="border rounded-md h-[500px] overflow-auto bg-gray-100 flex justify-center items-start p-4">
+        <div
+          className="bg-white shadow-md origin-top-left transition-all duration-200"
+          style={{
+            width: dimensions.width,
+            height: previewDevice === "desktop" ? "auto" : dimensions.height,
+            minHeight: previewDevice === "desktop" ? dimensions.minHeight : "auto",
+            transform: `scale(${previewScale})`,
+            transformOrigin: "top left",
+          }}
+        >
+          <div className="h-full overflow-auto">
+            {renderLayout(previewArticle, selectedLayout)}
+          </div>
+        </div>
+      </div>
+      
+      <Separator className="my-4" />
+      
+      <div className="flex justify-between items-center text-sm text-gray-500">
+        <p>
+          Preview of <span className="font-medium">{selectedLayout}</span> layout
+        </p>
+        <p>
+          {previewDevice.charAt(0).toUpperCase() + previewDevice.slice(1)} view {previewRotation && (previewDevice !== "desktop") ? "(Landscape)" : ""}
+        </p>
+      </div>
     </Card>
   );
 };
