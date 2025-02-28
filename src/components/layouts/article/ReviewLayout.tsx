@@ -123,7 +123,9 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
           
           {/* Main Content */}
           <div className="prose prose-lg max-w-none mb-12">
-            <div dangerouslySetInnerHTML={{ __html: article.content || '' }} />
+            {article.content && (
+              <div dangerouslySetInnerHTML={{ __html: article.content }} />
+            )}
           </div>
         </div>
         

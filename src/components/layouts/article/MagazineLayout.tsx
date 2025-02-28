@@ -88,7 +88,9 @@ export const MagazineLayout: React.FC<MagazineLayoutProps> = ({ article }) => {
 
       {/* Content with large initial letter */}
       <div className="prose prose-lg md:prose-xl max-w-none mb-12 font-serif">
-        <div dangerouslySetInnerHTML={{ __html: article.content || "" }} />
+        {article.content && (
+          <div dangerouslySetInnerHTML={{ __html: article.content }} />
+        )}
       </div>
       
       {/* Next/Previous Article Links */}
