@@ -449,7 +449,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     }));
   };
 
-  // Add the missing handleSaveLayoutSettings function
+  // Fix: Add the missing handleSaveLayoutSettings function
   const handleSaveLayoutSettings = (settings: Record<string, any>) => {
     console.log("Layout settings saved:", settings);
     setFormData(prev => ({
