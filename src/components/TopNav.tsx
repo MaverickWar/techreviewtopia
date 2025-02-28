@@ -17,6 +17,54 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UserSettingsDialog } from './settings/UserSettings';
 import { useQuery } from '@tanstack/react-query';
 
+// News Ticker component - responsible for scrolling latest articles
+const NewsTicker = () => {
+  const { data: latestArticles, isLoading } = useQuery({
+    queryKey: ['latest-articles-ticker'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('content')
+        .select('id, title, type')
+        .eq('status', 'published')
+        .order('published_at', { ascending: false })
+        .limit(5);
+      
+      if (error) {
+        console.error('Error fetching latest articles for ticker:', error);
+        return [];
+      }
+      
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // If loading or no articles, show a placeholder
+  if (isLoading || !latestArticles || latestArticles.length === 0) {
+    return (
+      <div className="text-sm overflow-hidden whitespace-nowrap">
+        <span className="opacity-70">Loading latest updates...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ticker-container overflow-hidden relative w-full max-w-lg">
+      <div className="animate-marquee whitespace-nowrap">
+        {latestArticles.map((article) => (
+          <Link 
+            key={article.id} 
+            to={`/technology/content/${article.id}`}
+            className="inline-block mr-8 hover:text-orange-400 transition-colors"
+          >
+            {article.title}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // Memoize the profile menu to prevent unnecessary rerenders
 const ProfileMenu = memo(({ 
   session, 
@@ -183,10 +231,14 @@ export const TopNav = () => {
     <>
       <div className="bg-slate-900 text-white py-2">
         <div className="content-container">
-          <div className="flex justify-between items-center">
-            <div className="flex space-x-4 text-sm">
-              <Link to="/breaking" className="hover:text-orange-400">Breaking News</Link>
-              <Link to="/newsletter" className="hover:text-orange-400">Newsletter</Link>
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div className="flex items-center space-x-2 w-full sm:w-auto">
+              <Link to="/breaking" className="text-sm font-medium text-orange-400 hover:text-orange-300 whitespace-nowrap">
+                Breaking News:
+              </Link>
+              <div className="w-full overflow-hidden">
+                <NewsTicker />
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <button className="p-2 hover:text-orange-400">
