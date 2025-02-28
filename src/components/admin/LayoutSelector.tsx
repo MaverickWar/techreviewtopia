@@ -10,7 +10,9 @@ import {
   Image, 
   Code,
   CheckCircle2,
-  ChevronDown
+  ChevronDown,
+  ThumbsUp,
+  Award
 } from "lucide-react";
 import { LayoutOption, LAYOUT_OPTIONS, ContentType } from "@/types/content";
 import {
@@ -55,6 +57,8 @@ export const LayoutSelector = ({
       case 'star': return <Star className="h-5 w-5" />;
       case 'image': return <Image className="h-5 w-5" />;
       case 'code': return <Code className="h-5 w-5" />;
+      case 'thumbs-up': return <ThumbsUp className="h-5 w-5" />;
+      case 'award': return <Award className="h-5 w-5" />;
       default: return <FileText className="h-5 w-5" />;
     }
   };

@@ -1,7 +1,7 @@
 
 export type ContentType = "article" | "review";
 export type ContentStatus = "draft" | "published";
-export type LayoutTemplate = "classic" | "magazine" | "review" | "gallery" | "technical";
+export type LayoutTemplate = "classic" | "magazine" | "review" | "gallery" | "technical" | "basic-review" | "enhanced-review";
 
 export interface RatingCriterion {
   name: string;
@@ -62,9 +62,23 @@ export const LAYOUT_OPTIONS: LayoutOption[] = [
   },
   {
     id: "review",
-    name: "Review Layout",
+    name: "Standard Review",
     description: "Specialized layout for product reviews with ratings and specifications.",
     icon: "star",
+    supportedTypes: ["review"]
+  },
+  {
+    id: "basic-review",
+    name: "Basic Review",
+    description: "Clean, simple layout focusing on essential review components.",
+    icon: "thumbs-up",
+    supportedTypes: ["review"]
+  },
+  {
+    id: "enhanced-review",
+    name: "Enhanced Review",
+    description: "Comprehensive review layout with detailed scoring, gallery, and specs.",
+    icon: "award",
     supportedTypes: ["review"]
   },
   {
