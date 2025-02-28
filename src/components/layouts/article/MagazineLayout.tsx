@@ -48,8 +48,8 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
 
   return (
     <article className="max-w-5xl mx-auto">
-      {/* Hero Banner */}
-      <div className="relative h-[60vh] min-h-[400px] w-full">
+      {/* Hero Banner - adjusted height and padding */}
+      <div className="relative h-[70vh] min-h-[500px] w-full mb-8">
         {article.featured_image ? (
           <img
             src={article.featured_image}
@@ -61,20 +61,21 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
         )}
         <div className="absolute inset-0 bg-black/50" />
         
-        <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-16">
-          <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+        {/* Adjusted padding and positioning to prevent title from being cut off */}
+        <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-16 pb-20">
+          <div className="max-w-4xl">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
               {article.title}
             </h1>
             
             {article.description && (
-              <p className="text-xl text-white/90 mb-6 leading-relaxed">
+              <p className="text-lg md:text-xl text-white/90 mb-6 leading-relaxed">
                 {article.description}
               </p>
             )}
             
             {/* Article metadata */}
-            <div className="flex items-center gap-3 text-white/90 mb-4 text-sm">
+            <div className="flex items-center gap-3 text-white/90 mb-8 mt-4 text-sm">
               {article.published_at && (
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
@@ -91,7 +92,7 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
         </div>
       </div>
       
-      <div className="max-w-3xl mx-auto px-4 py-12">
+      <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Author Card */}
         {authorProfile && (
           <Card className="mb-8 overflow-hidden bg-white/80 backdrop-blur-sm border-gray-200 shadow-md">
