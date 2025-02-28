@@ -19,8 +19,22 @@ export const useRealtimeContent = () => {
         },
         (payload) => {
           console.log('Content change detected:', payload);
-          // Invalidate and refetch content queries
-          queryClient.invalidateQueries({ queryKey: ['content'] });
+          
+          // Instead of invalidating all content queries, only invalidate specific content
+          // This prevents the form from losing content when navigating between tabs
+          if (payload.new && payload.new.id) {
+            queryClient.invalidateQueries({ 
+              queryKey: ['content', payload.new.id],
+              refetchType: 'none' // Don't automatically refetch to prevent losing form state
+            });
+            
+            // Also invalidate the content list query, but don't refetch immediately
+            queryClient.invalidateQueries({
+              queryKey: ['content'],
+              exact: true,
+              refetchType: 'none'
+            });
+          }
         }
       )
       .on(
@@ -32,9 +46,18 @@ export const useRealtimeContent = () => {
         },
         (payload) => {
           console.log('Page content change detected:', payload);
-          // Invalidate and refetch both content and page queries
-          queryClient.invalidateQueries({ queryKey: ['content'] });
-          queryClient.invalidateQueries({ queryKey: ['pages'] });
+          
+          // Only mark queries as stale without immediate refetching
+          // This prevents the form from refreshing and losing state
+          queryClient.invalidateQueries({ 
+            queryKey: ['content'],
+            refetchType: 'none'
+          });
+          
+          queryClient.invalidateQueries({ 
+            queryKey: ['pages'],
+            refetchType: 'none'
+          });
         }
       )
       .on(
@@ -46,8 +69,21 @@ export const useRealtimeContent = () => {
         },
         (payload) => {
           console.log('Review details change detected:', payload);
-          // Invalidate content queries when review details change
-          queryClient.invalidateQueries({ queryKey: ['content'] });
+          
+          // For review details, only invalidate the content it's related to
+          if (payload.new && payload.new.content_id) {
+            queryClient.invalidateQueries({
+              queryKey: ['content', payload.new.content_id],
+              refetchType: 'none'
+            });
+            
+            // Also mark the broader content queries as stale without refetching
+            queryClient.invalidateQueries({
+              queryKey: ['content'],
+              exact: true,
+              refetchType: 'none'
+            });
+          }
         }
       )
       .subscribe();
