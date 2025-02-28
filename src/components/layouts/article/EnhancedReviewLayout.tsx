@@ -372,26 +372,8 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
             </div>
           )}
           
-          {/* Overall Rating Summary Card - Duplicated for desktop layout consistency */}
-          {hasReviewDetails && (
-            <div className="bg-white shadow-lg rounded-xl overflow-hidden lg:block hidden">
-              <div className={`py-8 text-center text-white ${getRatingColor(overallScore)}`}>
-                <div className="text-6xl font-bold mb-1">{overallScore.toFixed(1)}</div>
-                <div className="text-sm uppercase tracking-wider">Overall Score</div>
-              </div>
-              
-              <div className="p-6">
-                <h3 className="font-semibold text-gray-900 mb-2">Final Verdict</h3>
-                <p className="text-gray-700 mb-4">
-                  {article.description || "An excellent product that delivers great value despite a few minor drawbacks."}
-                </p>
-                
-                <Button className="w-full">
-                  Check Price
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* Remove the duplicated overall rating summary that appears on desktop */}
+          {/* Overall Rating Summary Card has been removed */}
         </div>
       </div>
       
@@ -406,3 +388,4 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
     </article>
   );
 };
+
