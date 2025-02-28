@@ -24,23 +24,62 @@ const ArticlePage = () => {
     queryFn: async () => {
       if (!contentId) return null;
       
-      const { data, error } = await supabase
-        .from('content')
-        .select(`
-          *,
-          review_details (*),
-          rating_criteria (*)
-        `)
-        .eq('id', contentId)
-        .single();
+      try {
+        // First get the content
+        const { data: contentData, error: contentError } = await supabase
+          .from('content')
+          .select('*')
+          .eq('id', contentId)
+          .single();
+          
+        if (contentError) {
+          console.error("Error fetching content:", contentError);
+          throw contentError;
+        }
         
-      if (error) {
+        console.log("Fetched article with layout template:", contentData?.layout_template);
+        
+        // For reviews, fetch the review details and rating criteria separately
+        let reviewDetails = null;
+        let ratingCriteria = [];
+        
+        if (contentData.type === 'review') {
+          // Get review details
+          const { data: reviewData, error: reviewError } = await supabase
+            .from('review_details')
+            .select('*')
+            .eq('content_id', contentId)
+            .maybeSingle();
+            
+          if (reviewError) {
+            console.error("Error fetching review details:", reviewError);
+          } else if (reviewData) {
+            reviewDetails = reviewData;
+            
+            // Get rating criteria if we have review details
+            const { data: criteriaData, error: criteriaError } = await supabase
+              .from('rating_criteria')
+              .select('*')
+              .eq('review_id', reviewData.id);
+              
+            if (criteriaError) {
+              console.error("Error fetching rating criteria:", criteriaError);
+            } else {
+              ratingCriteria = criteriaData || [];
+            }
+          }
+        }
+        
+        // Combine all the data
+        return {
+          ...contentData,
+          review_details: reviewDetails ? [reviewDetails] : [],
+          rating_criteria: ratingCriteria
+        } as ArticleData;
+      } catch (error) {
         console.error("Error fetching article:", error);
         throw error;
       }
-      
-      console.log("Fetched article with layout template:", data?.layout_template);
-      return data as unknown as ArticleData;
     },
     enabled: !!contentId
   });
