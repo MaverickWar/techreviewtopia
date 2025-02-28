@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -735,7 +736,6 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
           <Separator />
 
-          
           <Accordion type="single" collapsible defaultValue="basic">
             <AccordionItem value="basic">
               <AccordionTrigger>Basic Information</AccordionTrigger>
@@ -865,120 +865,118 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
               </AccordionContent>
             </AccordionItem>
 
-            
-          <AccordionItem value="media">
-            <AccordionTrigger>Media</AccordionTrigger>
-            <AccordionContent>
-              <div className="space-y-4">
-                {/* Featured Image */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Featured Image</label>
-                  <div className="flex items-center gap-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => document.getElementById('featured-image')?.click()}
-                      disabled={imageUploading}
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload Image
-                    </Button>
-                    <input
-                      id="featured-image"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => handleImageUpload(e, 'featured')}
-                    />
-                    {formData.featured_image && (
-                      <div className="relative">
-                        <img
-                          src={formData.featured_image}
-                          alt="Featured"
-                          className="h-20 w-20 object-cover rounded"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                          onClick={() => setFormData(prev => ({ ...prev, featured_image: null }))}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Gallery */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Gallery</label>
-                  <div className="space-y-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => document.getElementById('gallery-image')?.click()}
-                      disabled={imageUploading}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add to Gallery
-                    </Button>
-                    <input
-                      id="gallery-image"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => handleImageUpload(e, 'gallery')}
-                    />
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {formData.gallery?.map((image, index) => (
-                        <div key={index} className="relative">
+            <AccordionItem value="media">
+              <AccordionTrigger>Media</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  {/* Featured Image */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Featured Image</label>
+                    <div className="flex items-center gap-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('featured-image')?.click()}
+                        disabled={imageUploading}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Image
+                      </Button>
+                      <input
+                        id="featured-image"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleImageUpload(e, 'featured')}
+                      />
+                      {formData.featured_image && (
+                        <div className="relative">
                           <img
-                            src={image}
-                            alt={`Gallery ${index + 1}`}
-                            className="h-24 w-24 object-cover rounded"
+                            src={formData.featured_image}
+                            alt="Featured"
+                            className="h-20 w-20 object-cover rounded"
                           />
                           <Button
                             type="button"
                             variant="destructive"
                             size="icon"
                             className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                            onClick={() => handleRemoveImage(index)}
+                            onClick={() => setFormData(prev => ({ ...prev, featured_image: null }))}
                           >
                             <X className="h-3 w-3" />
                           </Button>
                         </div>
-                      ))}
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Gallery */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Gallery</label>
+                    <div className="space-y-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => document.getElementById('gallery-image')?.click()}
+                        disabled={imageUploading}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add to Gallery
+                      </Button>
+                      <input
+                        id="gallery-image"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => handleImageUpload(e, 'gallery')}
+                      />
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {formData.gallery?.map((image, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={image}
+                              alt={`Gallery ${index + 1}`}
+                              className="h-24 w-24 object-cover rounded"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                              onClick={() => handleRemoveImage(index)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* YouTube URL */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">YouTube Video URL</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="url"
+                        value={formData.youtube_url || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, youtube_url: e.target.value }))}
+                        placeholder="https://youtube.com/watch?v=..."
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setFormData(prev => ({ ...prev, youtube_url: null }))}
+                        disabled={!formData.youtube_url}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </div>
+              </AccordionContent>
+            </AccordionItem>
 
-                {/* YouTube URL */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">YouTube Video URL</label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="url"
-                      value={formData.youtube_url || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, youtube_url: e.target.value }))}
-                      placeholder="https://youtube.com/watch?v=..."
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setFormData(prev => ({ ...prev, youtube_url: null }))}
-                      disabled={!formData.youtube_url}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-
-            
             {formData.type === 'review' && (
               <>
                 <AccordionItem value="specs">
@@ -1002,4 +1000,106 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
                             variant="destructive"
                             onClick={() => removeProductSpec(index)}
                           >
-                            <
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={addProductSpec}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Specification
+                      </Button>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="ratings">
+                  <AccordionTrigger>Rating Criteria</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4">
+                      {formData.rating_criteria?.map((criterion, index) => (
+                        <div key={index} className="flex gap-2">
+                          <Input
+                            placeholder="Criterion Name"
+                            value={criterion.name}
+                            onChange={(e) => updateRatingCriterion(index, 'name', e.target.value)}
+                          />
+                          <Input
+                            type="number"
+                            min="0"
+                            max="10"
+                            step="0.1"
+                            placeholder="Score (0-10)"
+                            value={criterion.score}
+                            onChange={(e) => updateRatingCriterion(index, 'score', parseFloat(e.target.value))}
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={() => removeRatingCriterion(index)}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addRatingCriterion}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Rating Criterion
+                      </Button>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="overall">
+                  <AccordionTrigger>Overall Score</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Overall Score (0-10)</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.1"
+                          value={formData.overall_score || 0}
+                          onChange={(e) => setFormData(prev => ({ ...prev, overall_score: parseFloat(e.target.value) }))}
+                        />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </>
+            )}
+          </Accordion>
+        </CardContent>
+
+        <CardFooter className="flex justify-between">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate("/admin/content")}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? (
+              <>
+                <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-current rounded-full" />
+                Saving...
+              </>
+            ) : (
+              <>Save {formData.type}</>
+            )}
+          </Button>
+        </CardFooter>
+      </Card>
+    </form>
+  );
+};
