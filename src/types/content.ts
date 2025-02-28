@@ -31,6 +31,10 @@ export interface ArticleData {
   review_details?: ReviewDetails[];
   rating_criteria?: RatingCriterion[];
   layout_settings?: Record<string, any>;
+  // Additional fields from database schema
+  status?: string;
+  created_at?: string;
+  page_id?: string | null;
 }
 
 export interface LayoutOption {
