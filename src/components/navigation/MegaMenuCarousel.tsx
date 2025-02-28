@@ -20,22 +20,18 @@ export const MegaMenuCarousel = ({ items, categorySlug, onItemClick }: MegaMenuC
   
   const [currentPage, setCurrentPage] = React.useState(0);
   const [totalPages, setTotalPages] = React.useState(0);
-  const [showSwipeHint, setShowSwipeHint] = useState(true);
 
   // Initialize the carousel
   useEffect(() => {
     if (emblaApi) {
-      // Calculate total pages
-      const count = emblaApi.slideNodes().length;
+      // Calculate total pages - always showing 2 rows of 4 items (8 items per page)
       const itemsPerPage = 8; // 2 rows × 4 columns
-      const pages = Math.ceil(count / itemsPerPage);
+      const pages = Math.ceil(items.length / itemsPerPage);
       setTotalPages(pages);
 
       // Set up change listener
       const onSelect = () => {
         setCurrentPage(emblaApi.selectedScrollSnap());
-        // Hide swipe hint after user has swiped
-        setShowSwipeHint(false);
       };
 
       emblaApi.on('select', onSelect);
@@ -43,14 +39,8 @@ export const MegaMenuCarousel = ({ items, categorySlug, onItemClick }: MegaMenuC
       // Initial state
       setCurrentPage(emblaApi.selectedScrollSnap());
 
-      // Auto-hide swipe hint after 5 seconds
-      const timer = setTimeout(() => {
-        setShowSwipeHint(false);
-      }, 5000);
-
       return () => {
         emblaApi.off('select', onSelect);
-        clearTimeout(timer);
       };
     }
   }, [emblaApi, items]);
@@ -58,17 +48,14 @@ export const MegaMenuCarousel = ({ items, categorySlug, onItemClick }: MegaMenuC
   // Scroll to page handlers
   const scrollPrev = useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev();
-    setShowSwipeHint(false);
   }, [emblaApi]);
 
   const scrollNext = useCallback(() => {
     if (emblaApi) emblaApi.scrollNext();
-    setShowSwipeHint(false);
   }, [emblaApi]);
 
   const scrollTo = useCallback((index: number) => {
     if (emblaApi) emblaApi.scrollTo(index);
-    setShowSwipeHint(false);
   }, [emblaApi]);
 
   // Create chunks of 8 items (2 rows of 4)
@@ -96,7 +83,7 @@ export const MegaMenuCarousel = ({ items, categorySlug, onItemClick }: MegaMenuC
         <div className="flex">
           {itemChunks.map((chunk, pageIndex) => (
             <div key={pageIndex} className="flex-[0_0_100%] min-w-0">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                 {chunk.map((item) => (
                   <Link
                     key={item.id}
@@ -109,7 +96,7 @@ export const MegaMenuCarousel = ({ items, categorySlug, onItemClick }: MegaMenuC
                         <img
                           src={item.image_url}
                           alt={item.name}
-                          className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover"
                         />
                       </div>
                     ) : (
@@ -121,7 +108,9 @@ export const MegaMenuCarousel = ({ items, categorySlug, onItemClick }: MegaMenuC
                       {item.name}
                     </h3>
                     {item.description && (
-                      <p className="text-base text-gray-600 mt-2">{item.description}</p>
+                      <p className="text-base text-gray-600 mt-2 line-clamp-2">
+                        {item.description}
+                      </p>
                     )}
                   </Link>
                 ))}
@@ -131,21 +120,10 @@ export const MegaMenuCarousel = ({ items, categorySlug, onItemClick }: MegaMenuC
         </div>
       </div>
 
-      {/* Visual Swipe Hint Overlay - only shows on first load and when there's more content */}
-      {showPagination && showSwipeHint && (
-        <div className="absolute inset-0 bg-black/5 backdrop-blur-[1px] flex items-center justify-center z-20 pointer-events-none">
-          <div className="bg-white/80 shadow-lg rounded-full px-5 py-3 flex items-center gap-3 animate-pulse">
-            <ChevronLeft className="text-orange-500" />
-            <span className="text-gray-700 font-medium">Swipe to see more content</span>
-            <ChevronRight className="text-orange-500" />
-          </div>
-        </div>
-      )}
-
       {/* Pagination Controls - Only show if we have more than one page */}
       {showPagination && (
         <>
-          {/* Next/Prev buttons - Made more visible */}
+          {/* Next/Prev buttons */}
           <button 
             className={`absolute top-1/2 -left-4 -translate-y-1/2 rounded-full p-2 bg-white shadow-md text-gray-700 hover:text-orange-500 transition-all z-20 ${currentPage === 0 ? 'opacity-0' : 'opacity-100'}`}
             onClick={scrollPrev}
@@ -163,32 +141,27 @@ export const MegaMenuCarousel = ({ items, categorySlug, onItemClick }: MegaMenuC
             <ChevronRight className="h-6 w-6" />
           </button>
 
-          {/* Enhanced Dot indicators with page info */}
+          {/* Dot indicators with page info */}
           {totalPages > 1 && (
-            <div className="flex flex-col items-center mt-5 space-y-2">
-              <div className="flex justify-center space-x-2">
-                {Array.from({ length: totalPages }).map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => scrollTo(index)}
-                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                      index === currentPage 
-                        ? 'bg-orange-500 scale-110' 
-                        : 'bg-gray-300 hover:bg-gray-400'
-                    }`}
-                    aria-label={`Go to page ${index + 1}`}
-                  />
-                ))}
-              </div>
-              <div className="text-xs text-gray-500">
-                Page {currentPage + 1} of {totalPages}
-              </div>
+            <div className="flex justify-center mt-5 space-x-2">
+              {Array.from({ length: totalPages }).map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => scrollTo(index)}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    index === currentPage 
+                      ? 'bg-orange-500 scale-110' 
+                      : 'bg-gray-300 hover:bg-gray-400'
+                  }`}
+                  aria-label={`Go to page ${index + 1}`}
+                />
+              ))}
             </div>
           )}
 
-          {/* Page count indicator - More visible swipe hint */}
+          {/* Page count indicator */}
           {hasMoreContent && (
-            <div className="absolute bottom-4 right-4 bg-orange-100 text-orange-600 rounded-full px-3 py-1 text-sm font-medium shadow-sm animate-bounce">
+            <div className="absolute bottom-0 right-0 bg-orange-100 text-orange-600 rounded-full px-3 py-1 text-sm font-medium shadow-sm">
               {items.length - ((currentPage + 1) * itemsPerPage)} more items →
             </div>
           )}

@@ -207,7 +207,7 @@ export const MainNav = () => {
 
       {/* Global Mega Menu Container - Only render when active and menu is ready */}
       {activeMegaMenu && categories && isMenuReady && (
-        <div className="absolute left-0 w-full bg-white shadow-lg border-t z-50 animate-fade-in">
+        <div className="absolute left-0 w-full bg-white shadow-lg border-t z-50">
           <div className="max-w-7xl mx-auto px-4">
             <div className="py-8">
               <MegaMenuContent 
@@ -217,13 +217,6 @@ export const MainNav = () => {
               />
             </div>
           </div>
-          
-          {/* Invisible overlay for catching clicks outside menu */}
-          <div 
-            className="fixed inset-0 -z-10"
-            onClick={() => setActiveMegaMenu(null)}
-            style={{ top: navRef.current?.offsetHeight + 'px' }}
-          />
         </div>
       )}
 
