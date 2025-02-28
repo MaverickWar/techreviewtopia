@@ -16,6 +16,8 @@ export const ClassicLayout: React.FC<ClassicLayoutProps> = ({ article }) => {
   const showAwards = article.layout_settings?.showAwards !== undefined ? 
     article.layout_settings.showAwards : true;
   
+  console.log("ClassicLayout - article:", article);
+  console.log("ClassicLayout - layout_settings:", article.layout_settings);
   console.log("ClassicLayout - award level:", awardLevel);
   console.log("ClassicLayout - show awards:", showAwards);
 
