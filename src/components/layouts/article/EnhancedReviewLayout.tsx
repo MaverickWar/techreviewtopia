@@ -89,9 +89,10 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
               </h1>
               
               {article.description && (
-                <p className="text-xl text-white/90 mb-4 max-w-3xl">
-                  {article.description}
-                </p>
+                <div 
+                  className="text-xl text-white/90 mb-4 max-w-3xl"
+                  dangerouslySetInnerHTML={{ __html: article.description }}
+                />
               )}
               
               <div className="flex flex-wrap items-center gap-4 text-sm text-white/80">
@@ -187,7 +188,11 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
           
           {/* Main Content */}
           <div className="prose prose-lg max-w-none mb-10">
-            <div dangerouslySetInnerHTML={{ __html: article.content || '' }} />
+            {article.content ? (
+              <div dangerouslySetInnerHTML={{ __html: article.content }} />
+            ) : (
+              <p>No content available.</p>
+            )}
           </div>
         </div>
         
@@ -284,9 +289,13 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
                     <Award className="h-5 w-5 mr-2 text-yellow-500" />
                     Verdict
                   </h3>
-                  <p className="text-gray-700">
-                    {article.description || "An excellent product that delivers great value despite a few minor drawbacks."}
-                  </p>
+                  <div className="text-gray-700">
+                    {article.description ? (
+                      <div dangerouslySetInnerHTML={{ __html: article.description }} />
+                    ) : (
+                      <p>An excellent product that delivers great value despite a few minor drawbacks.</p>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Pros and Cons - Using a grid layout for better mobile display */}
@@ -388,4 +397,3 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
     </article>
   );
 };
-
