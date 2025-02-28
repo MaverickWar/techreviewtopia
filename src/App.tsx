@@ -1,10 +1,10 @@
 
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
-import { Index } from "@/pages/Index";
+import Index from "@/pages/Index";
 import { AuthPage } from "@/pages/auth/AuthPage";
-import { NotFound } from "@/pages/NotFound";
-import { ArticlePage } from "@/pages/ArticlePage";
+import NotFound from "@/pages/NotFound";
+import ArticlePage from "@/pages/ArticlePage";
 import { CategoryPage } from "@/pages/CategoryPage";
 import { SubcategoryPage } from "@/pages/SubcategoryPage";
 import { AdminLayout } from "./components/admin/AdminLayout";
