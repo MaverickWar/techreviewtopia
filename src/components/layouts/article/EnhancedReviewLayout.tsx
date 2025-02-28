@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { ArticleData } from "@/types/content";
 import { Award, Check, ChevronRight, Clock, Info, Star, ThumbsDown, ThumbsUp, User } from "lucide-react";
+import { AwardBanner } from "./AwardBanner";
 
 interface EnhancedReviewLayoutProps {
   article: ArticleData;
@@ -17,6 +18,9 @@ export const EnhancedReviewLayout: React.FC<EnhancedReviewLayoutProps> = ({ arti
   const hasReviewDetails = article.type === "review" && article.review_details?.[0];
   const reviewDetails = hasReviewDetails ? article.review_details![0] : null;
   const overallScore = reviewDetails?.overall_score || 0;
+  
+  // Get the award from layout settings if it exists
+  const award = article.layout_settings?.award;
 
   // Calculate rating color based on score
   const getRatingColor = (score: number) => {
@@ -112,6 +116,9 @@ export const EnhancedReviewLayout: React.FC<EnhancedReviewLayoutProps> = ({ arti
       </div>
       
       <div className="px-4">
+        {/* Award Banner */}
+        <AwardBanner award={award} />
+        
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Main Content - 8 columns on desktop */}
           <div className="lg:col-span-8">

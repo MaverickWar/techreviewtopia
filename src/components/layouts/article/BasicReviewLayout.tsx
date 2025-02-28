@@ -5,6 +5,7 @@ import { ArticleData } from "@/types/content";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AwardBanner } from "./AwardBanner";
 
 interface BasicReviewLayoutProps {
   article: ArticleData;
@@ -54,6 +55,9 @@ export const BasicReviewLayout = ({ article }: BasicReviewLayoutProps) => {
   const hasReviewDetails = article.type === "review" && article.review_details?.[0];
   const reviewDetails = hasReviewDetails ? article.review_details![0] : null;
   const overallScore = reviewDetails?.overall_score || 0;
+  
+  // Get the award from layout settings if it exists
+  const award = article.layout_settings?.award;
 
   return (
     <article className="max-w-4xl mx-auto px-4 py-6">
@@ -87,6 +91,9 @@ export const BasicReviewLayout = ({ article }: BasicReviewLayoutProps) => {
           )}
         </div>
       </header>
+      
+      {/* Award Banner */}
+      <AwardBanner award={award} />
       
       {/* Score and Featured Image Section */}
       <div className="flex flex-col sm:flex-row gap-6 mb-8">
