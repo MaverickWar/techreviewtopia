@@ -19,11 +19,76 @@ export const MegaMenuCarousel = ({ items, categorySlug, onItemClick }: MegaMenuC
     align: 'start',
     skipSnaps: false,
     inViewThreshold: 0.7,
-    speed: 20, // Faster animation speed (lower = faster)
   });
   
   const [currentPage, setCurrentPage] = React.useState(0);
   const [totalPages, setTotalPages] = React.useState(0);
+
+  // Get placeholder images based on category slug
+  const getPlaceholderImage = (slug: string, index: number) => {
+    // Map of category to placeholder image URLs
+    const categoryImages: Record<string, string[]> = {
+      'tech': [
+        'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7',
+        'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d',
+        'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158',
+        'https://images.unsplash.com/photo-1563770660941-10a28b5e9739'
+      ],
+      'gadgets': [
+        'https://images.unsplash.com/photo-1543512214-318c7553f230',
+        'https://images.unsplash.com/photo-1507646227500-4d389b0012be',
+        'https://images.unsplash.com/photo-1546054454-aa26e2b734c7',
+        'https://images.unsplash.com/photo-1516131206008-dd041a9764fd'
+      ],
+      'software': [
+        'https://images.unsplash.com/photo-1461749280684-dccba630e2f6',
+        'https://images.unsplash.com/photo-1515879218367-8466d910aaa4',
+        'https://images.unsplash.com/photo-1550434190-5b4f827165af',
+        'https://images.unsplash.com/photo-1555066931-4365d14bab8c'
+      ],
+      'services': [
+        'https://images.unsplash.com/photo-1551434678-e076c223a692',
+        'https://images.unsplash.com/photo-1600880292203-757bb62b4baf',
+        'https://images.unsplash.com/photo-1591696205602-2f950c417cb9',
+        'https://images.unsplash.com/photo-1600880292089-90a7e086ee0c'
+      ],
+      'gaming': [
+        'https://images.unsplash.com/photo-1552820728-8b83bb6b773f',
+        'https://images.unsplash.com/photo-1550745165-9bc0b252726f',
+        'https://images.unsplash.com/photo-1586182987320-4f17e36a0cbc',
+        'https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf'
+      ],
+      'phones': [
+        'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5',
+        'https://images.unsplash.com/photo-1580910051074-3eb694886505',
+        'https://images.unsplash.com/photo-1556656793-08538906a9f8',
+        'https://images.unsplash.com/photo-1585060544812-6b45742d762f'
+      ],
+      'appliances': [
+        'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7',
+        'https://images.unsplash.com/photo-1583241800698-e8ab01832a19',
+        'https://images.unsplash.com/photo-1574269909862-7e1d70bb8078',
+        'https://images.unsplash.com/photo-1556911220-e15b29be8c8f'
+      ],
+      'audio': [
+        'https://images.unsplash.com/photo-1505740420928-5e560c06d30e',
+        'https://images.unsplash.com/photo-1590658268037-6bf12165a8df',
+        'https://images.unsplash.com/photo-1546435770-a3e426bf472b',
+        'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1'
+      ]
+    };
+
+    // Default placeholder images
+    const defaultImages = [
+      'https://images.unsplash.com/photo-1496307653780-42ee777d4833',
+      'https://images.unsplash.com/photo-1439337153520-7082a56a81f4',
+      'https://images.unsplash.com/photo-1551038247-3d9af20df552',
+      'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9'
+    ];
+
+    const images = categoryImages[categorySlug] || defaultImages;
+    return images[index % images.length] + '?w=600&h=340&auto=format&fit=crop';
+  };
 
   // Initialize the carousel
   useEffect(() => {
@@ -88,31 +153,26 @@ export const MegaMenuCarousel = ({ items, categorySlug, onItemClick }: MegaMenuC
           {itemChunks.map((chunk, pageIndex) => (
             <div key={pageIndex} className="flex-[0_0_100%] min-w-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                {chunk.map((item) => (
+                {chunk.map((item, itemIndex) => (
                   <Link
                     key={item.id}
                     to={`/${categorySlug}/${item.slug}`}
-                    className="group/item"
+                    className="group/item hover:bg-gray-50 rounded-lg p-3 transition-all duration-200 hover:shadow-md"
                     onClick={onItemClick}
                   >
-                    {item.image_url ? (
-                      <div className="aspect-video mb-4 overflow-hidden rounded-lg bg-gray-100">
-                        <img
-                          src={item.image_url}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="aspect-video mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
-                        <span className="text-gray-400 text-lg">{item.name}</span>
-                      </div>
-                    )}
+                    <div className="aspect-video mb-4 overflow-hidden rounded-lg bg-gray-100 relative">
+                      <img
+                        src={item.image_url || getPlaceholderImage(categorySlug, (pageIndex * itemsPerPage) + itemIndex)}
+                        alt={item.name}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover/item:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black opacity-0 group-hover/item:opacity-10 transition-opacity duration-300"></div>
+                    </div>
                     <h3 className="font-medium text-xl group-hover/item:text-orange-500 transition-colors">
                       {item.name}
                     </h3>
                     {item.description && (
-                      <p className="text-base text-gray-600 mt-2 line-clamp-2">
+                      <p className="text-base text-gray-600 mt-2 line-clamp-2 group-hover/item:text-gray-800 transition-colors">
                         {item.description}
                       </p>
                     )}
