@@ -58,6 +58,8 @@ export const BasicReviewLayout = ({ article }: BasicReviewLayoutProps) => {
   
   // Get the award from layout settings if it exists
   const award = article.layout_settings?.award;
+  console.log("BasicReviewLayout received article with layout_settings:", article.layout_settings);
+  console.log("Award value extracted:", award);
 
   return (
     <article className="max-w-4xl mx-auto px-4 py-6">

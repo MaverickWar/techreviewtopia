@@ -7,6 +7,8 @@ interface AwardBannerProps {
 }
 
 export const AwardBanner: React.FC<AwardBannerProps> = ({ award }) => {
+  console.log("Award Banner component received award:", award);
+  
   if (!award) return null;
 
   // Determine colors based on award type

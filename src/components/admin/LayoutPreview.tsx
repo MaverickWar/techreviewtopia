@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,7 +36,7 @@ export const LayoutPreview = ({
     published_at: article.published_at || new Date().toISOString(),
     author_id: article.author_id || "author",
     layout_template: selectedLayout,
-    layout_settings: article.layout_settings || {},
+    layout_settings: article.layout_settings || { award: "Best Value" }, // Added award for preview
     review_details: article.review_details || [{
       id: "preview",
       content_id: "preview",
