@@ -45,7 +45,7 @@ export const ClassicLayout = ({ article }: ClassicLayoutProps) => {
   };
 
   return (
-    <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <article className="content-container my-8">
       {/* Hero Section */}
       <div className="mb-12">
         {article.featured_image && (

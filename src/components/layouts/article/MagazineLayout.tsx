@@ -47,8 +47,8 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
   };
 
   return (
-    <article className="max-w-5xl mx-auto">
-      {/* Hero Banner - adjusted height and padding */}
+    <article>
+      {/* Hero Banner - full width */}
       <div className="relative h-[70vh] min-h-[500px] w-full mb-8">
         {article.featured_image ? (
           <img
@@ -61,9 +61,9 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
         )}
         <div className="absolute inset-0 bg-black/50" />
         
-        {/* Adjusted padding and positioning to prevent title from being cut off */}
-        <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-16 pb-20">
-          <div className="max-w-4xl">
+        {/* Adjusted padding and positioning */}
+        <div className="absolute inset-0 flex flex-col justify-end content-container">
+          <div className="max-w-4xl pb-20">
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
               {article.title}
             </h1>
@@ -92,7 +92,7 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
         </div>
       </div>
       
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="content-container my-8">
         {/* Author Card */}
         {authorProfile && (
           <Card className="mb-8 overflow-hidden bg-white/80 backdrop-blur-sm border-gray-200 shadow-md">
