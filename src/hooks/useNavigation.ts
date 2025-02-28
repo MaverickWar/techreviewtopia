@@ -91,12 +91,6 @@ export const useNavigation = () => {
     initialData: () => {
       console.log("📝 Providing initial empty data to useNavigation");
       return [];
-    },
-    onError: (error) => {
-      console.error("🔥 React Query error in useNavigation:", error);
-    },
-    onSuccess: (data) => {
-      console.log(`✅ useNavigation query successful, received ${data.length} categories`);
     }
   });
 };
