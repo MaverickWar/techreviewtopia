@@ -400,162 +400,6 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     }));
   };
 
-  const mutation = useMutation({
-    mutationFn: async (data: ContentFormData) => {
-      console.log("Submitting content with data:", data);
-      console.log("Layout template being saved:", data.layout_template);
-      
-      if (!data.author_id || !currentUser) {
-        throw new Error("You must be logged in to create or edit content");
-      }
-
-      // Skip page association if updating existing content
-      if (data.id && !data.page_id) {
-        // Create/update the content without page association
-        const { data: content, error: contentError } = await supabase
-          .from("content")
-          .upsert({
-            id: data.id,
-            title: data.title,
-            description: data.description,
-            content: data.content,
-            type: data.type,
-            status: data.status,
-            author_id: data.author_id,
-            featured_image: data.featured_image,
-            layout_template: data.layout_template,
-            layout_settings: data.layout_settings || {}
-          })
-          .select()
-          .single();
-
-        if (contentError) {
-          console.error("Error creating/updating content:", contentError);
-          throw contentError;
-        }
-
-        console.log("Content saved successfully with layout template:", content.layout_template);
-        
-        // If this is a review, handle review details
-        if (data.type === 'review') {
-          await handleReviewData(content.id, data);
-        }
-
-        return content;
-      }
-
-      // Handle page association if needed
-      if (data.page_id) {
-        const { data: existingPage, error: pageCheckError } = await supabase
-          .from('pages')
-          .select('id')
-          .eq('menu_item_id', data.page_id)
-          .maybeSingle();
-
-        if (pageCheckError && pageCheckError.code !== 'PGRST116') {
-          throw pageCheckError;
-        }
-
-        // If page doesn't exist, create it
-        if (!existingPage) {
-          const { data: menuItem, error: menuItemError } = await supabase
-            .from('menu_items')
-            .select('*')
-            .eq('id', data.page_id)
-            .maybeSingle();
-
-          if (menuItemError) throw menuItemError;
-          if (!menuItem) throw new Error("Menu item not found");
-
-          const { data: newPage, error: createPageError } = await supabase
-            .from('pages')
-            .insert({
-              menu_item_id: menuItem.id,
-              title: menuItem.name,
-              slug: menuItem.slug,
-              description: menuItem.description,
-              page_type: 'subcategory'
-            })
-            .select()
-            .single();
-
-          if (createPageError) throw createPageError;
-
-          // Update the page_id to use the newly created page
-          data.page_id = newPage.id;
-        } else {
-          // Use the existing page id
-          data.page_id = existingPage.id;
-        }
-      }
-
-      // Create/update the content
-      const { data: content, error: contentError } = await supabase
-        .from("content")
-        .upsert({
-          id: data.id,
-          title: data.title,
-          description: data.description,
-          content: data.content,
-          type: data.type,
-          status: data.status,
-          author_id: data.author_id,
-          featured_image: data.featured_image,
-          layout_template: data.layout_template,
-          layout_settings: data.layout_settings || {}
-        })
-        .select()
-        .single();
-
-      if (contentError) {
-        console.error("Error creating/updating content:", contentError);
-        throw contentError;
-      }
-
-      console.log("Content saved with layout template:", content.layout_template);
-
-      // If this is a review, handle review details
-      if (data.type === 'review') {
-        await handleReviewData(content.id, data);
-      }
-
-      // If a page is selected, handle the page_content relationship
-      if (data.page_id) {
-        const { error: pageContentError } = await supabase
-          .from("page_content")
-          .upsert({
-            page_id: data.page_id,
-            content_id: content.id,
-            order_index: 0, // Default to first position
-          });
-
-        if (pageContentError) {
-          console.error("Error linking content to page:", pageContentError);
-          throw pageContentError;
-        }
-      }
-
-      return content;
-    },
-    onSuccess: (data) => {
-      console.log("Content saved successfully with layout:", data.layout_template);
-      queryClient.invalidateQueries({ queryKey: ["content"] });
-      toast({
-        title: `Content ${id ? "updated" : "created"} successfully`,
-        description: formData.title,
-      });
-      navigate("/admin/content");
-    },
-    onError: (error: Error) => {
-      console.error("Mutation error:", error);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   // Helper function to handle review data
   const handleReviewData = async (contentId: string, data: ContentFormData) => {
     // Check for existing review
@@ -615,6 +459,166 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
     return reviewDetails;
   };
+
+  const mutation = useMutation({
+    mutationFn: async (data: ContentFormData) => {
+      console.log("Submitting content with data:", data);
+      console.log("Layout template being saved:", data.layout_template);
+      
+      if (!data.author_id || !currentUser) {
+        throw new Error("You must be logged in to create or edit content");
+      }
+
+      // If editing existing content (has an ID), update directly
+      if (data.id) {
+        // Update content without trying to associate with menu items/pages
+        const { data: content, error: contentError } = await supabase
+          .from("content")
+          .update({
+            title: data.title,
+            description: data.description,
+            content: data.content,
+            type: data.type,
+            status: data.status,
+            author_id: data.author_id,
+            featured_image: data.featured_image,
+            layout_template: data.layout_template,
+            layout_settings: data.layout_settings || {}
+          })
+          .eq("id", data.id)
+          .select()
+          .single();
+
+        if (contentError) {
+          console.error("Error updating content:", contentError);
+          throw contentError;
+        }
+
+        console.log("Content updated successfully with layout template:", content.layout_template);
+        
+        // If this is a review, handle review details
+        if (data.type === 'review') {
+          await handleReviewData(content.id, data);
+        }
+
+        return content;
+      } 
+      // Creating new content
+      else {
+        // Handle page association if specified
+        let pageId = data.page_id;
+        
+        if (pageId) {
+          // First check if this refers to a menu item that needs a page created
+          const { data: existingPage, error: pageCheckError } = await supabase
+            .from('pages')
+            .select('id')
+            .eq('menu_item_id', pageId)
+            .maybeSingle();
+
+          if (pageCheckError && pageCheckError.code !== 'PGRST116') {
+            throw pageCheckError;
+          }
+
+          // If page doesn't exist, create it
+          if (!existingPage) {
+            const { data: menuItem, error: menuItemError } = await supabase
+              .from('menu_items')
+              .select('*')
+              .eq('id', pageId)
+              .maybeSingle();
+
+            if (menuItemError) throw menuItemError;
+            if (!menuItem) throw new Error("Menu item not found");
+
+            const { data: newPage, error: createPageError } = await supabase
+              .from('pages')
+              .insert({
+                menu_item_id: menuItem.id,
+                title: menuItem.name,
+                slug: menuItem.slug,
+                description: menuItem.description,
+                page_type: 'subcategory'
+              })
+              .select()
+              .single();
+
+            if (createPageError) throw createPageError;
+
+            // Update the pageId to use the newly created page
+            pageId = newPage.id;
+          } else {
+            // Use the existing page id
+            pageId = existingPage.id;
+          }
+        }
+
+        // Create the content
+        const { data: content, error: contentError } = await supabase
+          .from("content")
+          .insert({
+            title: data.title,
+            description: data.description,
+            content: data.content,
+            type: data.type,
+            status: data.status,
+            author_id: data.author_id,
+            featured_image: data.featured_image,
+            layout_template: data.layout_template,
+            layout_settings: data.layout_settings || {}
+          })
+          .select()
+          .single();
+
+        if (contentError) {
+          console.error("Error creating content:", contentError);
+          throw contentError;
+        }
+
+        console.log("Content created with layout template:", content.layout_template);
+
+        // If this is a review, handle review details
+        if (data.type === 'review') {
+          await handleReviewData(content.id, data);
+        }
+
+        // If a page is selected, handle the page_content relationship
+        if (pageId) {
+          const { error: pageContentError } = await supabase
+            .from("page_content")
+            .upsert({
+              page_id: pageId,
+              content_id: content.id,
+              order_index: 0, // Default to first position
+            });
+
+          if (pageContentError) {
+            console.error("Error linking content to page:", pageContentError);
+            throw pageContentError;
+          }
+        }
+
+        return content;
+      }
+    },
+    onSuccess: (data) => {
+      console.log("Content saved successfully with layout:", data.layout_template);
+      queryClient.invalidateQueries({ queryKey: ["content"] });
+      toast({
+        title: `Content ${id ? "updated" : "created"} successfully`,
+        description: formData.title,
+      });
+      navigate("/admin/content");
+    },
+    onError: (error: Error) => {
+      console.error("Mutation error:", error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Show loading state while content is being fetched
   if (id && isLoading) {
