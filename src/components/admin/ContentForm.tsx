@@ -409,7 +409,42 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         throw new Error("You must be logged in to create or edit content");
       }
 
-      // First check if the page exists for the selected menu item
+      // Skip page association if updating existing content
+      if (data.id && !data.page_id) {
+        // Create/update the content without page association
+        const { data: content, error: contentError } = await supabase
+          .from("content")
+          .upsert({
+            id: data.id,
+            title: data.title,
+            description: data.description,
+            content: data.content,
+            type: data.type,
+            status: data.status,
+            author_id: data.author_id,
+            featured_image: data.featured_image,
+            layout_template: data.layout_template,
+            layout_settings: data.layout_settings || {}
+          })
+          .select()
+          .single();
+
+        if (contentError) {
+          console.error("Error creating/updating content:", contentError);
+          throw contentError;
+        }
+
+        console.log("Content saved successfully with layout template:", content.layout_template);
+        
+        // If this is a review, handle review details
+        if (data.type === 'review') {
+          await handleReviewData(content.id, data);
+        }
+
+        return content;
+      }
+
+      // Handle page association if needed
       if (data.page_id) {
         const { data: existingPage, error: pageCheckError } = await supabase
           .from('pages')
@@ -454,11 +489,6 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         }
       }
 
-      // Ensure layout_settings is an object before saving
-      const layoutSettings = typeof data.layout_settings === 'object' && data.layout_settings !== null 
-        ? data.layout_settings 
-        : {};
-
       // Create/update the content
       const { data: content, error: contentError } = await supabase
         .from("content")
@@ -472,7 +502,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
           author_id: data.author_id,
           featured_image: data.featured_image,
           layout_template: data.layout_template,
-          layout_settings: layoutSettings
+          layout_settings: data.layout_settings || {}
         })
         .select()
         .single();
@@ -484,61 +514,9 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
       console.log("Content saved with layout template:", content.layout_template);
 
-      // If this is a review, create/update review details
+      // If this is a review, handle review details
       if (data.type === 'review') {
-        const { data: existingReview } = await supabase
-          .from('review_details')
-          .select('id')
-          .eq('content_id', content.id)
-          .maybeSingle();
-
-        // Convert product_specs to JSON string before saving
-        const reviewData: any = {
-          content_id: content.id,
-          youtube_url: data.youtube_url,
-          gallery: data.gallery,
-          product_specs: data.product_specs ? JSON.stringify(data.product_specs) : null,
-          overall_score: data.overall_score,
-        };
-
-        // If review exists, include its ID in the upsert
-        if (existingReview) {
-          reviewData.id = existingReview.id;
-        }
-
-        const { data: reviewDetails, error: reviewError } = await supabase
-          .from('review_details')
-          .upsert(reviewData)
-          .select()
-          .single();
-
-        if (reviewError) {
-          console.error("Error creating/updating review details:", reviewError);
-          throw reviewError;
-        }
-
-        // Handle rating criteria
-        if (data.rating_criteria?.length) {
-          // Delete existing criteria first
-          if (reviewDetails.id) {
-            await supabase
-              .from('rating_criteria')
-              .delete()
-              .eq('review_id', reviewDetails.id);
-          }
-
-          const criteriaData = data.rating_criteria.map(criterion => ({
-            name: criterion.name,
-            score: criterion.score,
-            review_id: reviewDetails.id
-          }));
-
-          const { error: criteriaError } = await supabase
-            .from('rating_criteria')
-            .insert(criteriaData);
-
-          if (criteriaError) throw criteriaError;
-        }
+        await handleReviewData(content.id, data);
       }
 
       // If a page is selected, handle the page_content relationship
@@ -577,6 +555,66 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       });
     },
   });
+
+  // Helper function to handle review data
+  const handleReviewData = async (contentId: string, data: ContentFormData) => {
+    // Check for existing review
+    const { data: existingReview } = await supabase
+      .from('review_details')
+      .select('id')
+      .eq('content_id', contentId)
+      .maybeSingle();
+
+    // Convert product_specs to JSON string before saving
+    const reviewData: any = {
+      content_id: contentId,
+      youtube_url: data.youtube_url,
+      gallery: data.gallery,
+      product_specs: data.product_specs ? JSON.stringify(data.product_specs) : null,
+      overall_score: data.overall_score,
+    };
+
+    // If review exists, include its ID in the upsert
+    if (existingReview) {
+      reviewData.id = existingReview.id;
+    }
+
+    const { data: reviewDetails, error: reviewError } = await supabase
+      .from('review_details')
+      .upsert(reviewData)
+      .select()
+      .single();
+
+    if (reviewError) {
+      console.error("Error creating/updating review details:", reviewError);
+      throw reviewError;
+    }
+
+    // Handle rating criteria
+    if (data.rating_criteria?.length) {
+      // Delete existing criteria first
+      if (reviewDetails.id) {
+        await supabase
+          .from('rating_criteria')
+          .delete()
+          .eq('review_id', reviewDetails.id);
+      }
+
+      const criteriaData = data.rating_criteria.map(criterion => ({
+        name: criterion.name,
+        score: criterion.score,
+        review_id: reviewDetails.id
+      }));
+
+      const { error: criteriaError } = await supabase
+        .from('rating_criteria')
+        .insert(criteriaData);
+
+      if (criteriaError) throw criteriaError;
+    }
+
+    return reviewDetails;
+  };
 
   // Show loading state while content is being fetched
   if (id && isLoading) {
