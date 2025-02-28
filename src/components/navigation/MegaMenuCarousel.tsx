@@ -14,8 +14,12 @@ interface MegaMenuCarouselProps {
 export const MegaMenuCarousel = ({ items, categorySlug, onItemClick }: MegaMenuCarouselProps) => {
   const [emblaRef, emblaApi] = useEmblaCarousel({ 
     loop: false, 
-    dragFree: true,
-    containScroll: 'trimSnaps'
+    dragFree: false, // Set to false for smoother snapping
+    containScroll: 'trimSnaps',
+    align: 'start',
+    skipSnaps: false,
+    inViewThreshold: 0.7,
+    speed: 20, // Faster animation speed (lower = faster)
   });
   
   const [currentPage, setCurrentPage] = React.useState(0);

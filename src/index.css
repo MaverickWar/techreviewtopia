@@ -63,6 +63,12 @@
   }
 }
 
+/* Smooth carousel transitions */
+.embla__slide {
+  transition: transform 0.3s ease;
+  will-change: transform;
+}
+
 /* Card hover effects */
 .review-card {
   @apply relative overflow-hidden rounded-lg transition-all duration-300;
