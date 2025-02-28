@@ -137,7 +137,8 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             pages(
               id,
               title,
-              menu_category_id
+              menu_category_id,
+              menu_item_id
             )
           )
         `)
@@ -236,6 +237,17 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       const layoutTemplate = existingContent.layout_template || 'classic';
       console.log('Setting layout template from existing content:', layoutTemplate);
 
+      // Get the page and menu item information
+      const pageContent = existingContent.page_content?.[0];
+      const menuCategoryId = pageContent?.pages?.menu_category_id || null;
+      const menuItemId = pageContent?.pages?.menu_item_id || null;
+      const pageId = pageContent?.page_id || null;
+      
+      // Set the selected category first so subcategories can load
+      if (menuCategoryId) {
+        setSelectedCategory(menuCategoryId);
+      }
+
       setFormData({
         id: existingContent.id,
         title: existingContent.title,
@@ -244,7 +256,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         type: existingContent.type as ContentType,
         status: existingContent.status as ContentStatus,
         author_id: existingContent.author_id,
-        page_id: existingContent.page_content?.[0]?.page_id || null,
+        page_id: menuItemId || pageId,
         featured_image: existingContent.featured_image || null,
         gallery: gallery,
         product_specs: productSpecs,
@@ -255,8 +267,9 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         layout_settings: layoutSettings
       });
 
-      if (existingContent.page_content?.[0]?.pages?.menu_category_id) {
-        setSelectedCategory(existingContent.page_content[0].pages.menu_category_id);
+      if (menuCategoryId) {
+        console.log("Setting selected category to:", menuCategoryId);
+        setSelectedCategory(menuCategoryId);
       }
     }
   }, [existingContent]);
@@ -278,7 +291,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
   });
 
   // Subcategories query
-  const { data: subcategories } = useQuery({
+  const { data: subcategories, isLoading: isLoadingSubcategories } = useQuery({
     queryKey: ['subcategories', selectedCategory],
     enabled: !!selectedCategory,
     queryFn: async () => {
@@ -290,7 +303,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         .order('order_index');
       
       if (error) throw error;
-      console.log('Subcategories:', data);
+      console.log('Subcategories loaded:', data);
       return data;
     },
   });
@@ -736,6 +749,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
           <Separator />
 
+          
           <Accordion type="single" collapsible defaultValue="basic">
             <AccordionItem value="basic">
               <AccordionTrigger>Basic Information</AccordionTrigger>
@@ -846,25 +860,43 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
                   {selectedCategory && (
                     <div>
-                      <label className="block text-sm font-medium mb-1">Subcategory</label>
+                      <label className="block text-sm font-medium mb-1">
+                        Subcategory
+                        {isLoadingSubcategories && (
+                          <span className="ml-2 text-xs text-gray-500">Loading...</span>
+                        )}
+                      </label>
                       <select
                         className="w-full rounded-md border border-input bg-background px-3 py-2"
                         value={formData.page_id || ''}
                         onChange={(e) => setFormData(prev => ({ ...prev, page_id: e.target.value || null }))}
+                        disabled={isLoadingSubcategories}
                       >
                         <option value="">Select a subcategory</option>
-                        {subcategories?.map((subcategory) => (
-                          <option key={subcategory.id} value={subcategory.id}>
-                            {subcategory.name}
+                        {subcategories && subcategories.length > 0 ? (
+                          subcategories.map((subcategory) => (
+                            <option key={subcategory.id} value={subcategory.id}>
+                              {subcategory.name}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="" disabled>
+                            {isLoadingSubcategories ? "Loading subcategories..." : "No subcategories found"}
                           </option>
-                        ))}
+                        )}
                       </select>
+                      {!isLoadingSubcategories && subcategories && subcategories.length === 0 && (
+                        <p className="text-sm text-amber-600 mt-1">
+                          No subcategories found for this category. Please add subcategories in the menu management section.
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
               </AccordionContent>
             </AccordionItem>
 
+            
             <AccordionItem value="media">
               <AccordionTrigger>Media</AccordionTrigger>
               <AccordionContent>
@@ -977,6 +1009,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
               </AccordionContent>
             </AccordionItem>
 
+            
             {formData.type === 'review' && (
               <>
                 <AccordionItem value="specs">
