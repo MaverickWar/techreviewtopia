@@ -3,12 +3,47 @@ import { Link } from "react-router-dom";
 import { Star, Calendar, User, BookOpen, Share2 } from "lucide-react";
 import { format } from "date-fns";
 import { ArticleData } from "@/types/content";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface MagazineLayoutProps {
   article: ArticleData;
 }
 
 export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
+  const [authorProfile, setAuthorProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchAuthorProfile = async () => {
+      if (article.author_id) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', article.author_id)
+          .single();
+        
+        if (!error && data) {
+          setAuthorProfile(data);
+        }
+      }
+    };
+
+    fetchAuthorProfile();
+  }, [article.author_id]);
+
+  // Generate initials for avatar fallback
+  const getInitials = () => {
+    if (authorProfile?.display_name) {
+      return authorProfile.display_name
+        .split(' ')
+        .map((part: string) => part[0])
+        .join('')
+        .toUpperCase();
+    }
+    return authorProfile?.email ? authorProfile.email.substring(0, 2).toUpperCase() : 'AU';
+  };
+
   return (
     <article className="max-w-5xl mx-auto">
       {/* Hero Banner */}
@@ -34,10 +69,20 @@ export const MagazineLayout = ({ article }: MagazineLayoutProps) => {
                 </span>
               )}
               <span className="w-1 h-1 rounded-full bg-white/80" />
-              <span className="flex items-center gap-1">
-                <User className="h-4 w-4" />
-                Author Name
-              </span>
+              {authorProfile ? (
+                <span className="flex items-center gap-2">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={authorProfile.avatar_url || ''} alt={authorProfile.display_name || authorProfile.email} />
+                    <AvatarFallback>{getInitials()}</AvatarFallback>
+                  </Avatar>
+                  <span>{authorProfile.display_name || authorProfile.email}</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1">
+                  <User className="h-4 w-4" />
+                  Author
+                </span>
+              )}
               <span className="w-1 h-1 rounded-full bg-white/80" />
               <span className="flex items-center gap-1">
                 <BookOpen className="h-4 w-4" />
