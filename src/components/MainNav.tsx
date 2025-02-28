@@ -5,6 +5,7 @@ import { Menu, X } from 'lucide-react';
 import { useNavigation } from '@/hooks/useNavigation';
 import { MegaMenu } from './navigation/MegaMenu';
 import { MobileNav } from './navigation/MobileNav';
+import { MegaMenuCarousel } from './navigation/MegaMenuCarousel';
 
 export const MainNav = () => {
   const { data: categories, isLoading } = useNavigation();
@@ -84,39 +85,16 @@ export const MainNav = () => {
         <div className="absolute left-0 w-full bg-white shadow-lg border-t z-50 animate-fade-in">
           <div className="max-w-7xl mx-auto px-4">
             <div className="py-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-10">
-                {categories
-                  .find(category => category.id === activeMegaMenu)
-                  ?.items?.map((item) => (
-                    <Link
-                      key={item.id}
-                      to={`/${categories.find(c => c.id === activeMegaMenu)?.slug}/${item.slug}`}
-                      className="group/item"
-                      onClick={() => setActiveMegaMenu(null)}
-                    >
-                      {item.image_url ? (
-                        <div className="aspect-video mb-4 overflow-hidden rounded-lg bg-gray-100">
-                          <img
-                            src={item.image_url}
-                            alt={item.name}
-                            className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300"
-                          />
-                        </div>
-                      ) : (
-                        <div className="aspect-video mb-4 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <span className="text-gray-400 text-lg">{item.name}</span>
-                        </div>
-                      )}
-                      <h3 className="font-medium text-xl group-hover/item:text-orange-500 transition-colors">
-                        {item.name}
-                      </h3>
-                      {item.description && (
-                        <p className="text-base text-gray-600 mt-2">{item.description}</p>
-                      )}
-                    </Link>
-                  ))
-                }
-              </div>
+              {categories
+                .find(category => category.id === activeMegaMenu)
+                ?.items && (
+                  <MegaMenuCarousel 
+                    items={categories.find(category => category.id === activeMegaMenu)?.items || []}
+                    categorySlug={categories.find(c => c.id === activeMegaMenu)?.slug || ''}
+                    onItemClick={() => setActiveMegaMenu(null)}
+                  />
+                )
+              }
             </div>
           </div>
           
