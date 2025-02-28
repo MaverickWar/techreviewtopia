@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -163,6 +162,10 @@ export const LayoutSelector = ({
   const renderDropdownSelector = () => {
     console.log("🔍 Rendering dropdown selector");
     try {
+      // Ensure we have a valid selected layout ID
+      const effectiveSelectedLayout = selectedLayout || "classic";
+      console.log("🔍 Effective selected layout for dropdown:", effectiveSelectedLayout);
+      
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -181,30 +184,33 @@ export const LayoutSelector = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-full min-w-[200px] bg-white z-50 border border-gray-200 shadow-md">
-            {availableLayouts.map((layout) => (
-              <DropdownMenuItem 
-                key={layout.id}
-                onClick={() => {
-                  console.log("🔍 Dropdown item clicked:", layout.id);
-                  handleLayoutChange(layout.id);
-                }}
-                className="cursor-pointer hover:bg-gray-100"
-              >
-                <div className="flex items-center w-full">
-                  <div className={`p-1 rounded-md mr-2 ${
-                    selectedLayout === layout.id 
-                      ? 'bg-blue-100 text-blue-600' 
-                      : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {getLayoutIcon(layout.icon)}
+            {availableLayouts.map((layout) => {
+              console.log(`🔍 Rendering dropdown item for layout: ${layout.id}`);
+              return (
+                <DropdownMenuItem 
+                  key={layout.id}
+                  onClick={() => {
+                    console.log("🔍 Dropdown item clicked:", layout.id);
+                    handleLayoutChange(layout.id);
+                  }}
+                  className="cursor-pointer hover:bg-gray-100"
+                >
+                  <div className="flex items-center w-full">
+                    <div className={`p-1 rounded-md mr-2 ${
+                      effectiveSelectedLayout === layout.id 
+                        ? 'bg-blue-100 text-blue-600' 
+                        : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {getLayoutIcon(layout.icon)}
+                    </div>
+                    <span>{layout.name}</span>
+                    {effectiveSelectedLayout === layout.id && (
+                      <CheckCircle2 className="h-4 w-4 text-blue-500 ml-auto" />
+                    )}
                   </div>
-                  <span>{layout.name}</span>
-                  {selectedLayout === layout.id && (
-                    <CheckCircle2 className="h-4 w-4 text-blue-500 ml-auto" />
-                  )}
-                </div>
-              </DropdownMenuItem>
-            ))}
+                </DropdownMenuItem>
+              );
+            })}
           </DropdownMenuContent>
         </DropdownMenu>
       );
