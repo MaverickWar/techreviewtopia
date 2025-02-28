@@ -71,7 +71,7 @@ export const useNavigation = () => {
       }
     },
     staleTime: 300000, // Cache for 5 minutes to improve performance
-    cacheTime: 600000, // Keep in cache for 10 minutes
+    gcTime: 600000, // Keep in cache for 10 minutes (previously cacheTime)
     retry: 1, // Only retry once to avoid excessive API calls on failure
     refetchOnWindowFocus: false,
     refetchOnMount: false, // Don't refetch on component mount if data exists
