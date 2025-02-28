@@ -88,31 +88,42 @@ export const AdminDashboard = () => {
           console.log("Calculated statistics:", stats);
           
           // Store the calculated statistics in the statistics table for future use
-          for (const [type, count] of Object.entries(stats)) {
-            const { error: upsertError } = await supabase
-              .from('statistics')
-              .upsert(
-                { 
-                  type, 
-                  count,
-                  last_updated: new Date().toISOString() 
-                },
-                { 
-                  onConflict: 'type',
-                  ignoreDuplicates: false
-                }
-              );
-            
-            if (upsertError) {
-              console.error(`Error storing ${type} statistic:`, upsertError);
+          try {
+            for (const [type, count] of Object.entries(stats)) {
+              const { error: upsertError } = await supabase
+                .from('statistics')
+                .upsert(
+                  { 
+                    type, 
+                    count,
+                    last_updated: new Date().toISOString() 
+                  },
+                  { 
+                    onConflict: 'type'
+                  }
+                );
+              
+              if (upsertError) {
+                console.error(`Error storing ${type} statistic:`, upsertError);
+              }
             }
+          } catch (storeError) {
+            console.error("Error storing statistics:", storeError);
+            // Even if storing fails, return the calculated stats
           }
           
           return stats;
         }
       } catch (err) {
         console.error("Error calculating statistics:", err);
-        throw err;
+        // Return empty stats object in case of error to prevent UI crashes
+        return {
+          active_users: 0,
+          total_articles: 0,
+          total_reviews: 0,
+          total_comments: 0,
+          total_views: 0
+        };
       }
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
