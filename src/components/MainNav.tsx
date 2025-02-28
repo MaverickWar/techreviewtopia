@@ -85,7 +85,7 @@ export const MainNav = () => {
   const { data: categories, isLoading, error } = useNavigation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
-  const [isInitialRender, setIsInitialRender] = useState(true);
+  const [isMenuReady, setIsMenuReady] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
   const menuContainerRef = useRef<HTMLDivElement>(null);
 
@@ -95,17 +95,18 @@ export const MainNav = () => {
     console.error("🧭 MainNav error:", error);
   }
 
-  // Mark initial render as complete after component mounts
+  // Mark menu as ready after categories are loaded
   useEffect(() => {
-    console.log("🧭 MainNav useEffect for initial render executed");
-    if (isInitialRender) {
-      // Use requestAnimationFrame to ensure this happens after the first paint
-      requestAnimationFrame(() => {
-        setIsInitialRender(false);
-        console.log("🧭 MainNav initial render state updated to false");
-      });
+    if (categories && categories.length > 0) {
+      // Delay the menu ready state slightly to ensure DOM is ready
+      const timer = setTimeout(() => {
+        setIsMenuReady(true);
+        console.log("🧭 Menu is now ready for interactions");
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
-  }, [isInitialRender]);
+  }, [categories]);
 
   // Prevent scrolling when mobile menu is open
   useEffect(() => {
@@ -204,8 +205,8 @@ export const MainNav = () => {
         </div>
       </div>
 
-      {/* Global Mega Menu Container - Only render when active and not in initial render state */}
-      {activeMegaMenu && categories && !isInitialRender && (
+      {/* Global Mega Menu Container - Only render when active and menu is ready */}
+      {activeMegaMenu && categories && isMenuReady && (
         <div className="absolute left-0 w-full bg-white shadow-lg border-t z-50 animate-fade-in">
           <div className="max-w-7xl mx-auto px-4">
             <div className="py-8">
