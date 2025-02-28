@@ -1,5 +1,5 @@
 
-import { useState, Dispatch, SetStateAction, useEffect } from "react";
+import { useState, Dispatch, SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,23 +17,7 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { toast } = useToast();
-
-  // Debug: Check for existing session on component mount
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      console.log("Current session:", session);
-      if (error) console.error("Session check error:", error);
-      
-      // Clear any existing session
-      if (session) {
-        console.log("Clearing existing session...");
-        await supabase.auth.signOut();
-      }
-    };
-    
-    checkSession();
-  }, []);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,6 +103,9 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
         });
 
         if (onClose) onClose();
+        
+        // Redirect to home page after successful login
+        navigate("/");
       }
     } catch (error: any) {
       console.error("Auth error:", error);
@@ -154,6 +141,7 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoComplete="email"
           />
         </div>
 
@@ -167,6 +155,7 @@ export const AuthForm = ({ mode = 'login', onModeChange, onClose }: AuthFormProp
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            autoComplete={mode === 'login' ? "current-password" : "new-password"}
           />
         </div>
 
