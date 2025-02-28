@@ -16,10 +16,19 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
   const showAwards = article.layout_settings?.showAwards !== undefined ? 
     article.layout_settings.showAwards : true;
   
+  // Extract other layout settings with defaults
+  const contentAlignment = article.layout_settings?.contentAlignment || "left";
+  const showFeaturedImage = article.layout_settings?.showFeaturedImage !== undefined ? 
+    article.layout_settings.showFeaturedImage : true;
+  const layoutWidth = article.layout_settings?.layoutWidth || "standard";
+  
   console.log("BasicReviewLayout received article with layout_settings:", article.layout_settings);
-  console.log("Award value extracted:", {
+  console.log("Layout settings extracted:", {
     awardLevel,
-    showAwards
+    showAwards,
+    contentAlignment,
+    showFeaturedImage,
+    layoutWidth
   });
 
   // Get review details if available
@@ -31,8 +40,29 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
     return formatDistanceToNow(new Date(dateString), { addSuffix: true });
   };
 
+  // Determine the max width based on layout width setting
+  const getMaxWidthClass = () => {
+    switch (layoutWidth) {
+      case "narrow": return "max-w-2xl";
+      case "standard": return "max-w-4xl";
+      case "wide": return "max-w-6xl";
+      case "full": return "max-w-full px-4 md:px-8";
+      default: return "max-w-4xl";
+    }
+  };
+
+  // Determine the text alignment class
+  const getTextAlignmentClass = () => {
+    switch (contentAlignment) {
+      case "left": return "text-left";
+      case "center": return "text-center";
+      case "right": return "text-right";
+      default: return "text-left";
+    }
+  };
+
   return (
-    <article className="max-w-4xl mx-auto px-4 py-8">
+    <article className={`${getMaxWidthClass()} mx-auto px-4 py-8 ${getTextAlignmentClass()}`}>
       {/* Award banner - Add support for both award and awardLevel */}
       {showAwards && awardLevel && (
         <AwardBanner awardLevel={awardLevel} />
@@ -63,7 +93,7 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
         </div>
       </header>
       
-      {article.featured_image && (
+      {showFeaturedImage && article.featured_image && (
         <img 
           src={article.featured_image} 
           alt={article.title}
@@ -87,7 +117,7 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
       {/* Main content */}
       {article.content && (
         <div 
-          className="prose max-w-none mb-12"
+          className={`prose max-w-none mb-12 ${getTextAlignmentClass()}`}
           dangerouslySetInnerHTML={{ __html: article.content }}
         />
       )}
