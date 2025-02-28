@@ -292,6 +292,29 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     },
   });
 
+  // Fetch author profile data if we have an author_id
+  const { data: authorProfile } = useQuery({
+    queryKey: ['author-profile', formData.author_id],
+    enabled: !!formData.author_id && !!currentUser,
+    queryFn: async () => {
+      if (!formData.author_id) return null;
+      
+      console.log('Fetching author profile for ID:', formData.author_id);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', formData.author_id)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching author profile:', error);
+        return null;
+      }
+      
+      return data;
+    },
+  });
+
   // Image upload handler
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'featured' | 'gallery') => {
     const file = e.target.files?.[0];
