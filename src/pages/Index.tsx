@@ -140,12 +140,25 @@ const FeaturedContentTabs = () => {
 
         // Add to appropriate array based on type
         if (content.type === 'review') {
-          // Fix the specific error on line 146 - convert overall_score properly
-          // Ensure we're properly handling the review_details data which may be coming in different formats
+          // Fix the specific error - properly handling null and undefined values
           let score = 0;
-          if (content.review_details && content.review_details.length > 0) {
+          
+          // Check if review_details exists and has items
+          if (content.review_details && 
+              Array.isArray(content.review_details) && 
+              content.review_details.length > 0) {
+            
+            // Get the first review detail safely
             const reviewDetail = content.review_details[0];
-            if (reviewDetail && typeof reviewDetail === 'object' && 'overall_score' in reviewDetail) {
+            
+            // Check if reviewDetail exists and has overall_score property
+            if (reviewDetail && 
+                typeof reviewDetail === 'object' && 
+                reviewDetail !== null && 
+                'overall_score' in reviewDetail && 
+                reviewDetail.overall_score !== null) {
+              
+              // Convert to number with fallback to 0
               score = Number(reviewDetail.overall_score) || 0;
             }
           }
