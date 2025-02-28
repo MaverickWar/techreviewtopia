@@ -4,10 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import type { MenuCategory, MenuItem } from '@/types/navigation';
 
 export const useNavigation = () => {
+  console.log("🔍 useNavigation hook called");
+  
   return useQuery({
     queryKey: ['navigation'],
     queryFn: async () => {
-      console.log('Fetching navigation data');
+      console.log('🚀 Fetching navigation data from Supabase');
       try {
         // Fetch categories and menu items in parallel for better performance
         const [categoriesResponse, menuItemsResponse] = await Promise.all([
@@ -19,22 +21,26 @@ export const useNavigation = () => {
         const { data: menuItems, error: menuItemsError } = menuItemsResponse;
 
         if (categoriesError) {
-          console.error('Error fetching menu categories:', categoriesError);
+          console.error('❌ Error fetching menu categories:', categoriesError);
           throw categoriesError;
         }
 
         if (menuItemsError) {
-          console.error('Error fetching menu items:', menuItemsError);
+          console.error('❌ Error fetching menu items:', menuItemsError);
           throw menuItemsError;
         }
 
-        console.log(`Fetched ${categories.length} categories and ${menuItems.length} menu items`);
+        console.log(`✅ Successfully fetched ${categories?.length || 0} categories and ${menuItems?.length || 0} menu items`);
+        
+        if (!categories?.length) {
+          console.warn("⚠️ No categories fetched from database");
+        }
 
         // Create a map for faster item lookup
         const itemsByCategory: Record<string, MenuItem[]> = {};
         
         // Pre-process menu items into a lookup map (faster than filter in loop)
-        menuItems.forEach(item => {
+        menuItems?.forEach(item => {
           if (!itemsByCategory[item.category_id]) {
             itemsByCategory[item.category_id] = [];
           }
@@ -53,7 +59,7 @@ export const useNavigation = () => {
         });
 
         // Map database fields to our TypeScript types more efficiently
-        const organizedCategories = categories.map((category): MenuCategory => ({
+        const organizedCategories = categories?.map((category): MenuCategory => ({
           id: category.id,
           name: category.name,
           slug: category.slug,
@@ -62,11 +68,17 @@ export const useNavigation = () => {
           created_at: category.created_at,
           updated_at: category.updated_at,
           items: itemsByCategory[category.id] || []
-        }));
+        })) || [];
+
+        console.log('📊 Organized categories structure:', JSON.stringify(organizedCategories.map(c => ({
+          id: c.id,
+          name: c.name,
+          itemCount: c.items?.length || 0
+        })), null, 2));
 
         return organizedCategories;
       } catch (error) {
-        console.error('Error in useNavigation hook:', error);
+        console.error('🔥 Critical error in useNavigation hook:', error);
         throw error;
       }
     },
@@ -74,11 +86,17 @@ export const useNavigation = () => {
     gcTime: 600000, // Keep in cache for 10 minutes (previously cacheTime)
     retry: 1, // Only retry once to avoid excessive API calls on failure
     refetchOnWindowFocus: false,
-    refetchOnMount: false, // Don't refetch on component mount if data exists
-    refetchOnReconnect: false, // Don't refetch on reconnect if data exists
+    refetchOnMount: false,
+    refetchOnReconnect: false,
     initialData: () => {
-      // Provide empty initial data to prevent loading state flicker
+      console.log("📝 Providing initial empty data to useNavigation");
       return [];
+    },
+    onError: (error) => {
+      console.error("🔥 React Query error in useNavigation:", error);
+    },
+    onSuccess: (data) => {
+      console.log(`✅ useNavigation query successful, received ${data.length} categories`);
     }
   });
 };

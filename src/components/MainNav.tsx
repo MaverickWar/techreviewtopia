@@ -18,6 +18,8 @@ const CategoryMenuItem = memo(({
   isActive: boolean; 
   setActiveMegaMenu: (id: string | null) => void;
 }) => {
+  console.log(`Rendering CategoryMenuItem: ${category.name}`);
+  
   if (category.type === 'megamenu') {
     return (
       <MegaMenu 
@@ -54,11 +56,16 @@ const MegaMenuContent = memo(({
   categories: MenuCategory[];
   onItemClick: () => void;
 }) => {
+  console.log(`Rendering MegaMenuContent, active menu: ${activeMegaMenu}`);
+  
   const activeCategory = categories.find(category => category.id === activeMegaMenu);
   const items = activeCategory?.items || [];
   const categorySlug = activeCategory?.slug || '';
   
-  if (!activeCategory || !items.length) return null;
+  if (!activeCategory || !items.length) {
+    console.log("No active category or items to display in mega menu");
+    return null;
+  }
   
   return (
     <MegaMenuCarousel 
@@ -73,25 +80,36 @@ const MegaMenuContent = memo(({
 MegaMenuContent.displayName = 'MegaMenuContent';
 
 export const MainNav = () => {
-  const { data: categories, isLoading } = useNavigation();
+  console.log("🧭 MainNav component rendering start");
+  
+  const { data: categories, isLoading, error } = useNavigation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
   const [isInitialRender, setIsInitialRender] = useState(true);
   const navRef = useRef<HTMLDivElement>(null);
   const menuContainerRef = useRef<HTMLDivElement>(null);
 
+  console.log(`🧭 MainNav: categories=${categories?.length || 0}, isLoading=${isLoading}, error=${!!error}`);
+  
+  if (error) {
+    console.error("🧭 MainNav error:", error);
+  }
+
   // Mark initial render as complete after component mounts
   useEffect(() => {
+    console.log("🧭 MainNav useEffect for initial render executed");
     if (isInitialRender) {
       // Use requestAnimationFrame to ensure this happens after the first paint
       requestAnimationFrame(() => {
         setIsInitialRender(false);
+        console.log("🧭 MainNav initial render state updated to false");
       });
     }
   }, [isInitialRender]);
 
   // Prevent scrolling when mobile menu is open
   useEffect(() => {
+    console.log(`🧭 MainNav useEffect for mobile menu: ${isMobileMenuOpen ? 'open' : 'closed'}`);
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -114,6 +132,7 @@ export const MainNav = () => {
 
   // Loading state with fixed height to prevent layout shifts
   if (isLoading) {
+    console.log("🧭 MainNav rendering loading state");
     return (
       <nav className="bg-white border-b sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4">
@@ -137,6 +156,14 @@ export const MainNav = () => {
         </div>
       </nav>
     );
+  }
+
+  console.log("🧭 MainNav rendering full navigation");
+  
+  if (!categories || categories.length === 0) {
+    console.warn("🧭 MainNav: No categories available for rendering");
+  } else {
+    console.log(`🧭 MainNav has ${categories.length} categories to render`);
   }
 
   return (

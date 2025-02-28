@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { type MenuCategory } from '@/types/navigation';
 import { ChevronDown } from 'lucide-react';
 
@@ -12,10 +12,13 @@ interface MegaMenuProps {
 export const MegaMenu = ({ category, isActive, onMouseEnter }: MegaMenuProps) => {
   const [hasLoaded, setHasLoaded] = useState(false);
   
+  console.log(`📋 MegaMenu rendering for ${category.name}, isActive: ${isActive}`);
+  
   // Set loaded state after first render
-  useState(() => {
+  useEffect(() => {
     setHasLoaded(true);
-  });
+    console.log(`📋 MegaMenu for ${category.name} marked as loaded`);
+  }, [category.name]);
 
   return (
     <button
