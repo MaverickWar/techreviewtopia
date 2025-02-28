@@ -5,7 +5,7 @@ import { PageLayout } from "@/components/layouts/PageLayout";
 import IndexPage from "@/pages/Index";
 import { CategoryPage } from "@/pages/CategoryPage";
 import { SubcategoryPage } from "@/pages/SubcategoryPage";
-import { ArticlePage } from "@/pages/ArticlePage";
+import ArticlePage from "@/pages/ArticlePage";
 import NotFound from "@/pages/NotFound";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";

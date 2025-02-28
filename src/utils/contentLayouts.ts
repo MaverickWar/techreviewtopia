@@ -19,7 +19,7 @@ export const fetchContentWithLayout = async (contentId: string): Promise<Article
     return null;
   }
   
-  return data as ArticleData;
+  return data as unknown as ArticleData;
 };
 
 // Save content layout template

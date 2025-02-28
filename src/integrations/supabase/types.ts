@@ -17,6 +17,8 @@ export type Database = {
           description: string | null
           featured_image: string | null
           id: string
+          layout_settings: Json | null
+          layout_template: string | null
           page_id: string | null
           published_at: string | null
           status: string
@@ -30,6 +32,8 @@ export type Database = {
           description?: string | null
           featured_image?: string | null
           id?: string
+          layout_settings?: Json | null
+          layout_template?: string | null
           page_id?: string | null
           published_at?: string | null
           status?: string
@@ -43,6 +47,8 @@ export type Database = {
           description?: string | null
           featured_image?: string | null
           id?: string
+          layout_settings?: Json | null
+          layout_template?: string | null
           page_id?: string | null
           published_at?: string | null
           status?: string

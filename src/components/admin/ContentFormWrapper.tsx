@@ -40,7 +40,7 @@ export const ContentFormWrapper = () => {
         throw error;
       }
       
-      return data as ArticleData;
+      return data as unknown as ArticleData;
     },
     enabled: !!id
   });
@@ -103,7 +103,7 @@ export const ContentFormWrapper = () => {
   useEffect(() => {
     if (content) {
       setContentData(content);
-      setContentType(content.type);
+      setContentType(content.type as ContentType);
       setLayoutTemplate(content.layout_template || "classic");
     }
   }, [content]);
