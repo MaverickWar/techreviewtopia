@@ -58,45 +58,46 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
 
   return (
     <article className="max-w-6xl mx-auto px-4 py-8 relative">
+      {/* Title & Meta */}
+      <div className="mb-8">
+        <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
+          {article.title}
+        </h1>
+        
+        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-6">
+          {article.published_at && (
+            <span className="flex items-center gap-1">
+              <Calendar className="h-4 w-4" />
+              {format(new Date(article.published_at), 'MMMM d, yyyy')}
+            </span>
+          )}
+          {authorProfile ? (
+            <span className="flex items-center gap-2">
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={authorProfile.avatar_url || ''} alt={authorProfile.display_name || authorProfile.email} />
+                <AvatarFallback>{getInitials()}</AvatarFallback>
+              </Avatar>
+              <span>{authorProfile.display_name || authorProfile.email}</span>
+            </span>
+          ) : (
+            <span className="flex items-center gap-1">
+              <User className="h-4 w-4" />
+              Author
+            </span>
+          )}
+        </div>
+        
+        {article.description && (
+          <p className="text-xl text-gray-600">
+            {article.description}
+          </p>
+        )}
+      </div>
+      
+      {/* Main Content Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Main Content Column */}
         <div className="lg:col-span-8">
-          {/* Title & Meta */}
-          <div className="mb-8">
-            <h1 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-              {article.title}
-            </h1>
-            
-            <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
-              {article.published_at && (
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  {format(new Date(article.published_at), 'MMMM d, yyyy')}
-                </span>
-              )}
-              {authorProfile ? (
-                <span className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src={authorProfile.avatar_url || ''} alt={authorProfile.display_name || authorProfile.email} />
-                    <AvatarFallback>{getInitials()}</AvatarFallback>
-                  </Avatar>
-                  <span>{authorProfile.display_name || authorProfile.email}</span>
-                </span>
-              ) : (
-                <span className="flex items-center gap-1">
-                  <User className="h-4 w-4" />
-                  Author
-                </span>
-              )}
-            </div>
-            
-            {article.description && (
-              <p className="text-xl text-gray-600">
-                {article.description}
-              </p>
-            )}
-          </div>
-          
           {/* Featured Image */}
           {article.featured_image && (
             <div className="aspect-[16/9] overflow-hidden rounded-xl mb-8">
@@ -127,7 +128,7 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
         
         {/* Sidebar */}
         <div className="lg:col-span-4">
-          {/* Specifications Table */}
+          {/* Specifications Table - Now only in sidebar */}
           {hasReviewDetails && reviewDetails.product_specs && (
             <div className="bg-white shadow-lg rounded-xl overflow-hidden mb-8">
               <div className="bg-gray-100 py-3 px-6 border-b">
@@ -160,60 +161,62 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
         </div>
       </div>
       
-      {/* Detailed Ratings and Score Section - Added as a new full-width section */}
+      {/* Separate Ratings and Score Section - Full width with two columns */}
       {hasReviewDetails && (
         <div className="mt-12 mb-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Our Verdict</h2>
+          
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            {/* Detailed Ratings - Left side */}
+            {/* Detailed Ratings - Left column (8/12) */}
             <div className="lg:col-span-8 bg-white shadow-lg rounded-xl overflow-hidden">
               <div className="p-6">
                 <h3 className="font-semibold text-gray-900 mb-4">Detailed Ratings</h3>
                 
-                {/* Pros and Cons */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                {/* Pros and Cons - Grid layout for better mobile display */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  {/* Pros */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
                       <ThumbsUp className="h-5 w-5 mr-2 text-green-500" />
                       Pros
                     </h3>
-                    <ul className="space-y-1">
+                    <ul className="space-y-2">
                       <li className="flex items-start">
                         <Check className="h-5 w-5 mr-2 text-green-500 shrink-0 mt-0.5" />
-                        <span className="text-gray-700">Great performance</span>
+                        <span className="text-gray-700">Excellent performance</span>
                       </li>
                       <li className="flex items-start">
                         <Check className="h-5 w-5 mr-2 text-green-500 shrink-0 mt-0.5" />
-                        <span className="text-gray-700">Excellent value</span>
+                        <span className="text-gray-700">High-quality materials</span>
                       </li>
                       <li className="flex items-start">
                         <Check className="h-5 w-5 mr-2 text-green-500 shrink-0 mt-0.5" />
-                        <span className="text-gray-700">Premium design</span>
+                        <span className="text-gray-700">Great value for money</span>
                       </li>
                     </ul>
                   </div>
                   
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
+                  {/* Cons */}
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
                       <ThumbsDown className="h-5 w-5 mr-2 text-red-500" />
                       Cons
                     </h3>
-                    <ul className="space-y-1">
+                    <ul className="space-y-2">
                       <li className="flex items-start">
                         <ThumbsDown className="h-5 w-5 mr-2 text-red-500 shrink-0 mt-0.5" />
-                        <span className="text-gray-700">Limited battery life</span>
+                        <span className="text-gray-700">Battery life could be better</span>
                       </li>
                       <li className="flex items-start">
                         <ThumbsDown className="h-5 w-5 mr-2 text-red-500 shrink-0 mt-0.5" />
-                        <span className="text-gray-700">Higher price point</span>
+                        <span className="text-gray-700">Limited connectivity options</span>
                       </li>
                     </ul>
                   </div>
                 </div>
                 
-                {/* Rating criteria visualization - Would contain actual rating criteria */}
-                <div className="space-y-4">
+                {/* Rating criteria visualization */}
+                <div className="space-y-4 mt-6">
                   {article.rating_criteria?.map((criteria, index) => (
                     <div key={index} className="w-full">
                       <div className="flex justify-between mb-1">
@@ -232,7 +235,7 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
               </div>
             </div>
             
-            {/* Score Card - Right side */}
+            {/* Score Card - Right column (4/12) */}
             <div className="lg:col-span-4 bg-white shadow-lg rounded-xl overflow-hidden">
               <div className={`py-6 text-center text-white ${getRatingColor(overallScore)}`}>
                 <div className="text-5xl font-bold mb-1">{overallScore.toFixed(1)}</div>
@@ -289,7 +292,7 @@ export const ReviewLayout = ({ article }: ReviewLayoutProps) => {
       {/* Back to top button */}
       <button 
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        className="fixed bottom-6 right-6 bg-orange-500 text-white p-3 rounded-full shadow-lg hover:bg-orange-600 transition-colors z-20"
+        className="fixed bottom-6 right-6 bg-orange-500 text-white p-3 rounded-full shadow-lg hover:bg-orange-600 transition-colors z-10"
         aria-label="Back to top"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
