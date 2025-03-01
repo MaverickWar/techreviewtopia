@@ -2,9 +2,17 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { Upload, X, Image as ImageIcon, Plus, Youtube } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Plus, Youtube, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface MediaSectionProps {
   featuredImage: string | null | undefined;
@@ -26,6 +34,7 @@ export const MediaSection = ({
   showYoutubeInput = true
 }: MediaSectionProps) => {
   const [imageUploading, setImageUploading] = useState(false);
+  const [videoType, setVideoType] = useState<string>("youtube");
   const { toast } = useToast();
 
   // Image upload handler
@@ -73,6 +82,48 @@ export const MediaSection = ({
     onGalleryChange(gallery.filter((_, i) => i !== index));
   };
 
+  // Extract YouTube video ID
+  const extractYoutubeVideoId = (url: string): string | null => {
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(youtubeRegex);
+    return match ? match[1] : null;
+  };
+
+  // Extract Vimeo video ID
+  const extractVimeoVideoId = (url: string): string | null => {
+    const vimeoRegex = /(?:vimeo.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|)(\d+)(?:$|\/|\?))/;
+    const match = url.match(vimeoRegex);
+    return match ? match[1] : null;
+  };
+
+  // Get embed URL based on video type
+  const getEmbedUrl = (url: string, type: string): string | null => {
+    if (!url) return null;
+    
+    switch (type) {
+      case 'youtube': {
+        const videoId = extractYoutubeVideoId(url);
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+      }
+      case 'vimeo': {
+        const videoId = extractVimeoVideoId(url);
+        return videoId ? `https://player.vimeo.com/video/${videoId}` : null;
+      }
+      case 'direct': {
+        // For direct video URLs (mp4, etc.), just return the URL itself
+        return url.match(/\.(mp4|webm|ogg)$/i) ? url : null;
+      }
+      default:
+        return null;
+    }
+  };
+
+  // Get preview embed URL
+  const getPreviewEmbedUrl = (url: string | null): string | null => {
+    if (!url) return null;
+    return getEmbedUrl(url, videoType);
+  };
+
   return (
     <div className="space-y-6">
       {/* Featured Image */}
@@ -116,31 +167,88 @@ export const MediaSection = ({
         </div>
       </div>
 
-      {/* YouTube URL */}
+      {/* Video Section */}
       {showYoutubeInput && (
         <div>
-          <label className="block text-sm font-medium mb-2">YouTube Video URL</label>
-          <div className="space-y-2">
-            <Input
-              placeholder="https://www.youtube.com/watch?v=..."
-              value={youtubeUrl || ''}
-              onChange={(e) => onYoutubeUrlChange(e.target.value || null)}
-            />
-            {youtubeUrl && (
+          <div className="flex flex-col space-y-4">
+            <div>
+              <Label htmlFor="video-type">Video Platform</Label>
+              <Select
+                value={videoType}
+                onValueChange={(value) => {
+                  setVideoType(value);
+                  // Clear the URL when changing platform to avoid invalid URLs
+                  onYoutubeUrlChange(null);
+                }}
+              >
+                <SelectTrigger id="video-type" className="w-full">
+                  <SelectValue placeholder="Select video platform" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="youtube">
+                    <div className="flex items-center">
+                      <Youtube className="mr-2 h-4 w-4" />
+                      <span>YouTube</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="vimeo">
+                    <div className="flex items-center">
+                      <Video className="mr-2 h-4 w-4" />
+                      <span>Vimeo</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="direct">
+                    <div className="flex items-center">
+                      <Video className="mr-2 h-4 w-4" />
+                      <span>Direct Video URL</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="video-url">
+                {videoType === 'youtube' ? 'YouTube Video URL' :
+                 videoType === 'vimeo' ? 'Vimeo Video URL' : 'Direct Video URL'}
+              </Label>
+              <Input
+                id="video-url"
+                placeholder={
+                  videoType === 'youtube' ? 'https://www.youtube.com/watch?v=...' :
+                  videoType === 'vimeo' ? 'https://vimeo.com/...' :
+                  'https://example.com/video.mp4'
+                }
+                value={youtubeUrl || ''}
+                onChange={(e) => onYoutubeUrlChange(e.target.value || null)}
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                {videoType === 'youtube' ? 'Paste a YouTube URL (watch or share link)' : 
+                 videoType === 'vimeo' ? 'Paste a Vimeo URL' : 
+                 'Paste a direct link to a video file (.mp4, .webm, .ogg)'}
+              </p>
+            </div>
+
+            {/* Video Preview */}
+            {youtubeUrl && getPreviewEmbedUrl(youtubeUrl) && (
               <div className="border border-gray-200 rounded-md p-4">
                 <div className="aspect-video w-full">
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    src={`https://www.youtube.com/embed/${youtubeUrl.includes('watch?v=') 
-                      ? youtubeUrl.split('watch?v=')[1].split('&')[0] 
-                      : youtubeUrl.includes('youtu.be/') 
-                        ? youtubeUrl.split('youtu.be/')[1].split('?')[0]
-                        : youtubeUrl}`}
-                    allowFullScreen
-                    title="YouTube video player"
-                    className="rounded"
-                  ></iframe>
+                  {videoType === 'direct' ? (
+                    <video 
+                      src={youtubeUrl} 
+                      controls 
+                      className="w-full h-full rounded"
+                    />
+                  ) : (
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src={getPreviewEmbedUrl(youtubeUrl)}
+                      allowFullScreen
+                      title="Video preview"
+                      className="rounded"
+                    ></iframe>
+                  )}
                 </div>
               </div>
             )}

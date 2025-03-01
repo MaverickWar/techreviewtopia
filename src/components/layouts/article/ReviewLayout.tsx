@@ -1,8 +1,9 @@
+
 import React, { useMemo } from "react";
 import { ArticleData } from "@/types/content";
 import { AwardBanner } from "./AwardBanner";
 import { formatDistanceToNow } from "date-fns";
-import { Star, StarHalf, User, Clock, Bookmark } from "lucide-react";
+import { Star, StarHalf, User, Clock, Bookmark, Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -66,21 +67,46 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
   };
 
   // Helper function to extract YouTube video ID
-  const getYoutubeEmbedUrl = (url: string) => {
+  const extractYoutubeVideoId = (url: string): string | null => {
     if (!url) return null;
     
-    let videoId = '';
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(youtubeRegex);
+    return match ? match[1] : null;
+  };
+
+  // Helper function to extract Vimeo video ID
+  const extractVimeoVideoId = (url: string): string | null => {
+    if (!url) return null;
     
-    if (url.includes('watch?v=')) {
-      videoId = url.split('watch?v=')[1].split('&')[0];
-    } else if (url.includes('youtu.be/')) {
-      videoId = url.split('youtu.be/')[1].split('?')[0];
-    } else {
-      // Assume it's already a video ID
-      videoId = url;
+    const vimeoRegex = /(?:vimeo.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|)(\d+)(?:$|\/|\?))/;
+    const match = url.match(vimeoRegex);
+    return match ? match[1] : null;
+  };
+
+  // Helper function to generate embed URL based on video URL
+  const getEmbedUrl = (url: string): string | null => {
+    if (!url) return null;
+    
+    // Check if it's a YouTube URL
+    const youtubeId = extractYoutubeVideoId(url);
+    if (youtubeId) {
+      return `https://www.youtube.com/embed/${youtubeId}`;
     }
     
-    return `https://www.youtube.com/embed/${videoId}`;
+    // Check if it's a Vimeo URL
+    const vimeoId = extractVimeoVideoId(url);
+    if (vimeoId) {
+      return `https://player.vimeo.com/video/${vimeoId}`;
+    }
+    
+    // Check if it's a direct video URL
+    if (url.match(/\.(mp4|webm|ogg)$/i)) {
+      return url;
+    }
+    
+    // Default to treating as YouTube video ID if no match is found
+    return `https://www.youtube.com/embed/${url}`;
   };
 
   return (
@@ -191,18 +217,30 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
             </div>
           )}
           
-          {/* YouTube video */}
+          {/* Video section - with improved embed handling */}
           {reviewDetails?.youtube_url && (
-            <div className="rounded-lg overflow-hidden">
-              <h3 className="text-lg font-bold mb-4">Video Review</h3>
-              <div className="aspect-video">
-                <iframe
-                  src={getYoutubeEmbedUrl(reviewDetails.youtube_url)}
-                  className="w-full h-full"
-                  allowFullScreen
-                  title="YouTube video player"
-                  frameBorder="0"
-                ></iframe>
+            <div className="rounded-lg overflow-hidden space-y-2">
+              <h3 className="text-lg font-bold mb-4 flex items-center">
+                <Video className="h-5 w-5 mr-2 text-gray-700" />
+                Video Review
+              </h3>
+              <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                {reviewDetails.youtube_url.match(/\.(mp4|webm|ogg)$/i) ? (
+                  <video 
+                    src={reviewDetails.youtube_url}
+                    className="w-full h-full"
+                    controls
+                    title="Video player"
+                  ></video>
+                ) : (
+                  <iframe
+                    src={getEmbedUrl(reviewDetails.youtube_url)}
+                    className="w-full h-full"
+                    allowFullScreen
+                    title="Video player"
+                    frameBorder="0"
+                  ></iframe>
+                )}
               </div>
             </div>
           )}

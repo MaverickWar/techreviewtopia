@@ -67,11 +67,11 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     <div className="min-h-screen bg-background">
       <div
         className={cn(
-          "fixed left-0 top-0 z-40 h-screen bg-slate-900 text-white transition-all duration-300",
+          "fixed left-0 top-0 z-40 h-screen bg-slate-900 text-white transition-all duration-300 flex flex-col",
           collapsed ? "w-16" : "w-64"
         )}
       >
-        <div className="flex h-16 items-center justify-between px-4">
+        <div className="flex h-16 items-center justify-between px-4 flex-shrink-0">
           {!collapsed && <h1 className="text-xl font-bold">Admin</h1>}
           <Button
             variant="ghost"
@@ -83,7 +83,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
           </Button>
         </div>
 
-        <nav className="space-y-1 px-2">
+        <nav className="space-y-1 px-2 flex-grow overflow-y-auto">
           {sidebarItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -106,7 +106,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
           })}
         </nav>
 
-        <div className="absolute bottom-4 left-0 right-0 px-2 space-y-2">
+        <div className="flex flex-col px-2 space-y-2 flex-shrink-0 pb-4">
           <Link
             to="/"
             className={cn(
