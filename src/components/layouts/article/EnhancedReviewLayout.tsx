@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AwardBanner } from "./AwardBanner";
+import { AwardRibbon } from "./AwardRibbon";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 
@@ -82,6 +83,11 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
   const youtubeEmbedUrl = useMemo(() => getYouTubeEmbedUrl(youtubeUrl), [youtubeUrl]);
   const [showVideoFallback, setShowVideoFallback] = useState(false);
 
+  // Added missing function
+  const getAccentColor = () => {
+    return "text-blue-600";
+  };
+
   // Updated rating functions for 5-point scale
   const getRatingColor = (score: number) => {
     if (score >= 4) return "text-green-500";
@@ -93,11 +99,6 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
     if (score >= 4) return "bg-green-500";
     if (score >= 3) return "bg-amber-500";
     return "bg-red-500";
-  };
-
-  // Added missing function
-  const getAccentColor = () => {
-    return "text-blue-600";
   };
 
   const renderStarRating = (score: number) => {
@@ -180,22 +181,6 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
   // Extract overall score from review details
   const overallScore = reviewDetail?.overall_score || 0;
   
-  // Format award labels properly
-  const getAwardDisplayName = (awardSlug: string | null) => {
-    if (!awardSlug) return null;
-    
-    const awardMap: Record<string, string> = {
-      "editors-choice": "Editor's Choice",
-      "best-value": "Best Value",
-      "best-performance": "Best Performance",
-      "recommended": "Recommended"
-    };
-    
-    return awardMap[awardSlug] || awardSlug.split('-').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1)
-    ).join(' ');
-  };
-
   // Create properly structured product specs from object
   const formatProductSpecs = () => {
     const specs = reviewDetail?.product_specs || {};
@@ -221,16 +206,11 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
   };
   
   const award = article.layout_settings?.award || null;
-  const awardName = getAwardDisplayName(award);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Hero Section */}
       <div className="mb-8">
-        {award && awardName && (
-          <AwardBanner award={award} className="mb-4" />
-        )}
-        
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
           {article.title}
         </h1>
@@ -299,6 +279,11 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
             </CardContent>
           </Card>
           
+          {/* Award Banner - Moved here between Rating Criteria and Pros & Cons */}
+          {award && (
+            <AwardBanner award={award} className="w-full" />
+          )}
+          
           {/* Pros & Cons */}
           <Card>
             <CardHeader className="pb-2">
@@ -346,9 +331,10 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
         
         {/* Main Content Column */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Featured Image */}
+          {/* Featured Image with Award Ribbon */}
           {article.featured_image && (
-            <div className="rounded-lg overflow-hidden shadow-md">
+            <div className="rounded-lg overflow-hidden shadow-md relative">
+              {award && <AwardRibbon award={award} />}
               <img 
                 src={article.featured_image} 
                 alt={article.title} 
@@ -357,7 +343,7 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
             </div>
           )}
           
-          {/* Article Content */}
+          {/* Article Content - Fixed HTML rendering */}
           <div className="prose prose-lg max-w-none">
             {article.content && (
               <div dangerouslySetInnerHTML={{ __html: article.content }} />

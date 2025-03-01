@@ -5,7 +5,7 @@ import { Award } from "lucide-react";
 interface AwardBannerProps {
   award?: string;
   awardLevel?: string;
-  className?: string; // Add className prop
+  className?: string; // Keep className prop
 }
 
 // Map kebab-case award values to their display names
@@ -99,11 +99,11 @@ export const AwardBanner: React.FC<AwardBannerProps> = ({ award, awardLevel, cla
   const colors = getBannerColors(awardValue);
 
   return (
-    <div className={`mb-6 rounded-lg border-l-4 p-5 flex items-center ${colors.class} shadow-sm relative overflow-hidden animate-fade-in after:absolute after:inset-0 after:opacity-50 after:rounded-full after:w-32 after:h-32 after:blur-3xl after:-top-10 after:-right-10 ${colors.glow} ${className}`}>
-      <Award className={`h-8 w-8 mr-4 flex-shrink-0 ${colors.icon}`} />
+    <div className={`rounded-lg border-l-4 p-4 flex items-center ${colors.class} shadow-sm relative overflow-hidden after:absolute after:inset-0 after:opacity-50 after:rounded-full after:w-24 after:h-24 after:blur-3xl after:-top-10 after:-right-10 ${colors.glow} ${className}`}>
+      <Award className={`h-6 w-6 mr-3 flex-shrink-0 ${colors.icon}`} />
       <div className="z-10">
-        <h3 className="font-bold text-xl">{awardDisplayName}</h3>
-        <p className="text-sm opacity-90">Our editors have recognized this product for exceptional quality</p>
+        <h3 className="font-bold text-base">{awardDisplayName}</h3>
+        <p className="text-xs opacity-90">Our editors have recognized this product</p>
       </div>
     </div>
   );
