@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Laptop, Smartphone, Gamepad, Brain, Award, Star, Calendar, FileText, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -44,25 +45,27 @@ const extractYoutubeVideoId = (url: string | null): string | null => {
   return match ? match[1] : null;
 };
 
-const ContentPreview = ({ item }: { item: ContentItem }) => {
-  // Format award for display if one exists
-  const getAwardDisplayName = (awardValue: string): string => {
-    const awardMap: Record<string, string> = {
-      "editors-choice": "Editor's Choice",
-      "best-value": "Best Value",
-      "best-performance": "Best Performance",
-      "highly-recommended": "Highly Recommended",
-      "budget-pick": "Budget Pick",
-      "premium-choice": "Premium Choice",
-      "most-innovative": "Most Innovative"
-    };
-    
-    return awardMap[awardValue] || awardValue
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+// Map kebab-case award values to their display names
+// Move this function to the file scope so it can be used throughout the file
+const getAwardDisplayName = (awardValue: string): string => {
+  const awardMap: Record<string, string> = {
+    "editors-choice": "Editor's Choice",
+    "best-value": "Best Value",
+    "best-performance": "Best Performance",
+    "highly-recommended": "Highly Recommended",
+    "budget-pick": "Budget Pick",
+    "premium-choice": "Premium Choice",
+    "most-innovative": "Most Innovative"
   };
   
+  return awardMap[awardValue] || awardValue
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+const ContentPreview = ({ item }: { item: ContentItem }) => {
+  // Format award for display if one exists
   const formattedAward = item.award ? getAwardDisplayName(item.award) : null;
   
   return (
