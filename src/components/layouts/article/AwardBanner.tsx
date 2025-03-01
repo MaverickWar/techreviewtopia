@@ -35,6 +35,7 @@ export const AwardBanner: React.FC<AwardBannerProps> = ({ award, awardLevel }) =
 
   // Determine colors based on award type
   const getBannerColors = (awardType: string) => {
+    // Make sure to check for both kebab-case and display name versions
     switch (awardType.toLowerCase()) {
       case "editors-choice":
       case "editor's choice":
