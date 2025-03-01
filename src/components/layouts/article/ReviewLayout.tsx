@@ -67,7 +67,7 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
     );
   };
 
-  // Improved helper function to determine video type and extract video ID
+  // Simplified video URL processing function with improved logging
   const processVideoUrl = (url: string | null): { embedUrl: string | null, type: 'youtube' | 'vimeo' | 'direct' | null } => {
     if (!url) {
       console.log("No video URL provided");
@@ -84,24 +84,39 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
     console.log("Processing video URL:", trimmedUrl);
     
     // Handle YouTube URLs
-    // Support more YouTube URL formats
-    const youtubeFormats = [
-      // Standard YouTube watch URL
-      /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i,
-      // Just the video ID (11 characters)
-      /^([a-zA-Z0-9_-]{11})$/
-    ];
-    
-    for (const regex of youtubeFormats) {
-      const match = trimmedUrl.match(regex);
-      if (match) {
-        const videoId = match[1];
-        console.log("Found YouTube video ID:", videoId);
+    // Check for full YouTube URL
+    if (trimmedUrl.includes('youtube.com/watch') || trimmedUrl.includes('youtu.be/')) {
+      let videoId;
+      
+      // Extract video ID from various YouTube URL formats
+      if (trimmedUrl.includes('youtube.com/watch')) {
+        const urlParams = new URLSearchParams(trimmedUrl.split('?')[1]);
+        videoId = urlParams.get('v');
+      } else if (trimmedUrl.includes('youtu.be/')) {
+        videoId = trimmedUrl.split('youtu.be/')[1].split('?')[0];
+      }
+      
+      // Clean up video ID by removing any query parameters or hash
+      if (videoId) {
+        videoId = videoId.split('&')[0].split('#')[0];
+      }
+      
+      if (videoId) {
+        console.log("Extracted YouTube video ID:", videoId);
         return { 
-          embedUrl: `https://www.youtube.com/embed/${videoId}?autoplay=0`, 
+          embedUrl: `https://www.youtube.com/embed/${videoId}`, 
           type: 'youtube' 
         };
       }
+    }
+    
+    // Check if it's just a YouTube video ID (11 characters)
+    if (/^[a-zA-Z0-9_-]{11}$/.test(trimmedUrl)) {
+      console.log("Direct YouTube video ID:", trimmedUrl);
+      return { 
+        embedUrl: `https://www.youtube.com/embed/${trimmedUrl}`, 
+        type: 'youtube' 
+      };
     }
     
     // Check if it's a Vimeo URL
@@ -112,7 +127,7 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
       const videoId = vimeoMatch[1];
       console.log("Found Vimeo video ID:", videoId);
       return { 
-        embedUrl: `https://player.vimeo.com/video/${videoId}?autoplay=0`, 
+        embedUrl: `https://player.vimeo.com/video/${videoId}`, 
         type: 'vimeo' 
       };
     }
@@ -123,35 +138,22 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
       return { embedUrl: trimmedUrl, type: 'direct' };
     }
     
-    // If it could be a YouTube shortlink or non-standard format
-    if (trimmedUrl.includes("youtu") || trimmedUrl.match(/^[a-zA-Z0-9_-]{11}$/)) {
-      // Try to extract video ID
-      const possibleVideoId = trimmedUrl.split('/').pop()?.split('?')[0] || trimmedUrl;
-      if (possibleVideoId.match(/^[a-zA-Z0-9_-]{11}$/)) {
-        console.log("Extracted possible YouTube ID from non-standard URL:", possibleVideoId);
-        return { 
-          embedUrl: `https://www.youtube.com/embed/${possibleVideoId}?autoplay=0`, 
-          type: 'youtube' 
-        };
-      }
+    // If no valid format is detected, but URL exists, use as-is
+    console.warn("Could not determine video format for:", trimmedUrl);
+    
+    // Last resort: try to extract video ID from any possible YouTube-like URL
+    const possibleYoutubeId = trimmedUrl.match(/([a-zA-Z0-9_-]{11})/);
+    if (possibleYoutubeId) {
+      console.log("Extracted possible YouTube ID as last resort:", possibleYoutubeId[1]);
+      return {
+        embedUrl: `https://www.youtube.com/embed/${possibleYoutubeId[1]}`,
+        type: 'youtube'
+      };
     }
     
-    // If no valid format is detected, but URL exists, use as-is with YouTube embed
-    // This is a fallback for when we have a URL but couldn't parse it
-    console.warn("Could not determine video format for:", trimmedUrl);
-    console.log("Using as direct URL for embedding");
+    // If it looks like a URL, return as is
     if (trimmedUrl.startsWith('http')) {
-      // Try to guess if it's a YouTube URL by hostname
-      if (trimmedUrl.includes('youtube.com') || trimmedUrl.includes('youtu.be')) {
-        // Extract anything that might be a video ID
-        const matches = trimmedUrl.match(/([a-zA-Z0-9_-]{11})/);
-        if (matches && matches[1]) {
-          return {
-            embedUrl: `https://www.youtube.com/embed/${matches[1]}?autoplay=0`,
-            type: 'youtube'
-          };
-        }
-      }
+      console.log("Using as direct URL");
       return { embedUrl: trimmedUrl, type: 'direct' };
     }
     
@@ -290,12 +292,10 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
                   <iframe
                     src={embedUrl}
                     className="w-full h-full"
-                    allowFullScreen
                     title="Video player"
                     frameBorder="0"
+                    allowFullScreen
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    loading="lazy"
-                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation"
                   ></iframe>
                 )}
               </div>
