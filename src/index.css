@@ -36,6 +36,8 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   .glass-panel {
@@ -89,4 +91,63 @@
 /* Reading progress bar */
 .reading-progress {
   @apply fixed top-0 left-0 h-1 bg-orange-500 transition-all duration-200 z-50;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 640px) {
+  /* Ensure all tables can be scrolled horizontally on mobile */
+  table {
+    @apply block w-full overflow-x-auto;
+  }
+  
+  /* Force break for super long words */
+  .break-long-words {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+  
+  /* Ensure all content fits within viewport on mobile */
+  .prose img, 
+  .prose iframe,
+  .prose pre,
+  .prose blockquote {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  
+  /* Fix potential iframe issues */
+  iframe {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
+
+/* Fix for Prose content overflow */
+.prose {
+  max-width: 100% !important;
+  overflow-wrap: break-word;
+}
+
+.prose pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Tables should be horizontally scrollable */
+.prose table {
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+}
+
+/* Apply proper image responsiveness */
+img {
+  max-width: 100%;
+  height: auto;
 }

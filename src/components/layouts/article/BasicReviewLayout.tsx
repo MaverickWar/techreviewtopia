@@ -181,31 +181,31 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
   };
 
   return (
-    <article className={`${getMaxWidthClass()} mx-auto px-4 py-8 ${getTextAlignmentClass()} ${getFontSizeClasses()} ${getColorThemeClasses()}`}>
+    <article className={`${getMaxWidthClass()} mx-auto px-4 py-8 ${getTextAlignmentClass()} ${getFontSizeClasses()} ${getColorThemeClasses()} overflow-x-hidden`}>
       {/* Award banner - Add support for both award and awardLevel */}
       {showAwards && awardLevel && (
         <AwardBanner awardLevel={awardLevel} />
       )}
       
       <header className="mb-8">
-        <h1 className={`text-2xl md:text-3xl font-bold mb-4 ${getHeadingStyleClasses()}`}>{article.title}</h1>
+        <h1 className={`text-2xl md:text-3xl font-bold mb-4 ${getHeadingStyleClasses()} break-words`}>{article.title}</h1>
         
         {article.description && (
           <div 
-            className="text-lg text-gray-700 mb-4"
+            className="text-lg text-gray-700 mb-4 break-words"
             dangerouslySetInnerHTML={{ __html: article.description }}
           />
         )}
         
         <div className="flex flex-wrap items-center text-sm text-gray-500 gap-4 mb-4">
           <div className="flex items-center">
-            <User className="h-4 w-4 mr-1" />
-            <span>{article.author?.display_name || "Editorial Team"}</span>
+            <User className="h-4 w-4 mr-1 flex-shrink-0" />
+            <span className="truncate">{article.author?.display_name || "Editorial Team"}</span>
           </div>
           
           {article.published_at && (
             <div className="flex items-center">
-              <Clock className="h-4 w-4 mr-1" />
+              <Clock className="h-4 w-4 mr-1 flex-shrink-0" />
               <span>{formatPublishDate(article.published_at)}</span>
             </div>
           )}
@@ -213,16 +213,18 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
       </header>
       
       {showFeaturedImage && article.featured_image && (
-        <img 
-          src={article.featured_image} 
-          alt={article.title}
-          className="w-full h-auto rounded-lg mb-8 object-cover"
-        />
+        <div className="w-full overflow-hidden rounded-lg mb-8">
+          <img 
+            src={article.featured_image} 
+            alt={article.title}
+            className="w-full h-auto object-cover"
+          />
+        </div>
       )}
       
       {/* Simple rating display */}
       {reviewDetails?.overall_score !== undefined && (
-        <div className={`${colorTheme === "default" ? "bg-gray-100" : ""} p-4 rounded-lg mb-8`}>
+        <div className={`${colorTheme === "default" ? "bg-gray-100" : ""} p-4 rounded-lg mb-8 overflow-hidden`}>
           <h2 className={`text-lg font-semibold mb-2 ${getHeadingStyleClasses()}`}>Overall Rating</h2>
           {renderRating(reviewDetails.overall_score)}
         </div>
@@ -241,8 +243,8 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
                 }`} style={{ width: `${criterion.score * 10}%` }}></div>
                 <CardContent className="p-4">
                   <div className="flex justify-between items-center">
-                    <span className="font-medium">{criterion.name}</span>
-                    <span className="text-lg font-bold">{criterion.score.toFixed(1)}</span>
+                    <span className="font-medium truncate pr-2">{criterion.name}</span>
+                    <span className="text-lg font-bold flex-shrink-0">{criterion.score.toFixed(1)}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -251,50 +253,69 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
         </div>
       )}
       
+      {/* Horizontal scrollable navigation tabs */}
+      <div className="mb-8 -mx-4 px-4 overflow-x-auto">
+        <div className="flex min-w-max border-b">
+          <button className="px-4 py-2 font-medium text-sm border-b-2 border-blue-500 text-blue-600">
+            Performance
+          </button>
+          <button className="px-4 py-2 font-medium text-sm text-gray-500 hover:text-gray-700">
+            Full Specifications
+          </button>
+          <button className="px-4 py-2 font-medium text-sm text-gray-500 hover:text-gray-700">
+            Comparison
+          </button>
+        </div>
+      </div>
+      
       {/* Main content */}
       {article.content && (
         <div 
-          className={`prose max-w-none mb-8 ${getTextAlignmentClass()}`}
+          className={`prose max-w-none mb-8 ${getTextAlignmentClass()} break-words overflow-hidden`}
           dangerouslySetInnerHTML={{ __html: article.content }}
         />
       )}
       
       {/* Product specifications */}
       {showSpecifications && specifications.length > 0 && (
-        <div className="mb-8">
+        <div className="mb-8 overflow-x-auto">
           <h2 className={`text-lg font-semibold mb-4 ${getHeadingStyleClasses()}`}>Specifications</h2>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Specification</TableHead>
-                <TableHead>Detail</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {specifications.map((spec, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{spec.label}</TableCell>
-                  <TableCell>{spec.value}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="overflow-x-auto -mx-4 px-4">
+            <div className="min-w-full inline-block align-middle">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Specification</TableHead>
+                    <TableHead className="whitespace-normal">Detail</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {specifications.map((spec, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium whitespace-nowrap">{spec.label}</TableCell>
+                      <TableCell className="break-words">{spec.value}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         </div>
       )}
       
       {/* Simple pros and cons */}
       {showProsConsSection && (
-        <div className={`grid grid-cols-1 md:grid-cols-2 ${getSectionSpacingClass()} mb-8`}>
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${getSectionSpacingClass()} mb-8 gap-4`}>
           <div className="bg-green-50 p-4 rounded-lg">
             <h3 className={`text-lg font-semibold mb-2 flex items-center ${getHeadingStyleClasses()}`}>
-              <ThumbsUp className="h-5 w-5 text-green-600 mr-2" />
+              <ThumbsUp className="h-5 w-5 text-green-600 mr-2 flex-shrink-0" />
               Pros
             </h3>
             <ul className="space-y-2">
               {prosItems.map((item, index) => (
                 <li key={index} className="flex items-start">
-                  <span className="text-green-600 mr-2">✓</span>
-                  <span>{item}</span>
+                  <span className="text-green-600 mr-2 flex-shrink-0">✓</span>
+                  <span className="break-words">{item}</span>
                 </li>
               ))}
             </ul>
@@ -302,14 +323,14 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
           
           <div className="bg-red-50 p-4 rounded-lg">
             <h3 className={`text-lg font-semibold mb-2 flex items-center ${getHeadingStyleClasses()}`}>
-              <ThumbsDown className="h-5 w-5 text-red-600 mr-2" />
+              <ThumbsDown className="h-5 w-5 text-red-600 mr-2 flex-shrink-0" />
               Cons
             </h3>
             <ul className="space-y-2">
               {consItems.map((item, index) => (
                 <li key={index} className="flex items-start">
-                  <span className="text-red-600 mr-2">✗</span>
-                  <span>{item}</span>
+                  <span className="text-red-600 mr-2 flex-shrink-0">✗</span>
+                  <span className="break-words">{item}</span>
                 </li>
               ))}
             </ul>
@@ -329,10 +350,10 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
           "bg-blue-50"
         }`}>
           <h3 className={`text-lg font-semibold mb-2 flex items-center ${getHeadingStyleClasses()}`}>
-            <Info className="h-5 w-5 text-blue-600 mr-2" />
+            <Info className="h-5 w-5 text-blue-600 mr-2 flex-shrink-0" />
             Verdict
           </h3>
-          <p className="text-gray-700">{verdictText}</p>
+          <p className="text-gray-700 break-words">{verdictText}</p>
         </div>
       )}
       

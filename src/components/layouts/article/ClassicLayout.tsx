@@ -28,31 +28,31 @@ export const ClassicLayout: React.FC<ClassicLayoutProps> = ({ article }) => {
   };
 
   return (
-    <article className="max-w-4xl mx-auto px-4 py-8">
+    <article className="max-w-4xl mx-auto px-4 py-8 overflow-x-hidden">
       {/* Award banner */}
       {showAwards && awardLevel && (
         <AwardBanner awardLevel={awardLevel} />
       )}
       
       <header className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold mb-4">{article.title}</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-4 break-words">{article.title}</h1>
         
         {article.description && (
           <div 
-            className="text-xl text-gray-700 mb-6 leading-relaxed"
+            className="text-xl text-gray-700 mb-6 leading-relaxed break-words"
             dangerouslySetInnerHTML={{ __html: article.description }}
           />
         )}
         
         <div className="flex flex-wrap items-center text-sm text-gray-500 gap-4 mb-6">
           <div className="flex items-center">
-            <User className="h-4 w-4 mr-1" />
-            <span>{article.author?.display_name || "Editorial Team"}</span>
+            <User className="h-4 w-4 mr-1 flex-shrink-0" />
+            <span className="truncate">{article.author?.display_name || "Editorial Team"}</span>
           </div>
           
           {article.published_at && (
             <div className="flex items-center">
-              <Clock className="h-4 w-4 mr-1" />
+              <Clock className="h-4 w-4 mr-1 flex-shrink-0" />
               <span>{formatPublishDate(article.published_at)}</span>
             </div>
           )}
@@ -64,23 +64,25 @@ export const ClassicLayout: React.FC<ClassicLayoutProps> = ({ article }) => {
       </header>
       
       {article.featured_image && (
-        <img 
-          src={article.featured_image} 
-          alt={article.title}
-          className="w-full h-auto rounded-lg mb-8 object-cover"
-        />
+        <div className="w-full overflow-hidden rounded-lg mb-8">
+          <img 
+            src={article.featured_image} 
+            alt={article.title}
+            className="w-full h-auto object-cover"
+          />
+        </div>
       )}
       
       {article.content && (
         <div 
-          className="prose prose-lg max-w-none"
+          className="prose prose-lg max-w-none break-words overflow-hidden"
           dangerouslySetInnerHTML={{ __html: article.content }}
         />
       )}
       
       <footer className="mt-12 pt-8 border-t border-gray-200">
         <div className="flex items-center text-sm text-gray-500">
-          <Calendar className="h-4 w-4 mr-1" />
+          <Calendar className="h-4 w-4 mr-1 flex-shrink-0" />
           <span>
             Published: {article.published_at ? new Date(article.published_at).toLocaleDateString() : "Draft"}
           </span>

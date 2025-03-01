@@ -79,6 +79,7 @@ export default {
         DEFAULT: {
           css: {
             maxWidth: '100%',
+            overflowX: 'hidden',
             color: 'var(--tw-prose-body)',
             '[class~="lead"]': {
               color: 'var(--tw-prose-lead)',
@@ -87,6 +88,7 @@ export default {
               color: 'var(--tw-prose-links)',
               textDecoration: 'underline',
               fontWeight: '500',
+              overflowWrap: 'break-word',
             },
             strong: {
               color: 'var(--tw-prose-bold)',
@@ -107,6 +109,8 @@ export default {
               borderSpacing: 0,
               marginTop: '2em',
               marginBottom: '2em',
+              overflowX: 'auto',
+              display: 'block',
             },
             'thead th': {
               backgroundColor: 'var(--tw-prose-th-backgrounds)',
@@ -125,6 +129,7 @@ export default {
               borderBottom: '1px solid var(--tw-prose-td-borders)',
               borderColor: 'inherit',
               padding: '0.5em',
+              verticalAlign: 'top',
             },
             'tbody td:first-child, tfoot td:first-child': {
               paddingLeft: '0',
@@ -134,6 +139,8 @@ export default {
             },
             'figure img': {
               margin: '0',
+              maxWidth: '100%',
+              height: 'auto',
             },
             'figure figcaption': {
               color: 'var(--tw-prose-captions)',
@@ -146,12 +153,14 @@ export default {
               borderRadius: '0.25rem',
               padding: '0.25rem 0.4rem',
               fontWeight: '600',
+              wordBreak: 'break-word',
             },
             pre: {
               backgroundColor: 'var(--tw-prose-pre-bg)',
               borderRadius: '0.375rem',
               overflowX: 'auto',
               padding: '0.75rem 1rem',
+              maxWidth: '100%',
             },
             'pre code': {
               backgroundColor: 'transparent',
@@ -168,14 +177,19 @@ export default {
               marginTop: '2em',
               marginBottom: '2em',
               borderRadius: '0.375rem',
+              maxWidth: '100%',
+              height: 'auto',
             },
             video: {
               marginTop: '2em',
               marginBottom: '2em',
+              maxWidth: '100%',
+              height: 'auto',
             },
             figure: {
               marginTop: '2em',
               marginBottom: '2em',
+              maxWidth: '100%',
             },
             h1: {
               color: 'var(--tw-prose-headings)',
@@ -184,6 +198,7 @@ export default {
               marginTop: '0',
               marginBottom: '0.8888889em',
               lineHeight: '1.1111111',
+              overflowWrap: 'break-word',
             },
             h2: {
               color: 'var(--tw-prose-headings)',
@@ -192,6 +207,7 @@ export default {
               marginTop: '2em',
               marginBottom: '1em',
               lineHeight: '1.3333333',
+              overflowWrap: 'break-word',
             },
             h3: {
               color: 'var(--tw-prose-headings)',
@@ -200,6 +216,7 @@ export default {
               marginTop: '1.6em',
               marginBottom: '0.6em',
               lineHeight: '1.6',
+              overflowWrap: 'break-word',
             },
             h4: {
               color: 'var(--tw-prose-headings)',
@@ -207,6 +224,7 @@ export default {
               marginTop: '1.5em',
               marginBottom: '0.5em',
               lineHeight: '1.5',
+              overflowWrap: 'break-word',
             },
             h5: {
               color: 'var(--tw-prose-headings)',
@@ -215,6 +233,7 @@ export default {
               marginTop: '1.7142857em',
               marginBottom: '0.5em',
               lineHeight: '1.4285714',
+              overflowWrap: 'break-word',
             },
             h6: {
               color: 'var(--tw-prose-headings)',
@@ -223,6 +242,7 @@ export default {
               marginTop: '1.7142857em',
               marginBottom: '0.5em',
               lineHeight: '1.4285714',
+              overflowWrap: 'break-word',
             },
             'ul, ol': {
               paddingLeft: '1.25em',
