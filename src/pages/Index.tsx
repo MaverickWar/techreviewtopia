@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Laptop, Smartphone, Gamepad, Brain, Award, Star, Calendar, FileText, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -132,12 +131,11 @@ const FeaturedContent = () => {
 
       if (error) {
         console.error("Error fetching featured content:", error);
-        return { reviews: [], articles: [] };
+        return [];
       }
 
       // Transform the data into our content structure
-      const reviews: Review[] = [];
-      const articles: Article[] = [];
+      const transformedContent: ContentItem[] = [];
 
       // Process and organize the data
       data?.forEach(item => {
@@ -175,7 +173,7 @@ const FeaturedContent = () => {
         }
         
         // Base content structure
-        const baseItem = {
+        const baseItem: BaseContent = {
           id: content.id,
           title: content.title,
           category: "Technology", // Default category, would come from category relationship
@@ -220,18 +218,18 @@ const FeaturedContent = () => {
             type: 'review',
             rating: score
           };
-          reviews.push(review);
+          transformedContent.push(review);
         } else if (content.type === 'article') {
           const article: Article = {
             ...baseItem,
             type: 'article'
           };
-          articles.push(article);
+          transformedContent.push(article);
         }
       });
 
-      // Combine reviews and articles
-      const combined = [...reviews, ...articles].sort((a, b) => {
+      // Sort the combined array
+      return transformedContent.sort((a, b) => {
         // Sort by type first (reviews first)
         if (a.type === 'review' && b.type !== 'review') return -1;
         if (a.type !== 'review' && b.type === 'review') return 1;
@@ -243,8 +241,6 @@ const FeaturedContent = () => {
         
         return 0;
       });
-
-      return combined;
     }
   });
 
@@ -316,7 +312,7 @@ const FeaturedContent = () => {
   }
 
   // Extract YouTube video ID for the main featured item
-  const mainYoutubeVideoId = mainFeatured.youtubeUrl ? extractYoutubeVideoId(mainFeatured.youtubeUrl) : null;
+  const mainYoutubeVideoId = mainFeatured?.youtubeUrl ? extractYoutubeVideoId(mainFeatured.youtubeUrl) : null;
 
   return (
     <section className="py-16 bg-white">
@@ -341,75 +337,77 @@ const FeaturedContent = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
           {/* Main Featured Item */}
-          <article className="md:col-span-8 review-card animate-fade-in rounded-xl overflow-hidden shadow-xl">
-            {/* Fix the routing by adding the categorySlug */}
-            <Link to={`/${mainFeatured.categorySlug}/content/${mainFeatured.slug}`} className="block">
-              <div className="relative">
-                <img src={mainFeatured.image} alt={mainFeatured.title} className="w-full h-[500px] object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-                
-                {/* Award Badge */}
-                {mainFeatured.award && (
-                  <div className="absolute top-4 right-4 z-10">
-                    <Badge variant="award" className="flex items-center gap-1 px-4 py-2 text-sm shadow-lg">
-                      <Award className="h-4 w-4" />
-                      <span>{mainFeatured.award}</span>
-                    </Badge>
-                  </div>
-                )}
-                
-                {/* Video Badge */}
-                {mainYoutubeVideoId && (
-                  <div className="absolute top-4 left-4 z-10">
-                    <Badge className="bg-red-600 flex items-center gap-1 px-3 py-1.5 shadow-md">
-                      <Play className="h-3.5 w-3.5 fill-current" />
-                      <span>Video</span>
-                    </Badge>
-                  </div>
-                )}
-                
-                <div className="absolute bottom-0 left-0 p-8 text-white">
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      mainFeatured.type === 'review' 
-                        ? "bg-purple-600 text-white" 
-                        : "bg-blue-600 text-white"
-                    }`}>
-                      {mainFeatured.type === 'review' ? "Review" : "Article"}
-                    </span>
-                    {mainFeatured.type === 'review' && (
-                      <span className="bg-orange-500 px-2 py-1 rounded-full flex items-center gap-1">
-                        <Star className="h-3.5 w-3.5 fill-current" />
-                        {(mainFeatured as Review).rating.toFixed(1)}
+          {mainFeatured && (
+            <article className="md:col-span-8 review-card animate-fade-in rounded-xl overflow-hidden shadow-xl">
+              {/* Fix the routing by adding the categorySlug */}
+              <Link to={`/${mainFeatured.categorySlug}/content/${mainFeatured.slug}`} className="block">
+                <div className="relative">
+                  <img src={mainFeatured.image} alt={mainFeatured.title} className="w-full h-[500px] object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                  
+                  {/* Award Badge */}
+                  {mainFeatured.award && (
+                    <div className="absolute top-4 right-4 z-10">
+                      <Badge variant="award" className="flex items-center gap-1 px-4 py-2 text-sm shadow-lg">
+                        <Award className="h-4 w-4" />
+                        <span>{mainFeatured.award}</span>
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {/* Video Badge */}
+                  {mainYoutubeVideoId && (
+                    <div className="absolute top-4 left-4 z-10">
+                      <Badge className="bg-red-600 flex items-center gap-1 px-3 py-1.5 shadow-md">
+                        <Play className="h-3.5 w-3.5 fill-current" />
+                        <span>Video</span>
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  <div className="absolute bottom-0 left-0 p-8 text-white">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        mainFeatured.type === 'review' 
+                          ? "bg-purple-600 text-white" 
+                          : "bg-blue-600 text-white"
+                      }`}>
+                        {mainFeatured.type === 'review' ? "Review" : "Article"}
                       </span>
-                    )}
-                  </div>
-                  <h2 className="text-4xl font-bold mb-3">{mainFeatured.title}</h2>
-                  <div className="text-gray-200 text-lg mb-4" dangerouslySetInnerHTML={{ __html: mainFeatured.excerpt }}></div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span>{mainFeatured.author}</span>
-                    <span>•</span>
-                    <span>{mainFeatured.readTime}</span>
+                      {mainFeatured.type === 'review' && (
+                        <span className="bg-orange-500 px-2 py-1 rounded-full flex items-center gap-1">
+                          <Star className="h-3.5 w-3.5 fill-current" />
+                          {(mainFeatured as Review).rating.toFixed(1)}
+                        </span>
+                      )}
+                    </div>
+                    <h2 className="text-4xl font-bold mb-3">{mainFeatured.title}</h2>
+                    <div className="text-gray-200 text-lg mb-4" dangerouslySetInnerHTML={{ __html: mainFeatured.excerpt }}></div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span>{mainFeatured.author}</span>
+                      <span>•</span>
+                      <span>{mainFeatured.readTime}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
-            
-            {/* YouTube Video Preview (if available) */}
-            {mainYoutubeVideoId && (
-              <div className="p-6 bg-black">
-                <div className="aspect-video w-full">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${mainYoutubeVideoId}`}
-                    title="YouTube video player"
-                    className="w-full h-full rounded"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
+              </Link>
+              
+              {/* YouTube Video Preview (if available) */}
+              {mainYoutubeVideoId && (
+                <div className="p-6 bg-black">
+                  <div className="aspect-video w-full">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${mainYoutubeVideoId}`}
+                      title="YouTube video player"
+                      className="w-full h-full rounded"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
                 </div>
-              </div>
-            )}
-          </article>
+              )}
+            </article>
+          )}
 
           {/* Secondary Features */}
           <div className="md:col-span-4 grid grid-cols-1 gap-6">
