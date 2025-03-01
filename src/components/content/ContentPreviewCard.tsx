@@ -28,6 +28,27 @@ export const ContentPreviewCard = ({
   overallScore,
   award,
 }: ContentPreviewCardProps) => {
+  // Map kebab-case award values to their display names
+  const getAwardDisplayName = (awardValue: string): string => {
+    const awardMap: Record<string, string> = {
+      "editors-choice": "Editor's Choice",
+      "best-value": "Best Value",
+      "best-performance": "Best Performance",
+      "highly-recommended": "Highly Recommended",
+      "budget-pick": "Budget Pick",
+      "premium-choice": "Premium Choice",
+      "most-innovative": "Most Innovative"
+    };
+    
+    return awardMap[awardValue] || awardValue
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  // Format award for display if one exists
+  const formattedAward = award ? getAwardDisplayName(award) : null;
+
   return (
     <Link to={`/${categorySlug}/content/${slug}`} className="block group">
       <Card className="overflow-hidden hover:shadow-lg transition-all duration-300">
@@ -39,10 +60,10 @@ export const ContentPreviewCard = ({
               className="w-full h-full object-cover transform transition-transform duration-300 group-hover:scale-105"
             />
             <div className="absolute top-2 right-2 flex flex-col gap-2 items-end">
-              {award && (
+              {formattedAward && (
                 <Badge variant="award" className="flex items-center gap-1 px-3 py-1.5 shadow-md animate-fade-in">
                   <Award className="h-3.5 w-3.5" />
-                  <span>{award}</span>
+                  <span>{formattedAward}</span>
                 </Badge>
               )}
             </div>
@@ -70,10 +91,10 @@ export const ContentPreviewCard = ({
               <Star className="h-12 w-12 text-gray-400" />
             )}
             <div className="absolute top-2 right-2 flex flex-col gap-2 items-end">
-              {award && (
+              {formattedAward && (
                 <Badge variant="award" className="flex items-center gap-1 px-3 py-1.5 shadow-md animate-fade-in">
                   <Award className="h-3.5 w-3.5" />
-                  <span>{award}</span>
+                  <span>{formattedAward}</span>
                 </Badge>
               )}
             </div>

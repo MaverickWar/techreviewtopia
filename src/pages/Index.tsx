@@ -45,26 +45,35 @@ const extractYoutubeVideoId = (url: string | null): string | null => {
 };
 
 const ContentPreview = ({ item }: { item: ContentItem }) => {
-  // Safely extract YouTube video ID if available
-  const youtubeVideoId = item.youtubeUrl ? extractYoutubeVideoId(item.youtubeUrl) : null;
+  // Format award for display if one exists
+  const getAwardDisplayName = (awardValue: string): string => {
+    const awardMap: Record<string, string> = {
+      "editors-choice": "Editor's Choice",
+      "best-value": "Best Value",
+      "best-performance": "Best Performance",
+      "highly-recommended": "Highly Recommended",
+      "budget-pick": "Budget Pick",
+      "premium-choice": "Premium Choice",
+      "most-innovative": "Most Innovative"
+    };
+    
+    return awardMap[awardValue] || awardValue
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+  
+  const formattedAward = item.award ? getAwardDisplayName(item.award) : null;
   
   return (
     <article className="review-card overflow-hidden animate-fade-in bg-white rounded-lg shadow-md h-full">
       <div className="relative">
         <img src={item.image} alt={item.title} className="w-full h-48 object-cover" />
-        {item.award && (
+        {formattedAward && (
           <div className="absolute top-2 right-2">
             <Badge variant="award" className="flex items-center gap-1 px-3 py-1.5 shadow-md">
               <Award className="h-3.5 w-3.5" />
-              <span>{item.award}</span>
-            </Badge>
-          </div>
-        )}
-        {youtubeVideoId && (
-          <div className="absolute bottom-2 right-2">
-            <Badge className="bg-red-600 flex items-center gap-1 px-3 py-1.5 shadow-md">
-              <Play className="h-3.5 w-3.5 fill-current" />
-              <span>Video</span>
+              <span>{formattedAward}</span>
             </Badge>
           </div>
         )}
@@ -311,8 +320,25 @@ const FeaturedContent = () => {
     );
   }
 
-  // Extract YouTube video ID for the main featured item
-  const mainYoutubeVideoId = mainFeatured?.youtubeUrl ? extractYoutubeVideoId(mainFeatured.youtubeUrl) : null;
+  // Extract and format award for the main featured item
+  const getAwardDisplayName = (awardValue: string): string => {
+    const awardMap: Record<string, string> = {
+      "editors-choice": "Editor's Choice",
+      "best-value": "Best Value",
+      "best-performance": "Best Performance",
+      "highly-recommended": "Highly Recommended",
+      "budget-pick": "Budget Pick",
+      "premium-choice": "Premium Choice",
+      "most-innovative": "Most Innovative"
+    };
+    
+    return awardMap[awardValue] || awardValue
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  const formattedMainAward = mainFeatured?.award ? getAwardDisplayName(mainFeatured.award) : null;
 
   return (
     <section className="py-16 bg-white">
@@ -345,22 +371,12 @@ const FeaturedContent = () => {
                   <img src={mainFeatured.image} alt={mainFeatured.title} className="w-full h-[500px] object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
                   
-                  {/* Award Badge */}
-                  {mainFeatured.award && (
+                  {/* Award Badge with properly formatted name */}
+                  {formattedMainAward && (
                     <div className="absolute top-4 right-4 z-10">
                       <Badge variant="award" className="flex items-center gap-1 px-4 py-2 text-sm shadow-lg">
                         <Award className="h-4 w-4" />
-                        <span>{mainFeatured.award}</span>
-                      </Badge>
-                    </div>
-                  )}
-                  
-                  {/* Video Badge */}
-                  {mainYoutubeVideoId && (
-                    <div className="absolute top-4 left-4 z-10">
-                      <Badge className="bg-red-600 flex items-center gap-1 px-3 py-1.5 shadow-md">
-                        <Play className="h-3.5 w-3.5 fill-current" />
-                        <span>Video</span>
+                        <span>{formattedMainAward}</span>
                       </Badge>
                     </div>
                   )}
@@ -392,20 +408,7 @@ const FeaturedContent = () => {
                 </div>
               </Link>
               
-              {/* YouTube Video Preview (if available) */}
-              {mainYoutubeVideoId && (
-                <div className="p-6 bg-black">
-                  <div className="aspect-video w-full">
-                    <iframe
-                      src={`https://www.youtube.com/embed/${mainYoutubeVideoId}`}
-                      title="YouTube video player"
-                      className="w-full h-full rounded"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    ></iframe>
-                  </div>
-                </div>
-              )}
+              {/* YouTube Video Preview removed */}
             </article>
           )}
 
@@ -564,7 +567,7 @@ const Index = () => {
 
   return (
     <>
-      {/* Hero Section with improved gradients and animations */}
+      {/* Hero Section */}
       <section className="bg-gradient-to-r from-blue-900 via-blue-800 to-purple-900 text-white py-20">
         <div className="content-container relative">
           <div className="absolute inset-0 overflow-hidden">
@@ -608,16 +611,13 @@ const Index = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {topRatedReviews.slice(0, 3).map((review, index) => {
-              // Extract YouTube video ID if available
-              const youtubeVideoId = review.youtubeUrl ? extractYoutubeVideoId(review.youtubeUrl) : null;
+              // Format award for display if one exists
+              const formattedAward = review.award ? getAwardDisplayName(review.award) : null;
               
               return (
                 <Card 
                   key={review.id} 
-                  className={cn(
-                    "overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in h-full",
-                    youtubeVideoId ? "flex flex-col" : ""
-                  )}
+                  className="overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in h-full"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className="aspect-video relative overflow-hidden">
@@ -626,11 +626,11 @@ const Index = () => {
                       alt={review.title} 
                       className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
                     />
-                    {review.award && (
+                    {formattedAward && (
                       <div className="absolute top-2 right-2">
                         <Badge variant="award" className="flex items-center gap-1 px-3 py-1.5 shadow-md">
                           <Award className="h-3.5 w-3.5" />
-                          <span>{review.award}</span>
+                          <span>{formattedAward}</span>
                         </Badge>
                       </div>
                     )}
@@ -640,32 +640,11 @@ const Index = () => {
                         <span>{review.rating.toFixed(1)}/10</span>
                       </Badge>
                     </div>
-                    {youtubeVideoId && (
-                      <div className="absolute bottom-2 right-2">
-                        <Badge className="bg-red-600 flex items-center gap-1 px-3 py-1.5 shadow-md">
-                          <Play className="h-3.5 w-3.5 fill-current" />
-                          <span>Video</span>
-                        </Badge>
-                      </div>
-                    )}
                   </div>
                   
-                  {/* YouTube Video (if available) */}
-                  {youtubeVideoId && (
-                    <div className="px-6 pt-6">
-                      <div className="aspect-video w-full">
-                        <iframe
-                          src={`https://www.youtube.com/embed/${youtubeVideoId}`}
-                          title="YouTube video player"
-                          className="w-full h-full rounded"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        ></iframe>
-                      </div>
-                    </div>
-                  )}
+                  {/* YouTube Video Preview removed */}
                   
-                  <CardContent className={cn("p-6", youtubeVideoId ? "pt-4" : "pt-0")}>
+                  <CardContent className="p-6">
                     <Link to={`/${review.categorySlug}/content/${review.slug}`}>
                       <h3 className="text-xl font-bold mb-2 hover:text-blue-600 transition-colors">{review.title}</h3>
                     </Link>
