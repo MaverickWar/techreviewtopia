@@ -229,7 +229,7 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
       {/* Hero Section */}
       <div className="mb-8">
         {award && awardName && (
-          <AwardBanner awardName={awardName} className="mb-4" />
+          <AwardBanner award={award} className="mb-4" />
         )}
         
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -360,7 +360,9 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
           
           {/* Article Content */}
           <div className="prose prose-lg max-w-none">
-            <div dangerouslySetInnerHTML={{ __html: article.content || '' }} />
+            {article.content && (
+              <div dangerouslySetInnerHTML={{ __html: article.content }} />
+            )}
           </div>
           
           {/* Video Section (if available) */}
@@ -394,7 +396,7 @@ export const EnhancedReviewLayout = ({ article }: EnhancedReviewLayoutProps) => 
                             {section.specs.map((spec, specIdx) => (
                               <tr key={specIdx} className="border-b border-gray-100 last:border-b-0">
                                 <td className="py-2 pr-4 text-gray-600 align-top w-1/3">{spec.key}</td>
-                                <td className="py-2 text-gray-900">{spec.value}</td>
+                                <td className="py-2 text-gray-900">{String(spec.value)}</td>
                               </tr>
                             ))}
                           </tbody>
