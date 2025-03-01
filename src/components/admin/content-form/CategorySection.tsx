@@ -1,6 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 interface CategorySectionProps {
   selectedCategory: string | null;
@@ -49,6 +50,65 @@ export const CategorySection = ({
       return data;
     },
   });
+
+  // If we have a pageId but no selectedCategory, fetch the parent category
+  useEffect(() => {
+    const fetchParentCategory = async () => {
+      if (pageId && !selectedCategory) {
+        console.log('Fetching parent category for page ID:', pageId);
+        
+        // First check if this is a menu item ID
+        const { data: menuItem, error: menuItemError } = await supabase
+          .from('menu_items')
+          .select('category_id')
+          .eq('id', pageId)
+          .maybeSingle();
+        
+        if (!menuItemError && menuItem?.category_id) {
+          console.log('Found category from menu item:', menuItem.category_id);
+          onCategoryChange(menuItem.category_id);
+          return;
+        }
+        
+        // If not a direct menu item, check if it's a page with menu_item_id
+        const { data: page, error: pageError } = await supabase
+          .from('pages')
+          .select('menu_item_id, menu_category_id')
+          .eq('id', pageId)
+          .maybeSingle();
+        
+        if (pageError) {
+          console.error('Error fetching page:', pageError);
+          return;
+        }
+        
+        if (page) {
+          if (page.menu_category_id) {
+            console.log('Found category directly from page:', page.menu_category_id);
+            onCategoryChange(page.menu_category_id);
+            return;
+          }
+          
+          if (page.menu_item_id) {
+            // Get the category from the menu item
+            const { data: relatedMenuItem, error: relatedMenuItemError } = await supabase
+              .from('menu_items')
+              .select('category_id')
+              .eq('id', page.menu_item_id)
+              .maybeSingle();
+            
+            if (!relatedMenuItemError && relatedMenuItem?.category_id) {
+              console.log('Found category from related menu item:', relatedMenuItem.category_id);
+              onCategoryChange(relatedMenuItem.category_id);
+              return;
+            }
+          }
+        }
+      }
+    };
+    
+    fetchParentCategory();
+  }, [pageId, selectedCategory, onCategoryChange]);
 
   return (
     <div className="space-y-4">
