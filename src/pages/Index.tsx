@@ -1,11 +1,13 @@
+
 import { useState, useEffect } from 'react';
-import { Laptop, Smartphone, Gamepad, Brain, Award, Star, Calendar, FileText } from 'lucide-react';
+import { Laptop, Smartphone, Gamepad, Brain, Award, Star, Calendar, FileText, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 // Define proper interfaces for our content types
 interface BaseContent {
@@ -20,6 +22,7 @@ interface BaseContent {
   slug: string;
   categorySlug?: string; // Add categorySlug for routing
   award?: string | null; // Add award property
+  youtubeUrl?: string | null; // Add youtubeUrl property
 }
 
 interface Review extends BaseContent {
@@ -33,7 +36,19 @@ interface Article extends BaseContent {
 
 type ContentItem = Review | Article;
 
+// Helper function to extract YouTube video ID
+const extractYoutubeVideoId = (url: string | null): string | null => {
+  if (!url) return null;
+  
+  const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+  const match = url.match(youtubeRegex);
+  return match ? match[1] : null;
+};
+
 const ContentPreview = ({ item }: { item: ContentItem }) => {
+  // Safely extract YouTube video ID if available
+  const youtubeVideoId = item.youtubeUrl ? extractYoutubeVideoId(item.youtubeUrl) : null;
+  
   return (
     <article className="review-card overflow-hidden animate-fade-in bg-white rounded-lg shadow-md h-full">
       <div className="relative">
@@ -43,6 +58,14 @@ const ContentPreview = ({ item }: { item: ContentItem }) => {
             <Badge variant="award" className="flex items-center gap-1 px-3 py-1.5 shadow-md">
               <Award className="h-3.5 w-3.5" />
               <span>{item.award}</span>
+            </Badge>
+          </div>
+        )}
+        {youtubeVideoId && (
+          <div className="absolute bottom-2 right-2">
+            <Badge className="bg-red-600 flex items-center gap-1 px-3 py-1.5 shadow-md">
+              <Play className="h-3.5 w-3.5 fill-current" />
+              <span>Video</span>
             </Badge>
           </div>
         )}
@@ -76,10 +99,8 @@ const ContentPreview = ({ item }: { item: ContentItem }) => {
   );
 };
 
-const FeaturedContentTabs = () => {
-  const [activeTab, setActiveTab] = useState<'reviews' | 'articles'>('reviews');
-  const [reviewsData, setReviewsData] = useState<Review[]>([]);
-  const [articlesData, setArticlesData] = useState<Article[]>([]);
+const FeaturedContent = () => {
+  const [allContent, setAllContent] = useState<ContentItem[]>([]);
   
   // Fetch featured content from Supabase
   const { data: featuredContent, isLoading } = useQuery({
@@ -102,7 +123,8 @@ const FeaturedContentTabs = () => {
             author_id,
             layout_settings,
             review_details (
-              overall_score
+              overall_score,
+              youtube_url
             )
           )
         `)
@@ -135,12 +157,21 @@ const FeaturedContentTabs = () => {
               : content.layout_settings;
               
             // Check if settings is an object and has award property
-            if (settings && typeof settings === 'object' && 'award' in settings) {
-              award = settings.award as string;
+            if (settings && typeof settings === 'object' && ('award' in settings || 'awardLevel' in settings)) {
+              award = settings.award || settings.awardLevel;
             }
           } catch (e) {
             console.error("Error parsing layout_settings:", e);
           }
+        }
+        
+        // Extract YouTube URL if available (for reviews)
+        let youtubeUrl: string | null = null;
+        if (content.review_details && 
+            Array.isArray(content.review_details) && 
+            content.review_details.length > 0 &&
+            content.review_details[0].youtube_url) {
+          youtubeUrl = content.review_details[0].youtube_url;
         }
         
         // Base content structure
@@ -155,7 +186,8 @@ const FeaturedContentTabs = () => {
           readTime: "5 min read", // Would be calculated
           slug: content.id, // Using ID as slug for now
           type: content.type as 'review' | 'article',
-          award: award // Include award information
+          award: award, // Include award information
+          youtubeUrl: youtubeUrl // Include YouTube URL if available
         };
 
         // Add to appropriate array based on type
@@ -198,22 +230,35 @@ const FeaturedContentTabs = () => {
         }
       });
 
-      return { reviews, articles };
+      // Combine reviews and articles
+      const combined = [...reviews, ...articles].sort((a, b) => {
+        // Sort by type first (reviews first)
+        if (a.type === 'review' && b.type !== 'review') return -1;
+        if (a.type !== 'review' && b.type === 'review') return 1;
+        
+        // Then sort by rating for reviews
+        if (a.type === 'review' && b.type === 'review') {
+          return (b as Review).rating - (a as Review).rating;
+        }
+        
+        return 0;
+      });
+
+      return combined;
     }
   });
 
   // Update state when data is fetched
   useEffect(() => {
     if (featuredContent) {
-      setReviewsData(featuredContent.reviews);
-      setArticlesData(featuredContent.articles);
+      setAllContent(featuredContent);
     }
   }, [featuredContent]);
 
   // Use empty placeholders when loading
-  const activeData = activeTab === 'reviews' ? reviewsData : articlesData;
-  const mainFeatured = activeData[0] || null;
-  const secondaryFeatured = activeData.slice(1) || [];
+  const mainFeatured = allContent[0] || null;
+  const secondaryFeatured = allContent.slice(1, 5) || [];
+  const remainingContent = allContent.slice(5) || [];
 
   if (isLoading) {
     return (
@@ -221,22 +266,6 @@ const FeaturedContentTabs = () => {
         <div className="content-container">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold">Featured Content</h2>
-            <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg">
-              <Button 
-                variant={activeTab === 'reviews' ? 'default' : 'ghost'} 
-                onClick={() => setActiveTab('reviews')}
-                className={activeTab === 'reviews' ? 'bg-blue-600' : ''}
-              >
-                Reviews
-              </Button>
-              <Button 
-                variant={activeTab === 'articles' ? 'default' : 'ghost'} 
-                onClick={() => setActiveTab('articles')}
-                className={activeTab === 'articles' ? 'bg-blue-600' : ''}
-              >
-                Articles
-              </Button>
-            </div>
           </div>
           
           <div className="h-96 flex items-center justify-center">
@@ -254,37 +283,30 @@ const FeaturedContentTabs = () => {
         <div className="content-container">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-bold">Featured Content</h2>
-            <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg">
-              <Button 
-                variant={activeTab === 'reviews' ? 'default' : 'ghost'} 
-                onClick={() => setActiveTab('reviews')}
-                className={activeTab === 'reviews' ? 'bg-blue-600' : ''}
-              >
-                Reviews
-              </Button>
-              <Button 
-                variant={activeTab === 'articles' ? 'default' : 'ghost'} 
-                onClick={() => setActiveTab('articles')}
-                className={activeTab === 'articles' ? 'bg-blue-600' : ''}
-              >
-                Articles
-              </Button>
-            </div>
           </div>
           
           <div className="h-40 flex items-center justify-center">
-            <div className="text-gray-500">No featured {activeTab} available</div>
+            <div className="text-gray-500">No featured content available</div>
           </div>
           
-          {/* View All Button */}
-          <div className="mt-8 text-center">
+          {/* View All Buttons */}
+          <div className="mt-8 flex justify-center gap-4">
             <Button 
               asChild
               variant="outline" 
               className="border-blue-600 text-blue-600 hover:bg-blue-50"
             >
-              <Link to={`/${activeTab}`}>
-                View all {activeTab}
+              <Link to="/reviews">
+                View all reviews
+              </Link>
+            </Button>
+            <Button 
+              asChild
+              variant="outline" 
+              className="border-purple-600 text-purple-600 hover:bg-purple-50"
+            >
+              <Link to="/articles">
+                View all articles
               </Link>
             </Button>
           </div>
@@ -293,26 +315,27 @@ const FeaturedContentTabs = () => {
     );
   }
 
+  // Extract YouTube video ID for the main featured item
+  const mainYoutubeVideoId = mainFeatured.youtubeUrl ? extractYoutubeVideoId(mainFeatured.youtubeUrl) : null;
+
   return (
     <section className="py-16 bg-white">
       <div className="content-container">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-bold">Featured Content</h2>
-          <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg">
-            <Button 
-              variant={activeTab === 'reviews' ? 'default' : 'ghost'} 
-              onClick={() => setActiveTab('reviews')}
-              className={activeTab === 'reviews' ? 'bg-blue-600' : ''}
-            >
-              Reviews
-            </Button>
-            <Button 
-              variant={activeTab === 'articles' ? 'default' : 'ghost'} 
-              onClick={() => setActiveTab('articles')}
-              className={activeTab === 'articles' ? 'bg-blue-600' : ''}
-            >
-              Articles
-            </Button>
+          <div className="flex space-x-2">
+            <Link to="/reviews" className="text-blue-600 hover:text-blue-800 flex items-center gap-1">
+              All reviews
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </Link>
+            <Link to="/articles" className="text-purple-600 hover:text-purple-800 flex items-center gap-1">
+              All articles
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
+            </Link>
           </div>
         </div>
         
@@ -335,27 +358,57 @@ const FeaturedContentTabs = () => {
                   </div>
                 )}
                 
+                {/* Video Badge */}
+                {mainYoutubeVideoId && (
+                  <div className="absolute top-4 left-4 z-10">
+                    <Badge className="bg-red-600 flex items-center gap-1 px-3 py-1.5 shadow-md">
+                      <Play className="h-3.5 w-3.5 fill-current" />
+                      <span>Video</span>
+                    </Badge>
+                  </div>
+                )}
+                
                 <div className="absolute bottom-0 left-0 p-8 text-white">
-                  <div className="category-tag mb-4">{mainFeatured.category}</div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      mainFeatured.type === 'review' 
+                        ? "bg-purple-600 text-white" 
+                        : "bg-blue-600 text-white"
+                    }`}>
+                      {mainFeatured.type === 'review' ? "Review" : "Article"}
+                    </span>
+                    {mainFeatured.type === 'review' && (
+                      <span className="bg-orange-500 px-2 py-1 rounded-full flex items-center gap-1">
+                        <Star className="h-3.5 w-3.5 fill-current" />
+                        {(mainFeatured as Review).rating.toFixed(1)}
+                      </span>
+                    )}
+                  </div>
                   <h2 className="text-4xl font-bold mb-3">{mainFeatured.title}</h2>
                   <div className="text-gray-200 text-lg mb-4" dangerouslySetInnerHTML={{ __html: mainFeatured.excerpt }}></div>
                   <div className="flex items-center gap-4 text-sm">
                     <span>{mainFeatured.author}</span>
                     <span>•</span>
                     <span>{mainFeatured.readTime}</span>
-                    {mainFeatured.type === 'review' && (
-                      <>
-                        <span>•</span>
-                        <span className="bg-orange-500 px-2 py-1 rounded-full flex items-center gap-1">
-                          <Star className="h-3.5 w-3.5 fill-current" />
-                          {(mainFeatured as Review).rating.toFixed(1)}
-                        </span>
-                      </>
-                    )}
                   </div>
                 </div>
               </div>
             </Link>
+            
+            {/* YouTube Video Preview (if available) */}
+            {mainYoutubeVideoId && (
+              <div className="p-6 bg-black">
+                <div className="aspect-video w-full">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${mainYoutubeVideoId}`}
+                    title="YouTube video player"
+                    className="w-full h-full rounded"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              </div>
+            )}
           </article>
 
           {/* Secondary Features */}
@@ -372,15 +425,42 @@ const FeaturedContentTabs = () => {
           </div>
         </div>
         
-        {/* View All Button */}
-        <div className="mt-8 text-center">
+        {/* Additional Content (Grid Layout) */}
+        {remainingContent.length > 0 && (
+          <div className="mt-12">
+            <h3 className="text-2xl font-bold mb-6">More Content</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {remainingContent.map((item) => (
+                <Link 
+                  key={item.id} 
+                  to={`/${item.categorySlug}/content/${item.slug}`}
+                  className="block h-full"
+                >
+                  <ContentPreview item={item} />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* View All Buttons */}
+        <div className="mt-8 flex justify-center gap-4">
           <Button 
             asChild
             variant="outline" 
             className="border-blue-600 text-blue-600 hover:bg-blue-50"
           >
-            <Link to={`/${activeTab}`}>
-              View all {activeTab}
+            <Link to="/reviews">
+              View all reviews
+            </Link>
+          </Button>
+          <Button 
+            asChild
+            variant="outline" 
+            className="border-purple-600 text-purple-600 hover:bg-purple-50"
+          >
+            <Link to="/articles">
+              View all articles
             </Link>
           </Button>
         </div>
@@ -407,7 +487,8 @@ const Index = () => {
           featured_image,
           layout_settings,
           review_details (
-            overall_score
+            overall_score,
+            youtube_url
           )
         `)
         .eq('type', 'review')
@@ -431,12 +512,21 @@ const Index = () => {
               : item.layout_settings;
               
             // Check if settings is an object and has award property
-            if (settings && typeof settings === 'object' && 'award' in settings) {
-              award = settings.award as string;
+            if (settings && typeof settings === 'object' && ('award' in settings || 'awardLevel' in settings)) {
+              award = settings.award || settings.awardLevel;
             }
           } catch (e) {
             console.error("Error parsing layout_settings:", e);
           }
+        }
+        
+        // Extract YouTube URL if available
+        let youtubeUrl: string | null = null;
+        if (item.review_details && 
+            Array.isArray(item.review_details) && 
+            item.review_details.length > 0 &&
+            item.review_details[0].youtube_url) {
+          youtubeUrl = item.review_details[0].youtube_url;
         }
         
         // Get score safely
@@ -460,7 +550,8 @@ const Index = () => {
           type: 'review' as const,
           slug: item.id,
           rating: score,
-          award: award
+          award: award,
+          youtubeUrl: youtubeUrl
         };
       });
     }
@@ -501,11 +592,9 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Featured Content Section with Tabs */}
-      <FeaturedContentTabs />
+      {/* Featured Content Section with Unified Layout */}
+      <FeaturedContent />
 
-      {/* Categories section removed as requested */}
-      
       {/* Top-Rated Products Section */}
       <section className="py-16 bg-white">
         <div className="content-container">
@@ -520,49 +609,81 @@ const Index = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {topRatedReviews.slice(0, 3).map((review, index) => (
-              <Card 
-                key={review.id} 
-                className="overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in h-full"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="aspect-video relative overflow-hidden">
-                  <img 
-                    src={review.image} 
-                    alt={review.title} 
-                    className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
-                  />
-                  {review.award && (
-                    <div className="absolute top-2 right-2">
-                      <Badge variant="award" className="flex items-center gap-1 px-3 py-1.5 shadow-md">
-                        <Award className="h-3.5 w-3.5" />
-                        <span>{review.award}</span>
+            {topRatedReviews.slice(0, 3).map((review, index) => {
+              // Extract YouTube video ID if available
+              const youtubeVideoId = review.youtubeUrl ? extractYoutubeVideoId(review.youtubeUrl) : null;
+              
+              return (
+                <Card 
+                  key={review.id} 
+                  className={cn(
+                    "overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in h-full",
+                    youtubeVideoId ? "flex flex-col" : ""
+                  )}
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <div className="aspect-video relative overflow-hidden">
+                    <img 
+                      src={review.image} 
+                      alt={review.title} 
+                      className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+                    />
+                    {review.award && (
+                      <div className="absolute top-2 right-2">
+                        <Badge variant="award" className="flex items-center gap-1 px-3 py-1.5 shadow-md">
+                          <Award className="h-3.5 w-3.5" />
+                          <span>{review.award}</span>
+                        </Badge>
+                      </div>
+                    )}
+                    <div className="absolute top-2 left-2">
+                      <Badge variant="default" className="bg-purple-600 flex items-center gap-1">
+                        <Star className="h-3.5 w-3.5 fill-current" />
+                        <span>{review.rating.toFixed(1)}/10</span>
                       </Badge>
                     </div>
-                  )}
-                  <div className="absolute top-2 left-2">
-                    <Badge variant="default" className="bg-purple-600 flex items-center gap-1">
-                      <Star className="h-3.5 w-3.5 fill-current" />
-                      <span>{review.rating.toFixed(1)}/10</span>
-                    </Badge>
+                    {youtubeVideoId && (
+                      <div className="absolute bottom-2 right-2">
+                        <Badge className="bg-red-600 flex items-center gap-1 px-3 py-1.5 shadow-md">
+                          <Play className="h-3.5 w-3.5 fill-current" />
+                          <span>Video</span>
+                        </Badge>
+                      </div>
+                    )}
                   </div>
-                </div>
-                <CardContent className="p-6">
-                  <Link to={`/${review.categorySlug}/content/${review.slug}`}>
-                    <h3 className="text-xl font-bold mb-2 hover:text-blue-600 transition-colors">{review.title}</h3>
-                  </Link>
-                  <p className="text-gray-600 line-clamp-2">{review.excerpt}</p>
-                </CardContent>
-                <CardFooter className="px-6 pb-6 pt-0 flex justify-between items-center">
-                  <span className="text-sm text-gray-500">{review.readTime}</span>
-                  <Button asChild variant="outline" size="sm">
+                  
+                  {/* YouTube Video (if available) */}
+                  {youtubeVideoId && (
+                    <div className="px-6 pt-6">
+                      <div className="aspect-video w-full">
+                        <iframe
+                          src={`https://www.youtube.com/embed/${youtubeVideoId}`}
+                          title="YouTube video player"
+                          className="w-full h-full rounded"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <CardContent className={cn("p-6", youtubeVideoId ? "pt-4" : "pt-0")}>
                     <Link to={`/${review.categorySlug}/content/${review.slug}`}>
-                      Read Review
+                      <h3 className="text-xl font-bold mb-2 hover:text-blue-600 transition-colors">{review.title}</h3>
                     </Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+                    <p className="text-gray-600 line-clamp-2">{review.excerpt}</p>
+                  </CardContent>
+                  <CardFooter className="px-6 pb-6 pt-0 flex justify-between items-center mt-auto">
+                    <span className="text-sm text-gray-500">{review.readTime}</span>
+                    <Button asChild variant="outline" size="sm">
+                      <Link to={`/${review.categorySlug}/content/${review.slug}`}>
+                        Read Review
+                      </Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
