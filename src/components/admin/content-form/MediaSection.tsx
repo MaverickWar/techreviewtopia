@@ -82,50 +82,65 @@ export const MediaSection = ({
     onGalleryChange(gallery.filter((_, i) => i !== index));
   };
 
-  // Extract YouTube video ID
-  const extractYoutubeVideoId = (url: string): string | null => {
-    const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-    const match = url.match(youtubeRegex);
-    return match ? match[1] : null;
-  };
-
-  // Extract Vimeo video ID
-  const extractVimeoVideoId = (url: string): string | null => {
-    const vimeoRegex = /(?:vimeo.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|)(\d+)(?:$|\/|\?))/;
-    const match = url.match(vimeoRegex);
-    return match ? match[1] : null;
-  };
-
-  // Get embed URL based on video type
-  const getEmbedUrl = (url: string, type: string): string | null => {
+  // Simplified YouTube ID extraction - more robust than before
+  const getYouTubeVideoId = (url: string): string | null => {
     if (!url) return null;
     
-    switch (type) {
-      case 'youtube': {
-        const videoId = extractYoutubeVideoId(url);
-        // If the input is already a valid YouTube ID (11 chars, alphanumeric + underscore/dash)
-        if (!videoId && url.length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(url)) {
-          return `https://www.youtube.com/embed/${url}?autoplay=0`;
-        }
-        return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=0` : null;
+    // Common YouTube URL patterns
+    const patterns = [
+      // youtu.be shortened links
+      /youtu\.be\/([a-zA-Z0-9_-]{11})(\?.*)?$/,
+      // Standard youtube.com/watch?v= links
+      /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})(\&.*)?$/,
+      // youtube.com/embed/ links
+      /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})(\?.*)?$/,
+      // youtube.com/v/ links
+      /youtube\.com\/v\/([a-zA-Z0-9_-]{11})(\?.*)?$/,
+    ];
+    
+    // Try each pattern
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1]; // Return the video ID
       }
-      case 'vimeo': {
-        const videoId = extractVimeoVideoId(url);
-        return videoId ? `https://player.vimeo.com/video/${videoId}?autoplay=0` : null;
-      }
-      case 'direct': {
-        // For direct video URLs (mp4, etc.), just return the URL itself
-        return url.match(/\.(mp4|webm|ogg)$/i) ? url : null;
-      }
-      default:
-        return null;
     }
+    
+    // If it looks like just a video ID (11 characters)
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+      return url;
+    }
+    
+    return null;
   };
 
-  // Get preview embed URL
+  // Get YouTube Embed URL
+  const getYouTubeEmbedUrl = (url: string | null): string | null => {
+    if (!url) return null;
+    const videoId = getYouTubeVideoId(url);
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
+    return null;
+  };
+
+  // Get preview embed URL based on video type
   const getPreviewEmbedUrl = (url: string | null): string | null => {
     if (!url) return null;
-    return getEmbedUrl(url, videoType);
+    
+    if (videoType === 'youtube') {
+      return getYouTubeEmbedUrl(url);
+    } else if (videoType === 'vimeo') {
+      // Extract Vimeo ID
+      const vimeoRegex = /(?:vimeo.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|)(\d+)(?:$|\/|\?))/;
+      const match = url.match(vimeoRegex);
+      return match ? `https://player.vimeo.com/video/${match[1]}` : null;
+    } else if (videoType === 'direct') {
+      // For direct video URLs (mp4, etc.), just return the URL itself
+      return url.match(/\.(mp4|webm|ogg)$/i) ? url : null;
+    }
+    
+    return null;
   };
 
   return (
