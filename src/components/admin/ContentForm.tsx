@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -8,7 +9,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   FileText, 
   Star, 
-  Layout
+  Layout,
+  Globe,
+  FileEdit
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -19,6 +22,8 @@ import {
 } from "@/components/ui/accordion";
 import { ContentType, ContentStatus, LayoutTemplate, ArticleData } from "@/types/content";
 import RichTextEditor from "@/components/editor/RichTextEditor";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 // Import refactored components
 import { ContentFormData } from "./content-form/types";
@@ -126,6 +131,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       if (!contentData) return null;
 
       console.log('Loaded content with layout template:', contentData.layout_template);
+      console.log('Content status:', contentData.status);
 
       // If this is a review, fetch additional review data
       if (contentData.type === 'review') {
@@ -171,6 +177,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
   // Update form data when content is loaded
   useEffect(() => {
     if (existingContent) {
+      console.log("Existing content loaded:", existingContent);
       const reviewDetails = existingContent.review_details?.[0];
       
       // Handle product_specs parsing correctly
@@ -603,6 +610,46 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             </div>
           </div>
 
+          {/* Add publish/draft status toggle */}
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="publish-status" className="text-sm font-medium">
+                Status:
+              </Label>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="publish-status"
+                  checked={formData.status === "published"}
+                  onCheckedChange={(checked) => 
+                    setFormData(prev => ({ 
+                      ...prev, 
+                      status: checked ? "published" : "draft" 
+                    }))
+                  }
+                />
+                <span className="text-sm">
+                  {formData.status === "published" ? (
+                    <div className="flex items-center text-green-600">
+                      <Globe className="h-4 w-4 mr-1" />
+                      Published
+                    </div>
+                  ) : (
+                    <div className="flex items-center text-gray-500">
+                      <FileEdit className="h-4 w-4 mr-1" />
+                      Draft
+                    </div>
+                  )}
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">
+              {formData.status === "published" 
+                ? "Content is visible to the public" 
+                : "Content is only visible to you"
+              }
+            </p>
+          </div>
+
           <Separator />
 
           <Accordion type="single" collapsible defaultValue="basic">
@@ -746,3 +793,4 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     </form>
   );
 };
+

@@ -33,7 +33,7 @@ export interface ArticleData {
   rating_criteria?: RatingCriterion[];
   layout_settings?: Record<string, any>;
   // Additional fields from database schema
-  status?: string;
+  status?: ContentStatus;
   created_at?: string;
   page_id?: string | null;
 }
