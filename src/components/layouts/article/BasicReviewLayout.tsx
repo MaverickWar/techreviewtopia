@@ -1,4 +1,3 @@
-
 import React from "react";
 import { ArticleData } from "@/types/content";
 import { formatDistanceToNow } from "date-fns";
@@ -176,20 +175,20 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
         </div>
       )}
       
-      {/* Updated rating display to show /5 instead of /10 */}
+      {/* Fix: Show the actual rating without dividing by 2 */}
       {reviewDetails?.overall_score !== undefined && (
         <div className={`${colorTheme === "default" ? "bg-gray-100" : ""} p-4 rounded-lg mb-8 overflow-hidden`}>
           <h2 className={`text-lg font-semibold mb-2 ${getHeadingStyleClasses()}`}>Overall Rating</h2>
           <div className="flex items-center">
             <div className="text-3xl font-bold text-blue-600 mr-2">
-              {(reviewDetails.overall_score / 2).toFixed(1)}
+              {(reviewDetails.overall_score).toFixed(1)}
             </div>
             <div className="text-gray-500">/ 5</div>
           </div>
         </div>
       )}
 
-      {/* Updated rating criteria to 5-point scale */}
+      {/* Fix: Show rating criteria without dividing by 2 */}
       {showRatingCriteria && article.rating_criteria && article.rating_criteria.length > 0 && (
         <div className="mb-8">
           <h2 className={`text-lg font-semibold mb-4 ${getHeadingStyleClasses()}`}>Rating Breakdown</h2>
@@ -203,7 +202,7 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
                 <CardContent className="p-4">
                   <div className="flex justify-between items-center">
                     <span className="font-medium truncate pr-2">{criterion.name}</span>
-                    <span className="text-lg font-bold flex-shrink-0">{(criterion.score / 2).toFixed(1)}</span>
+                    <span className="text-lg font-bold flex-shrink-0">{(criterion.score).toFixed(1)}</span>
                   </div>
                 </CardContent>
               </Card>
