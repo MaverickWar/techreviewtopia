@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Laptop, Smartphone, Gamepad, Brain, Award, Star, Calendar, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -33,33 +32,6 @@ interface Article extends BaseContent {
 }
 
 type ContentItem = Review | Article;
-
-const categories = [
-  {
-    id: 1,
-    name: "Smartphones",
-    icon: Smartphone,
-    path: "/smartphones"
-  },
-  {
-    id: 2,
-    name: "Laptops",
-    icon: Laptop,
-    path: "/laptops"
-  },
-  {
-    id: 3,
-    name: "Gaming",
-    icon: Gamepad,
-    path: "/gaming"
-  },
-  {
-    id: 4,
-    name: "AI & Software",
-    icon: Brain,
-    path: "/ai"
-  }
-];
 
 const ContentPreview = ({ item }: { item: ContentItem }) => {
   return (
@@ -532,32 +504,7 @@ const Index = () => {
       {/* Featured Content Section with Tabs */}
       <FeaturedContentTabs />
 
-      {/* Categories with improved card design */}
-      <section className="py-16 bg-gray-50">
-        <div className="content-container">
-          <h2 className="text-3xl font-bold mb-12 text-center">Browse by Category</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {categories.map((category, index) => (
-              <Card 
-                key={category.id} 
-                className="border-none hover:shadow-xl transition-all duration-300 animate-fade-in hover:translate-y-[-5px] group"
-                style={{
-                  animationDelay: `${index * 0.1}s`
-                }}
-              >
-                <Link to={category.path} className="block p-8">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-600 transition-colors">
-                      <category.icon size={32} className="text-blue-600 group-hover:text-white transition-colors" />
-                    </div>
-                    <h3 className="text-xl font-semibold group-hover:text-blue-600 transition-colors">{category.name}</h3>
-                  </div>
-                </Link>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Categories section removed as requested */}
       
       {/* Top-Rated Products Section */}
       <section className="py-16 bg-white">

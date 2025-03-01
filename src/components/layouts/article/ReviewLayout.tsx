@@ -1,4 +1,3 @@
-
 import React, { useMemo } from "react";
 import { ArticleData } from "@/types/content";
 import { AwardBanner } from "./AwardBanner";
@@ -64,6 +63,24 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
         <span className="ml-2 text-lg font-bold">{score.toFixed(1)}/10</span>
       </div>
     );
+  };
+
+  // Helper function to extract YouTube video ID
+  const getYoutubeEmbedUrl = (url: string) => {
+    if (!url) return null;
+    
+    let videoId = '';
+    
+    if (url.includes('watch?v=')) {
+      videoId = url.split('watch?v=')[1].split('&')[0];
+    } else if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1].split('?')[0];
+    } else {
+      // Assume it's already a video ID
+      videoId = url;
+    }
+    
+    return `https://www.youtube.com/embed/${videoId}`;
   };
 
   return (
@@ -180,10 +197,11 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
               <h3 className="text-lg font-bold mb-4">Video Review</h3>
               <div className="aspect-video">
                 <iframe
-                  src={reviewDetails.youtube_url.replace('watch?v=', 'embed/')}
+                  src={getYoutubeEmbedUrl(reviewDetails.youtube_url)}
                   className="w-full h-full"
                   allowFullScreen
                   title="YouTube video player"
+                  frameBorder="0"
                 ></iframe>
               </div>
             </div>

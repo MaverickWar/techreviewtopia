@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
-import { Upload, X, Image as ImageIcon, Plus } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Plus, Youtube } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface MediaSectionProps {
@@ -23,7 +23,7 @@ export const MediaSection = ({
   onFeaturedImageChange,
   onGalleryChange,
   onYoutubeUrlChange,
-  showYoutubeInput = false
+  showYoutubeInput = true
 }: MediaSectionProps) => {
   const [imageUploading, setImageUploading] = useState(false);
   const { toast } = useToast();
@@ -120,11 +120,31 @@ export const MediaSection = ({
       {showYoutubeInput && (
         <div>
           <label className="block text-sm font-medium mb-2">YouTube Video URL</label>
-          <Input
-            placeholder="https://www.youtube.com/watch?v=..."
-            value={youtubeUrl || ''}
-            onChange={(e) => onYoutubeUrlChange(e.target.value || null)}
-          />
+          <div className="space-y-2">
+            <Input
+              placeholder="https://www.youtube.com/watch?v=..."
+              value={youtubeUrl || ''}
+              onChange={(e) => onYoutubeUrlChange(e.target.value || null)}
+            />
+            {youtubeUrl && (
+              <div className="border border-gray-200 rounded-md p-4">
+                <div className="aspect-video w-full">
+                  <iframe
+                    width="100%"
+                    height="100%"
+                    src={`https://www.youtube.com/embed/${youtubeUrl.includes('watch?v=') 
+                      ? youtubeUrl.split('watch?v=')[1].split('&')[0] 
+                      : youtubeUrl.includes('youtu.be/') 
+                        ? youtubeUrl.split('youtu.be/')[1].split('?')[0]
+                        : youtubeUrl}`}
+                    allowFullScreen
+                    title="YouTube video player"
+                    className="rounded"
+                  ></iframe>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

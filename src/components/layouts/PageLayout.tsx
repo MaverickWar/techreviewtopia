@@ -22,7 +22,7 @@ export const PageLayout = ({ children }: PageLayoutProps) => {
     <div className="min-h-screen bg-gray-50">
       <TopNav />
       <MainNav />
-      <main>
+      <main className="pb-12">
         {children}
       </main>
       <Footer />
