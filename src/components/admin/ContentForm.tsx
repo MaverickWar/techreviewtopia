@@ -1,21 +1,14 @@
-<lov-code>
+
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   FileText, 
   Star, 
-  Image as ImageIcon,
-  Youtube,
-  Plus,
-  Minus,
-  Upload,
-  X,
   Layout
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
@@ -25,53 +18,16 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { LayoutSelector } from "./LayoutSelector";
-import { LayoutPreview } from "./LayoutPreview";
 import { ContentType, ContentStatus, LayoutTemplate, ArticleData } from "@/types/content";
 import RichTextEditor from "@/components/editor/RichTextEditor";
 
-// Import the LayoutSettings component
-import LayoutSettings from "./LayoutSettings";
-
-type RatingCriterion = {
-  name: string;
-  score: number;
-  review_id?: string;
-};
-
-interface ProductSpec {
-  label: string;
-  value: string;
-}
-
-interface ReviewDetails {
-  id?: string;
-  content_id?: string;
-  youtube_url: string | null;
-  gallery: string[];
-  product_specs: ProductSpec[];
-  overall_score: number;
-}
-
-interface ContentFormData {
-  id?: string;
-  title: string;
-  description: string | null;
-  content: string | null;
-  type: ContentType;
-  status: ContentStatus;
-  author_id: string | null;
-  page_id: string | null;
-  featured_image?: string | null;
-  youtube_url?: string | null;
-  gallery?: string[];
-  product_specs?: ProductSpec[];
-  rating_criteria?: RatingCriterion[];
-  overall_score?: number;
-  review_details?: ReviewDetails;
-  layout_template?: LayoutTemplate;
-  layout_settings?: Record<string, any>;
-}
+// Import refactored components
+import { ContentFormData } from "./content-form/types";
+import { RatingCriteriaSection } from "./content-form/RatingCriteriaSection";
+import { ProductSpecsSection } from "./content-form/ProductSpecsSection";
+import { MediaSection } from "./content-form/MediaSection";
+import { CategorySection } from "./content-form/CategorySection";
+import { LayoutSectionWrapper } from "./content-form/LayoutSectionWrapper";
 
 interface ContentFormProps {
   initialData?: ContentFormData;
@@ -97,7 +53,6 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       layout_settings: {}
     }
   );
-  const [imageUploading, setImageUploading] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -220,7 +175,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       const reviewDetails = existingContent.review_details?.[0];
       
       // Handle product_specs parsing correctly
-      let productSpecs: ProductSpec[] = [];
+      let productSpecs = [];
       if (reviewDetails?.product_specs) {
         try {
           // Check if product_specs is already an object or needs parsing
@@ -237,7 +192,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
       const gallery = Array.isArray(reviewDetails?.gallery) ? reviewDetails.gallery : [];
 
       // Ensure layout_settings is always an object
-      let layoutSettings: Record<string, any> = {};
+      let layoutSettings = {};
       if (existingContent.layout_settings) {
         try {
           // If it's a string, try to parse it, otherwise use it if it's already an object
@@ -296,40 +251,6 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     }
   }, [existingContent]);
 
-  // Get categories query
-  const { data: categories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: async () => {
-      console.log('Fetching categories');
-      const { data, error } = await supabase
-        .from('menu_categories')
-        .select('id, name')
-        .order('order_index');
-      
-      if (error) throw error;
-      console.log('Categories:', data);
-      return data;
-    },
-  });
-
-  // Subcategories query
-  const { data: subcategories, isLoading: isLoadingSubcategories } = useQuery({
-    queryKey: ['subcategories', selectedCategory],
-    enabled: !!selectedCategory,
-    queryFn: async () => {
-      console.log('Fetching subcategories for category:', selectedCategory);
-      const { data, error } = await supabase
-        .from('menu_items')
-        .select('id, name')
-        .eq('category_id', selectedCategory)
-        .order('order_index');
-      
-      if (error) throw error;
-      console.log('Subcategories loaded:', data);
-      return data;
-    },
-  });
-
   // Fetch author profile data if we have an author_id
   const { data: authorProfile } = useQuery({
     queryKey: ['author-profile', formData.author_id],
@@ -353,105 +274,6 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     },
   });
 
-  // Image upload handler
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'featured' | 'gallery') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setImageUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${crypto.randomUUID()}.${fileExt}`;
-      const { error: uploadError, data } = await supabase.storage
-        .from('images')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('images')
-        .getPublicUrl(filePath);
-
-      if (type === 'featured') {
-        setFormData(prev => ({ ...prev, featured_image: publicUrl }));
-      } else {
-        setFormData(prev => ({
-          ...prev,
-          gallery: [...(prev.gallery || []), publicUrl]
-        }));
-      }
-
-      toast({
-        title: "Success",
-        description: "Image uploaded successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to upload image",
-        variant: "destructive",
-      });
-    } finally {
-      setImageUploading(false);
-    }
-  };
-
-  // Image removal handler
-  const handleRemoveImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      gallery: prev.gallery?.filter((_, i) => i !== index) || []
-    }));
-  };
-
-  // Product spec handlers
-  const addProductSpec = () => {
-    setFormData(prev => ({
-      ...prev,
-      product_specs: [...(prev.product_specs || []), { label: '', value: '' }]
-    }));
-  };
-
-  const updateProductSpec = (index: number, field: 'label' | 'value', value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      product_specs: prev.product_specs?.map((spec, i) =>
-        i === index ? { ...spec, [field]: value } : spec
-      ) || []
-    }));
-  };
-
-  const removeProductSpec = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      product_specs: prev.product_specs?.filter((_, i) => i !== index) || []
-    }));
-  };
-
-  // Rating criterion handlers
-  const addRatingCriterion = () => {
-    setFormData(prev => ({
-      ...prev,
-      rating_criteria: [...(prev.rating_criteria || []), { name: '', score: 0 }]
-    }));
-  };
-
-  const updateRatingCriterion = (index: number, field: 'name' | 'score', value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      rating_criteria: prev.rating_criteria?.map((criterion, i) =>
-        i === index ? { ...criterion, [field]: value } : criterion
-      ) || []
-    }));
-  };
-
-  const removeRatingCriterion = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      rating_criteria: prev.rating_criteria?.filter((_, i) => i !== index) || []
-    }));
-  };
-
   // Handle layout template change
   const handleLayoutChange = (layoutTemplate: string) => {
     console.log("Layout template changed to:", layoutTemplate);
@@ -470,7 +292,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     }));
   };
 
-  // Fix: Add the missing handleSaveLayoutSettings function
+  // Handle layout settings save
   const handleSaveLayoutSettings = (settings: Record<string, any>) => {
     console.log("Layout settings saved:", settings);
     setFormData(prev => ({
@@ -784,7 +606,6 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
 
           <Separator />
 
-          
           <Accordion type="single" collapsible defaultValue="basic">
             <AccordionItem value="basic">
               <AccordionTrigger>Basic Information</AccordionTrigger>
@@ -792,7 +613,8 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">Title</label>
-                    <Input
+                    <input
+                      className="w-full rounded-md border border-input bg-background px-3 py-2"
                       value={formData.title}
                       onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                       required
@@ -831,173 +653,97 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
                 </div>
               </AccordionTrigger>
               <AccordionContent>
-                <div className="space-y-6">
-                  <div className="mb-4">
-                    <p className="text-sm text-gray-500 mb-4">
-                      Choose a layout template to determine how your content will be displayed to readers.
-                      Each layout is optimized for different types of content.
-                    </p>
-                  
-                    <LayoutSelector
-                      contentType={formData.type}
-                      selectedLayout={formData.layout_template || "classic"}
-                      onChange={handleLayoutChange}
-                    />
-                  </div>
-                  
-                  {/* Fixed LayoutSettings Component - Pass all required props */}
-                  <LayoutSettings
-                    article={previewArticle as ArticleData}
-                    onSave={handleSaveLayoutSettings}
-                    layoutTemplate={formData.layout_template || "classic"}
-                    contentType={formData.type}
-                    layoutSettings={formData.layout_settings || {}}
-                    onChange={handleLayoutSettingsChange}
-                  />
-                  
-                  <div>
-                    <h3 className="text-lg font-medium mb-3">Preview</h3>
-                    <div className="border rounded-lg overflow-hidden">
-                      <LayoutPreview
-                        article={previewArticle as ArticleData}
-                        selectedLayout={formData.layout_template || "classic"}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 italic mt-2">
-                      This is a preview of how your content will appear with the selected layout. The actual rendering may vary slightly.
-                    </p>
-                  </div>
-                </div>
+                <LayoutSectionWrapper
+                  contentType={formData.type}
+                  layoutTemplate={formData.layout_template || "classic"}
+                  layoutSettings={formData.layout_settings || {}}
+                  previewArticle={previewArticle as ArticleData}
+                  onLayoutChange={handleLayoutChange}
+                  onLayoutSettingsChange={handleLayoutSettingsChange}
+                  onLayoutSettingsSave={handleSaveLayoutSettings}
+                />
               </AccordionContent>
             </AccordionItem>
             
             <AccordionItem value="categories">
               <AccordionTrigger>Categories</AccordionTrigger>
               <AccordionContent>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Category</label>
-                    <select
-                      className="w-full rounded-md border border-input bg-background px-3 py-2"
-                      value={selectedCategory || ''}
-                      onChange={(e) => {
-                        const newCategoryId = e.target.value || null;
-                        console.log('Selected category changed to:', newCategoryId);
-                        setSelectedCategory(newCategoryId);
-                        setFormData(prev => ({ ...prev, page_id: null }));
-                      }}
-                    >
-                      <option value="">Select a category</option>
-                      {categories?.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {selectedCategory && (
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Subcategory
-                        {isLoadingSubcategories && (
-                          <span className="ml-2 text-xs text-gray-500">Loading...</span>
-                        )}
-                      </label>
-                      <select
-                        className="w-full rounded-md border border-input bg-background px-3 py-2"
-                        value={formData.page_id || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, page_id: e.target.value || null }))}
-                        disabled={isLoadingSubcategories}
-                      >
-                        <option value="">Select a subcategory</option>
-                        {subcategories && subcategories.length > 0 ? (
-                          subcategories.map((subcategory) => (
-                            <option key={subcategory.id} value={subcategory.id}>
-                              {subcategory.name}
-                            </option>
-                          ))
-                        ) : (
-                          <option value="" disabled>
-                            {isLoadingSubcategories ? "Loading subcategories..." : "No subcategories found"}
-                          </option>
-                        )}
-                      </select>
-                      {!isLoadingSubcategories && subcategories && subcategories.length === 0 && (
-                        <p className="text-sm text-amber-600 mt-1">
-                          No subcategories found for this category. Please add subcategories in the menu management section.
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <CategorySection
+                  selectedCategory={selectedCategory}
+                  pageId={formData.page_id}
+                  onCategoryChange={setSelectedCategory}
+                  onPageIdChange={(pageId) => setFormData(prev => ({ ...prev, page_id: pageId }))}
+                />
               </AccordionContent>
             </AccordionItem>
-
             
             <AccordionItem value="media">
               <AccordionTrigger>Media</AccordionTrigger>
               <AccordionContent>
-                <div className="space-y-4">
-                  {/* Featured Image */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Featured Image</label>
-                    <div className="flex items-center gap-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('featured-image')?.click()}
-                        disabled={imageUploading}
-                      >
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload Image
-                      </Button>
-                      <input
-                        id="featured-image"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handleImageUpload(e, 'featured')}
-                      />
-                      {formData.featured_image && (
-                        <div className="relative">
-                          <img
-                            src={formData.featured_image}
-                            alt="Featured"
-                            className="h-20 w-20 object-cover rounded"
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                            onClick={() => setFormData(prev => ({ ...prev, featured_image: null }))}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                <MediaSection
+                  featuredImage={formData.featured_image}
+                  gallery={formData.gallery}
+                  youtubeUrl={formData.youtube_url}
+                  showYoutubeInput={formData.type === 'review'}
+                  onFeaturedImageChange={(url) => setFormData(prev => ({ ...prev, featured_image: url }))}
+                  onGalleryChange={(gallery) => setFormData(prev => ({ ...prev, gallery }))}
+                  onYoutubeUrlChange={(url) => setFormData(prev => ({ ...prev, youtube_url: url }))}
+                />
+              </AccordionContent>
+            </AccordionItem>
 
-                  {/* Gallery */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Gallery</label>
-                    <div className="space-y-4">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('gallery-image')?.click()}
-                        disabled={imageUploading}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add to Gallery
-                      </Button>
-                      <input
-                        id="gallery-image"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => handleImageUpload(e, 'gallery')}
-                      />
-                      <div
+            {formData.type === 'review' && (
+              <>
+                <AccordionItem value="rating">
+                  <AccordionTrigger>Rating</AccordionTrigger>
+                  <AccordionContent>
+                    <RatingCriteriaSection
+                      criteria={formData.rating_criteria || []}
+                      onChange={(criteria) => setFormData(prev => ({ ...prev, rating_criteria: criteria }))}
+                      calculatedOverallScore={calculatedOverallScore}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="specs">
+                  <AccordionTrigger>Product Specifications</AccordionTrigger>
+                  <AccordionContent>
+                    <ProductSpecsSection
+                      specs={formData.product_specs || []}
+                      onChange={(specs) => setFormData(prev => ({ ...prev, product_specs: specs }))}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+              </>
+            )}
+          </Accordion>
+        </CardContent>
+
+        <CardFooter className="flex justify-between">
+          <Button 
+            type="button" 
+            variant="outline"
+            onClick={() => navigate('/admin/content')}
+          >
+            Cancel
+          </Button>
+          <div className="flex gap-2">
+            <Button 
+              type="submit" 
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-foreground"></div>
+                  Saving...
+                </>
+              ) : (
+                'Save'
+              )}
+            </Button>
+          </div>
+        </CardFooter>
+      </Card>
+    </form>
+  );
+};
