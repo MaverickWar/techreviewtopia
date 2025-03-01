@@ -14,7 +14,7 @@ interface ContentPreviewCardProps {
   featuredImage: string | null;
   publishedAt: string | null;
   overallScore?: number | null;
-  award?: string | null; // Added award prop
+  award?: string | null; 
 }
 
 export const ContentPreviewCard = ({
@@ -26,7 +26,7 @@ export const ContentPreviewCard = ({
   featuredImage,
   publishedAt,
   overallScore,
-  award, // Added award prop
+  award,
 }: ContentPreviewCardProps) => {
   return (
     <Link to={`/${categorySlug}/content/${slug}`} className="block group">
@@ -38,14 +38,29 @@ export const ContentPreviewCard = ({
               alt={title}
               className="w-full h-full object-cover transform transition-transform duration-300 group-hover:scale-105"
             />
-            {award && (
-              <div className="absolute top-0 right-0 m-2">
-                <Badge variant="default" className="bg-gradient-to-r from-amber-500 to-orange-500 text-white flex items-center gap-1 px-3 py-1.5 shadow-md animate-fade-in">
+            <div className="absolute top-2 right-2 flex flex-col gap-2 items-end">
+              {award && (
+                <Badge variant="award" className="flex items-center gap-1 px-3 py-1.5 shadow-md animate-fade-in">
                   <Award className="h-3.5 w-3.5" />
                   <span>{award}</span>
                 </Badge>
-              </div>
-            )}
+              )}
+            </div>
+            <div className="absolute top-2 left-2 flex flex-wrap gap-2 max-w-[70%]">
+              <Badge variant="default" className={`${
+                type === "review" 
+                  ? "bg-purple-600" 
+                  : "bg-blue-600"
+              } text-white flex items-center gap-1 px-3 py-1.5 shadow-md`}>
+                {type === "review" ? "Review" : "Article"}
+              </Badge>
+              {type === "review" && overallScore !== null && (
+                <Badge variant="default" className="bg-orange-500 text-white flex items-center gap-1 px-3 py-1.5 shadow-md">
+                  <Star className="h-3.5 w-3.5 fill-current" />
+                  {overallScore.toFixed(1)}
+                </Badge>
+              )}
+            </div>
           </div>
         ) : (
           <div className="aspect-[16/9] bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center relative">
@@ -54,31 +69,33 @@ export const ContentPreviewCard = ({
             ) : (
               <Star className="h-12 w-12 text-gray-400" />
             )}
-            {award && (
-              <div className="absolute top-0 right-0 m-2">
-                <Badge variant="default" className="bg-gradient-to-r from-amber-500 to-orange-500 text-white flex items-center gap-1 px-3 py-1.5 shadow-md animate-fade-in">
+            <div className="absolute top-2 right-2 flex flex-col gap-2 items-end">
+              {award && (
+                <Badge variant="award" className="flex items-center gap-1 px-3 py-1.5 shadow-md animate-fade-in">
                   <Award className="h-3.5 w-3.5" />
                   <span>{award}</span>
                 </Badge>
-              </div>
-            )}
+              )}
+            </div>
+            <div className="absolute top-2 left-2 flex flex-wrap gap-2 max-w-[70%]">
+              <Badge variant="default" className={`${
+                type === "review" 
+                  ? "bg-purple-600" 
+                  : "bg-blue-600"
+              } text-white flex items-center gap-1 px-3 py-1.5 shadow-md`}>
+                {type === "review" ? "Review" : "Article"}
+              </Badge>
+              {type === "review" && overallScore !== null && (
+                <Badge variant="default" className="bg-orange-500 text-white flex items-center gap-1 px-3 py-1.5 shadow-md">
+                  <Star className="h-3.5 w-3.5 fill-current" />
+                  {overallScore.toFixed(1)}
+                </Badge>
+              )}
+            </div>
           </div>
         )}
         <CardContent className="p-6">
           <div className="flex items-center gap-2 mb-3 flex-wrap">
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              type === "review" 
-                ? "bg-purple-100 text-purple-700" 
-                : "bg-blue-100 text-blue-700"
-            }`}>
-              {type === "review" ? "Review" : "Article"}
-            </span>
-            {type === "review" && overallScore !== null && (
-              <span className="flex items-center gap-1 text-sm text-amber-500 font-medium">
-                <Star className="h-4 w-4 fill-current" />
-                {overallScore.toFixed(1)}
-              </span>
-            )}
             {publishedAt && (
               <span className="flex items-center gap-1 text-sm text-gray-500">
                 <Calendar className="h-4 w-4" />
