@@ -1,5 +1,5 @@
 
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { ArticleData } from "@/types/content";
 import { AwardBanner } from "./AwardBanner";
 import { formatDistanceToNow } from "date-fns";
@@ -15,6 +15,9 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
   // Get review details if available
   const reviewDetails = article.review_details?.[0];
   const ratingCriteria = article.rating_criteria || [];
+  
+  // State to track if video loaded successfully
+  const [videoLoaded, setVideoLoaded] = useState(false);
   
   // Extract award from layout settings
   // Check for both awardLevel (new) and award (legacy)
@@ -117,6 +120,27 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
     getYouTubeEmbedUrl(reviewDetails.youtube_url) : null;
   
   console.log("Final YouTube embed URL:", youtubeEmbedUrl);
+
+  // Add effect to log when component mounts and if video is present
+  useEffect(() => {
+    console.log("ReviewLayout mounted, YouTube URL:", reviewDetails?.youtube_url);
+    console.log("YouTube embed URL:", youtubeEmbedUrl);
+    
+    // Reset video loaded state when URL changes
+    setVideoLoaded(false);
+  }, [reviewDetails?.youtube_url, youtubeEmbedUrl]);
+
+  // Video load handler
+  const handleVideoLoad = () => {
+    console.log("Video iframe loaded successfully");
+    setVideoLoaded(true);
+  };
+
+  // Video error handler
+  const handleVideoError = () => {
+    console.error("Error loading video iframe");
+    setVideoLoaded(false);
+  };
 
   return (
     <article className="max-w-5xl mx-auto px-4 py-8">
@@ -226,22 +250,40 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
             </div>
           )}
           
-          {/* Video section - simplified and more reliable embedding */}
+          {/* Video section - enhanced and more reliable embedding */}
           {youtubeEmbedUrl && (
             <div className="rounded-lg overflow-hidden space-y-2">
               <h3 className="text-lg font-bold mb-4 flex items-center">
                 <Video className="h-5 w-5 mr-2 text-gray-700" />
                 Video Review
               </h3>
-              <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+              <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden relative">
                 <iframe
+                  key={youtubeEmbedUrl} // Add key to force re-render when URL changes
                   src={youtubeEmbedUrl}
                   className="w-full h-full"
                   title="Video Review"
                   frameBorder="0"
                   allowFullScreen
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  onLoad={handleVideoLoad}
+                  onError={handleVideoError}
                 ></iframe>
+                
+                {/* Fallback for when iframe doesn't work */}
+                {!videoLoaded && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 text-blue-600">
+                    <p className="mb-2">Video unavailable in preview</p>
+                    <a 
+                      href={`https://www.youtube.com/watch?v=${youtubeEmbedUrl?.split('/').pop() || ''}`}
+                      className="text-blue-600 hover:underline flex items-center"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Video className="mr-1 h-4 w-4" /> Watch on YouTube
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           )}
