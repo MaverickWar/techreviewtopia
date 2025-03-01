@@ -3,7 +3,7 @@ import React, { useMemo, useEffect, useState } from "react";
 import { ArticleData } from "@/types/content";
 import { AwardBanner } from "./AwardBanner";
 import { formatDistanceToNow } from "date-fns";
-import { Star, StarHalf, User, Clock, Bookmark, Video } from "lucide-react";
+import { Star, StarHalf, User, Clock, Bookmark, Video, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -70,11 +70,17 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
     );
   };
 
-  // Extract YouTube video ID - simplified and more robust version
+  // IMPROVED YouTube URL parsing function - handles more formats and edge cases
   const getYouTubeEmbedUrl = (url: string | null): string | null => {
     if (!url) return null;
     
     console.log("Processing YouTube URL:", url);
+    
+    // Try direct ID match first (11 characters)
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+      console.log("URL is already a valid YouTube ID:", url);
+      return `https://www.youtube.com/embed/${url}`;
+    }
     
     // Common YouTube URL patterns
     const patterns = [
@@ -82,6 +88,7 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
       /youtu\.be\/([a-zA-Z0-9_-]{11})(\?.*)?$/,
       // Standard youtube.com/watch?v= links
       /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})(\&.*)?$/,
+      /youtube\.com\/watch\?.*v=([a-zA-Z0-9_-]{11})(\&.*)?$/,
       // youtube.com/embed/ links
       /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})(\?.*)?$/,
       // youtube.com/v/ links
@@ -96,12 +103,6 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
         console.log("Extracted YouTube video ID:", videoId);
         return `https://www.youtube.com/embed/${videoId}`;
       }
-    }
-    
-    // If it looks like just a video ID (11 characters)
-    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
-      console.log("URL appears to be just a YouTube ID:", url);
-      return `https://www.youtube.com/embed/${url}`;
     }
     
     // One last attempt - try to extract any 11-character ID that might be in the URL
@@ -120,6 +121,16 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
     getYouTubeEmbedUrl(reviewDetails.youtube_url) : null;
   
   console.log("Final YouTube embed URL:", youtubeEmbedUrl);
+
+  // Get direct YouTube watch URL for fallbacks
+  const getDirectYouTubeUrl = (embedUrl: string | null): string | null => {
+    if (!embedUrl) return null;
+    const videoId = embedUrl.split('/').pop();
+    if (!videoId) return null;
+    return `https://www.youtube.com/watch?v=${videoId}`;
+  };
+
+  const directYouTubeUrl = getDirectYouTubeUrl(youtubeEmbedUrl);
 
   // Add effect to log when component mounts and if video is present
   useEffect(() => {
@@ -250,41 +261,64 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
             </div>
           )}
           
-          {/* Video section - enhanced and more reliable embedding */}
+          {/* Video section - enhanced with improved reliability and better fallback */}
           {youtubeEmbedUrl && (
             <div className="rounded-lg overflow-hidden space-y-2">
               <h3 className="text-lg font-bold mb-4 flex items-center">
                 <Video className="h-5 w-5 mr-2 text-gray-700" />
                 Video Review
               </h3>
+              
+              {/* Video container with aspect ratio */}
               <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden relative">
+                {/* Primary YouTube embed iframe */}
                 <iframe
-                  key={youtubeEmbedUrl} // Add key to force re-render when URL changes
+                  key={youtubeEmbedUrl}
                   src={youtubeEmbedUrl}
-                  className="w-full h-full"
+                  className="w-full h-full absolute inset-0 z-10"
                   title="Video Review"
                   frameBorder="0"
                   allowFullScreen
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   onLoad={handleVideoLoad}
                   onError={handleVideoError}
+                  loading="lazy"
                 ></iframe>
                 
-                {/* Fallback for when iframe doesn't work */}
+                {/* Fallback for when iframe doesn't load or has errors */}
                 {!videoLoaded && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 text-blue-600">
-                    <p className="mb-2">Video unavailable in preview</p>
-                    <a 
-                      href={`https://www.youtube.com/watch?v=${youtubeEmbedUrl?.split('/').pop() || ''}`}
-                      className="text-blue-600 hover:underline flex items-center"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Video className="mr-1 h-4 w-4" /> Watch on YouTube
-                    </a>
+                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-gray-100 text-center p-4">
+                    <p className="text-gray-800 mb-3">Video unavailable in preview</p>
+                    {directYouTubeUrl && (
+                      <a 
+                        href={directYouTubeUrl}
+                        className="bg-red-600 text-white px-4 py-2 rounded flex items-center hover:bg-red-700 transition-colors"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Video className="mr-2 h-4 w-4" /> Watch on YouTube
+                      </a>
+                    )}
+                    <p className="text-xs text-gray-500 mt-3">
+                      YouTube embedding restrictions may be preventing playback
+                    </p>
                   </div>
                 )}
               </div>
+              
+              {/* Direct link below video for convenience */}
+              {directYouTubeUrl && (
+                <div className="mt-2 flex justify-end">
+                  <a 
+                    href={directYouTubeUrl}
+                    className="text-sm text-blue-600 hover:underline flex items-center"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" /> Open in YouTube
+                  </a>
+                </div>
+              )}
             </div>
           )}
           
