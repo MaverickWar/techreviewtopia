@@ -24,6 +24,7 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
   
   console.log("ReviewLayout - award level:", awardLevel);
   console.log("ReviewLayout - show awards:", showAwards);
+  console.log("ReviewLayout - YouTube URL:", reviewDetails?.youtube_url);
 
   // Calculate the overall score based on individual criteria
   const calculatedOverallScore = useMemo(() => {
@@ -66,48 +67,55 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
     );
   };
 
-  // Helper function to extract YouTube video ID
-  const extractYoutubeVideoId = (url: string): string | null => {
-    if (!url) return null;
-    
-    const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-    const match = url.match(youtubeRegex);
-    return match ? match[1] : null;
-  };
-
-  // Helper function to extract Vimeo video ID
-  const extractVimeoVideoId = (url: string): string | null => {
-    if (!url) return null;
-    
-    const vimeoRegex = /(?:vimeo.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|)(\d+)(?:$|\/|\?))/;
-    const match = url.match(vimeoRegex);
-    return match ? match[1] : null;
-  };
-
-  // Helper function to generate embed URL based on video URL
-  const getEmbedUrl = (url: string): string | null => {
-    if (!url) return null;
+  // Helper function to determine video type and extract video ID
+  const processVideoUrl = (url: string | null): { embedUrl: string | null, type: 'youtube' | 'vimeo' | 'direct' | null } => {
+    if (!url) return { embedUrl: null, type: null };
     
     // Check if it's a YouTube URL
-    const youtubeId = extractYoutubeVideoId(url);
-    if (youtubeId) {
-      return `https://www.youtube.com/embed/${youtubeId}`;
+    const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const youtubeMatch = url.match(youtubeRegex);
+    
+    if (youtubeMatch) {
+      return { 
+        embedUrl: `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=0`, 
+        type: 'youtube' 
+      };
     }
     
     // Check if it's a Vimeo URL
-    const vimeoId = extractVimeoVideoId(url);
-    if (vimeoId) {
-      return `https://player.vimeo.com/video/${vimeoId}`;
+    const vimeoRegex = /(?:vimeo.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|)(\d+)(?:$|\/|\?))/;
+    const vimeoMatch = url.match(vimeoRegex);
+    
+    if (vimeoMatch) {
+      return { 
+        embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=0`, 
+        type: 'vimeo' 
+      };
     }
     
     // Check if it's a direct video URL
     if (url.match(/\.(mp4|webm|ogg)$/i)) {
-      return url;
+      return { embedUrl: url, type: 'direct' };
     }
     
-    // Default to treating as YouTube video ID if no match is found
-    return `https://www.youtube.com/embed/${url}`;
+    // Default to treating as YouTube video ID if no format is detected
+    if (url.trim().length > 0) {
+      if (url.length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(url)) {
+        return { 
+          embedUrl: `https://www.youtube.com/embed/${url}?autoplay=0`, 
+          type: 'youtube' 
+        };
+      }
+    }
+    
+    // If no valid format is detected
+    console.warn("Invalid video URL format:", url);
+    return { embedUrl: null, type: null };
   };
+
+  // Process the video URL if available
+  const { embedUrl, type } = processVideoUrl(reviewDetails?.youtube_url || null);
+  console.log("Video processing result:", { embedUrl, type });
 
   return (
     <article className="max-w-5xl mx-auto px-4 py-8">
@@ -218,27 +226,30 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
           )}
           
           {/* Video section - with improved embed handling */}
-          {reviewDetails?.youtube_url && (
+          {embedUrl && (
             <div className="rounded-lg overflow-hidden space-y-2">
               <h3 className="text-lg font-bold mb-4 flex items-center">
                 <Video className="h-5 w-5 mr-2 text-gray-700" />
                 Video Review
               </h3>
               <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
-                {reviewDetails.youtube_url.match(/\.(mp4|webm|ogg)$/i) ? (
+                {type === 'direct' ? (
                   <video 
-                    src={reviewDetails.youtube_url}
+                    src={embedUrl}
                     className="w-full h-full"
                     controls
+                    controlsList="nodownload"
                     title="Video player"
                   ></video>
                 ) : (
                   <iframe
-                    src={getEmbedUrl(reviewDetails.youtube_url)}
+                    src={embedUrl}
                     className="w-full h-full"
                     allowFullScreen
                     title="Video player"
                     frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    loading="lazy"
                   ></iframe>
                 )}
               </div>

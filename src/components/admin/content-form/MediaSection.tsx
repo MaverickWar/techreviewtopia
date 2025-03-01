@@ -103,11 +103,15 @@ export const MediaSection = ({
     switch (type) {
       case 'youtube': {
         const videoId = extractYoutubeVideoId(url);
-        return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+        // If the input is already a valid YouTube ID (11 chars, alphanumeric + underscore/dash)
+        if (!videoId && url.length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(url)) {
+          return `https://www.youtube.com/embed/${url}?autoplay=0`;
+        }
+        return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=0` : null;
       }
       case 'vimeo': {
         const videoId = extractVimeoVideoId(url);
-        return videoId ? `https://player.vimeo.com/video/${videoId}` : null;
+        return videoId ? `https://player.vimeo.com/video/${videoId}?autoplay=0` : null;
       }
       case 'direct': {
         // For direct video URLs (mp4, etc.), just return the URL itself
@@ -209,13 +213,13 @@ export const MediaSection = ({
 
             <div>
               <Label htmlFor="video-url">
-                {videoType === 'youtube' ? 'YouTube Video URL' :
+                {videoType === 'youtube' ? 'YouTube Video URL or ID' :
                  videoType === 'vimeo' ? 'Vimeo Video URL' : 'Direct Video URL'}
               </Label>
               <Input
                 id="video-url"
                 placeholder={
-                  videoType === 'youtube' ? 'https://www.youtube.com/watch?v=...' :
+                  videoType === 'youtube' ? 'https://www.youtube.com/watch?v=... or dQw4w9WgXcQ' :
                   videoType === 'vimeo' ? 'https://vimeo.com/...' :
                   'https://example.com/video.mp4'
                 }
@@ -223,7 +227,7 @@ export const MediaSection = ({
                 onChange={(e) => onYoutubeUrlChange(e.target.value || null)}
               />
               <p className="text-sm text-gray-500 mt-1">
-                {videoType === 'youtube' ? 'Paste a YouTube URL (watch or share link)' : 
+                {videoType === 'youtube' ? 'Paste a YouTube URL (watch or share link) or just the video ID' : 
                  videoType === 'vimeo' ? 'Paste a Vimeo URL' : 
                  'Paste a direct link to a video file (.mp4, .webm, .ogg)'}
               </p>
@@ -247,6 +251,7 @@ export const MediaSection = ({
                       allowFullScreen
                       title="Video preview"
                       className="rounded"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     ></iframe>
                   )}
                 </div>
