@@ -1,5 +1,5 @@
-
-import { useState, useEffect } from "react";
+<lov-code>
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -103,6 +103,27 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Calculate the overall score based on rating criteria
+  const calculatedOverallScore = useMemo(() => {
+    if (!formData.rating_criteria || formData.rating_criteria.length === 0) {
+      return 0;
+    }
+    
+    const sum = formData.rating_criteria.reduce((total, criterion) => 
+      total + (parseFloat(criterion.score.toString()) || 0), 0);
+    return parseFloat((sum / formData.rating_criteria.length).toFixed(1));
+  }, [formData.rating_criteria]);
+
+  // Update overall score whenever rating criteria change
+  useEffect(() => {
+    if (formData.type === 'review' && formData.rating_criteria && formData.rating_criteria.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        overall_score: calculatedOverallScore
+      }));
+    }
+  }, [calculatedOverallScore, formData.rating_criteria, formData.type]);
 
   // Add user session check
   useEffect(() => {
@@ -979,177 +1000,4 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
                         className="hidden"
                         onChange={(e) => handleImageUpload(e, 'gallery')}
                       />
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {formData.gallery?.map((image, index) => (
-                          <div key={index} className="relative">
-                            <img
-                              src={image}
-                              alt={`Gallery ${index + 1}`}
-                              className="h-24 w-24 object-cover rounded"
-                            />
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="icon"
-                              className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                              onClick={() => handleRemoveImage(index)}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* YouTube URL */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">YouTube Video URL</label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="url"
-                        value={formData.youtube_url || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, youtube_url: e.target.value }))}
-                        placeholder="https://youtube.com/watch?v=..."
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setFormData(prev => ({ ...prev, youtube_url: null }))}
-                        disabled={!formData.youtube_url}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            
-            {formData.type === 'review' && (
-              <>
-                <AccordionItem value="specs">
-                  <AccordionTrigger>Product Specifications</AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4">
-                      {formData.product_specs?.map((spec, index) => (
-                        <div key={index} className="flex gap-2">
-                          <Input
-                            placeholder="Specification"
-                            value={spec.label}
-                            onChange={(e) => updateProductSpec(index, 'label', e.target.value)}
-                          />
-                          <Input
-                            placeholder="Value"
-                            value={spec.value}
-                            onChange={(e) => updateProductSpec(index, 'value', e.target.value)}
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            onClick={() => removeProductSpec(index)}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={addProductSpec}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Specification
-                      </Button>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="ratings">
-                  <AccordionTrigger>Rating Criteria</AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4">
-                      {formData.rating_criteria?.map((criterion, index) => (
-                        <div key={index} className="flex gap-2">
-                          <Input
-                            placeholder="Criterion Name"
-                            value={criterion.name}
-                            onChange={(e) => updateRatingCriterion(index, 'name', e.target.value)}
-                          />
-                          <Input
-                            type="number"
-                            min="0"
-                            max="10"
-                            step="0.1"
-                            placeholder="Score (0-10)"
-                            value={criterion.score}
-                            onChange={(e) => updateRatingCriterion(index, 'score', parseFloat(e.target.value))}
-                          />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            onClick={() => removeRatingCriterion(index)}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={addRatingCriterion}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Rating Criterion
-                      </Button>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="overall">
-                  <AccordionTrigger>Overall Score</AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Overall Score (0-10)</label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="10"
-                          step="0.1"
-                          value={formData.overall_score || 0}
-                          onChange={(e) => setFormData(prev => ({ ...prev, overall_score: parseFloat(e.target.value) }))}
-                        />
-                      </div>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </>
-            )}
-          </Accordion>
-        </CardContent>
-
-        <CardFooter className="flex justify-between">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate("/admin/content")}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? (
-              <>
-                <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-current rounded-full" />
-                Saving...
-              </>
-            ) : (
-              <>Save {formData.type}</>
-            )}
-          </Button>
-        </CardFooter>
-      </Card>
-    </form>
-  );
-};
+                      <div

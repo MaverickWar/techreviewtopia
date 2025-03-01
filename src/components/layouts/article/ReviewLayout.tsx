@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useMemo } from "react";
 import { ArticleData } from "@/types/content";
 import { AwardBanner } from "./AwardBanner";
 import { formatDistanceToNow } from "date-fns";
@@ -24,6 +24,19 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
   
   console.log("ReviewLayout - award level:", awardLevel);
   console.log("ReviewLayout - show awards:", showAwards);
+
+  // Calculate the overall score based on individual criteria
+  const calculatedOverallScore = useMemo(() => {
+    if (ratingCriteria.length === 0) return 0;
+    
+    const sum = ratingCriteria.reduce((total, criterion) => total + (criterion.score || 0), 0);
+    return parseFloat((sum / ratingCriteria.length).toFixed(1));
+  }, [ratingCriteria]);
+
+  // Use the calculated score or fallback to the stored one if no criteria exist
+  const overallScore = ratingCriteria.length > 0 
+    ? calculatedOverallScore 
+    : (reviewDetails?.overall_score || 0);
 
   // Helper function to format the date
   const formatPublishDate = (dateString: string | null) => {
@@ -88,10 +101,10 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
           </Badge>
         </div>
         
-        {reviewDetails?.overall_score !== undefined && (
+        {overallScore > 0 && (
           <div className="bg-gray-50 p-6 rounded-lg mb-8">
             <h2 className="text-lg font-bold mb-4">Overall Rating</h2>
-            {renderStars(reviewDetails.overall_score)}
+            {renderStars(overallScore)}
           </div>
         )}
       </header>
