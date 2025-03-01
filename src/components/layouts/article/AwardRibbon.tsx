@@ -65,10 +65,10 @@ export const AwardRibbon: React.FC<AwardRibbonProps> = ({ award, awardLevel }) =
   const ribbonColors = getRibbonColors(awardValue);
 
   return (
-    <div className="absolute -top-0 -left-0 z-10">
-      <div className={`${ribbonColors} py-1 px-3 transform -rotate-45 translate-x-[-35%] translate-y-[50%] shadow-md font-medium text-xs uppercase tracking-wider flex items-center`}>
-        <Ribbon className="h-3 w-3 mr-1" />
-        {awardDisplayName}
+    <div className="absolute -top-1 -left-1 z-10 overflow-visible">
+      <div className={`${ribbonColors} py-1 px-3 transform -translate-x-1/4 translate-y-1/4 -rotate-45 shadow-md font-medium text-xs uppercase tracking-wider flex items-center whitespace-nowrap max-w-[200px]`}>
+        <Ribbon className="h-3 w-3 mr-1 flex-shrink-0" />
+        <span className="truncate">{awardDisplayName}</span>
       </div>
     </div>
   );

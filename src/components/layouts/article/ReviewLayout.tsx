@@ -1,6 +1,8 @@
+
 import React, { useMemo, useEffect, useState } from "react";
 import { ArticleData } from "@/types/content";
 import { AwardBanner } from "./AwardBanner";
+import { AwardRibbon } from "./AwardRibbon";
 import { formatDistanceToNow } from "date-fns";
 import { Star, StarHalf, User, Clock, Bookmark, Video, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -169,11 +171,14 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           {article.featured_image && (
-            <img 
-              src={article.featured_image} 
-              alt={article.title}
-              className="w-full h-auto rounded-lg mb-8 object-cover"
-            />
+            <div className="relative mb-8">
+              <img 
+                src={article.featured_image} 
+                alt={article.title}
+                className="w-full h-auto rounded-lg object-cover"
+              />
+              {showAwards && awardLevel && <AwardRibbon awardLevel={awardLevel} />}
+            </div>
           )}
           
           {article.content && (
@@ -215,7 +220,7 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
                   reviewDetails.product_specs.map((spec, index) => (
                     <div key={index} className="grid grid-cols-2 gap-4">
                       <dt className="text-gray-600 font-medium">{spec.label}</dt>
-                      <dd className="font-medium">{spec.value}</dd>
+                      <dd className="font-medium">{String(spec.value)}</dd>
                     </div>
                   )) : 
                   Object.entries(reviewDetails.product_specs || {}).map(([key, value], index) => (
