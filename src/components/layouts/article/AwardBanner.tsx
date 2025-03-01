@@ -64,6 +64,27 @@ export const AwardBanner: React.FC<AwardBannerProps> = ({ award, awardLevel }) =
           icon: "text-green-500",
           glow: "after:bg-green-500/20"
         };
+      case "budget-pick":
+      case "budget pick":
+        return {
+          class: "bg-amber-100 border-amber-500 text-amber-800",
+          icon: "text-amber-500",
+          glow: "after:bg-amber-500/20"
+        };
+      case "premium-choice":
+      case "premium choice":
+        return {
+          class: "bg-indigo-100 border-indigo-500 text-indigo-800",
+          icon: "text-indigo-500",
+          glow: "after:bg-indigo-500/20"
+        };
+      case "most-innovative":
+      case "most innovative":
+        return {
+          class: "bg-pink-100 border-pink-500 text-pink-800",
+          icon: "text-pink-500",
+          glow: "after:bg-pink-500/20"
+        };
       default:
         return {
           class: "bg-amber-100 border-amber-500 text-amber-800",

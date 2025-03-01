@@ -5,6 +5,8 @@ import { formatDistanceToNow } from "date-fns";
 import { User, Clock, Info, ThumbsUp, ThumbsDown, Star, StarHalf } from "lucide-react";
 import { AwardBanner } from "./AwardBanner";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface BasicReviewLayoutProps {
   article: ArticleData;
@@ -17,7 +19,7 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
   const showAwards = article.layout_settings?.showAwards !== undefined ? 
     article.layout_settings.showAwards : true;
   
-  // Extract other layout settings with defaults
+  // Extract basic layout settings with reasonable defaults
   const contentAlignment = article.layout_settings?.contentAlignment || "left";
   const showFeaturedImage = article.layout_settings?.showFeaturedImage !== undefined ? 
     article.layout_settings.showFeaturedImage : true;
@@ -34,22 +36,28 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
   const ratingDisplayStyle = article.layout_settings?.ratingDisplayStyle || "numeric";
   const sectionSpacing = article.layout_settings?.sectionSpacing || 4;
   
+  // Get pros and cons content
+  const prosItems = article.layout_settings?.prosItems || [
+    "Good value for money",
+    "Solid construction",
+    "Easy to use"
+  ];
+  
+  const consItems = article.layout_settings?.consItems || [
+    "Limited features",
+    "Battery life could be better"
+  ];
+  
+  // Get verdict content
+  const verdictText = article.layout_settings?.verdictText || 
+    "Overall, this is a solid product that offers good value for money. While it has some limitations, it performs well for its intended purpose and is easy to use.";
+  
+  // Get specifications
+  const specifications = article.layout_settings?.specifications || [];
+  const showSpecifications = article.layout_settings?.showSpecifications !== undefined ?
+    article.layout_settings.showSpecifications : true;
+  
   console.log("BasicReviewLayout received article with layout_settings:", article.layout_settings);
-  console.log("Layout settings extracted:", {
-    awardLevel,
-    showAwards,
-    contentAlignment,
-    showFeaturedImage,
-    layoutWidth,
-    colorTheme,
-    fontSize,
-    headingStyle,
-    showProsConsSection,
-    showVerdictSection,
-    showRatingCriteria,
-    ratingDisplayStyle,
-    sectionSpacing
-  });
 
   // Get review details if available
   const reviewDetails = article.review_details?.[0];
@@ -246,9 +254,32 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
       {/* Main content */}
       {article.content && (
         <div 
-          className={`prose max-w-none mb-12 ${getTextAlignmentClass()}`}
+          className={`prose max-w-none mb-8 ${getTextAlignmentClass()}`}
           dangerouslySetInnerHTML={{ __html: article.content }}
         />
+      )}
+      
+      {/* Product specifications */}
+      {showSpecifications && specifications.length > 0 && (
+        <div className="mb-8">
+          <h2 className={`text-lg font-semibold mb-4 ${getHeadingStyleClasses()}`}>Specifications</h2>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Specification</TableHead>
+                <TableHead>Detail</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {specifications.map((spec, index) => (
+                <TableRow key={index}>
+                  <TableCell className="font-medium">{spec.label}</TableCell>
+                  <TableCell>{spec.value}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
       
       {/* Simple pros and cons */}
@@ -260,18 +291,12 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
               Pros
             </h3>
             <ul className="space-y-2">
-              <li className="flex items-start">
-                <span className="text-green-600 mr-2">✓</span>
-                <span>Good value for money</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-green-600 mr-2">✓</span>
-                <span>Solid construction</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-green-600 mr-2">✓</span>
-                <span>Easy to use</span>
-              </li>
+              {prosItems.map((item, index) => (
+                <li key={index} className="flex items-start">
+                  <span className="text-green-600 mr-2">✓</span>
+                  <span>{item}</span>
+                </li>
+              ))}
             </ul>
           </div>
           
@@ -281,14 +306,12 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
               Cons
             </h3>
             <ul className="space-y-2">
-              <li className="flex items-start">
-                <span className="text-red-600 mr-2">✗</span>
-                <span>Limited features</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-red-600 mr-2">✗</span>
-                <span>Battery life could be better</span>
-              </li>
+              {consItems.map((item, index) => (
+                <li key={index} className="flex items-start">
+                  <span className="text-red-600 mr-2">✗</span>
+                  <span>{item}</span>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
@@ -309,11 +332,14 @@ export const BasicReviewLayout: React.FC<BasicReviewLayoutProps> = ({ article })
             <Info className="h-5 w-5 text-blue-600 mr-2" />
             Verdict
           </h3>
-          <p className="text-gray-700">
-            Overall, this is a solid product that offers good value for money. While it has some limitations, it performs well for its intended purpose and is easy to use.
-          </p>
+          <p className="text-gray-700">{verdictText}</p>
         </div>
       )}
+      
+      {/* Add subtle footer with date */}
+      <div className="text-xs text-gray-400 text-center mt-8">
+        Review published {article.published_at ? new Date(article.published_at).toLocaleDateString() : "recently"}
+      </div>
     </article>
   );
 };
