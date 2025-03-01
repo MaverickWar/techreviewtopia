@@ -27,7 +27,7 @@ const getCategoryImage = (slug: string): string => {
 };
 
 const SubcategoryView = ({ category, onBack, onClose }: SubcategoryViewProps) => (
-  <div className="animate-slide-in-right h-full">
+  <div className="animate-slide-in-right h-full overflow-hidden">
     <div className="sticky top-0 bg-white z-10 border-b">
       <button 
         onClick={onBack}
@@ -96,7 +96,7 @@ export const MobileNav = ({ categories, onClose }: MobileNavProps) => {
           onClose={handleClose}
         />
       ) : (
-        <div className="animate-fade-in">
+        <div className="animate-fade-in overflow-x-hidden">
           <div className="sticky top-0 bg-white z-10 border-b">
             <div className="flex items-center justify-between p-4">
               <h2 className="text-xl font-semibold">Menu</h2>

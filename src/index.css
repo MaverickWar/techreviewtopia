@@ -121,6 +121,32 @@
     max-width: 100% !important;
     width: 100% !important;
   }
+  
+  /* Make tabs scrollable on mobile */
+  .mobile-scrollable-tabs {
+    @apply flex overflow-x-auto pb-2 -mx-4 px-4;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  .mobile-scrollable-tabs::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+  }
+  
+  .mobile-scrollable-tabs > * {
+    @apply flex-shrink-0;
+  }
+  
+  /* Fix tab content for mobile */
+  .mobile-tab-content {
+    @apply w-full overflow-x-hidden;
+  }
+  
+  /* Table cells should wrap text when possible */
+  td, th {
+    @apply break-words whitespace-normal;
+    max-width: 12rem;
+  }
 }
 
 /* Fix for Prose content overflow */
@@ -150,4 +176,34 @@
 img {
   max-width: 100%;
   height: auto;
+}
+
+/* Tabs styling for better mobile experience */
+.tabs-container {
+  @apply w-full overflow-hidden;
+}
+
+.tab-list {
+  @apply flex border-b border-gray-200;
+}
+
+@media (max-width: 640px) {
+  .tab-list {
+    @apply overflow-x-auto scrollbar-hide;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .tabs-content {
+    @apply overflow-x-hidden;
+  }
+}
+
+/* Hide scrollbar but allow scrolling */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
