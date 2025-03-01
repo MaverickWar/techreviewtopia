@@ -1,4 +1,3 @@
-
 import React, { useMemo, useEffect, useState } from "react";
 import { ArticleData } from "@/types/content";
 import { AwardBanner } from "./AwardBanner";
@@ -12,46 +11,34 @@ interface ReviewLayoutProps {
 }
 
 export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
-  // Get review details if available
   const reviewDetails = article.review_details?.[0];
   const ratingCriteria = article.rating_criteria || [];
-  
-  // State to track if video loaded successfully
   const [videoLoaded, setVideoLoaded] = useState(false);
-  
-  // Extract award from layout settings
-  // Check for both awardLevel (new) and award (legacy)
+
   const awardLevel = article.layout_settings?.awardLevel || article.layout_settings?.award;
   const showAwards = article.layout_settings?.showAwards !== undefined ? 
     article.layout_settings.showAwards : true;
-  
-  console.log("ReviewLayout - award level:", awardLevel);
-  console.log("ReviewLayout - show awards:", showAwards);
-  console.log("ReviewLayout - YouTube URL:", reviewDetails?.youtube_url);
 
-  // Calculate the overall score based on individual criteria
+  // Calculate overall score out of 5
   const calculatedOverallScore = useMemo(() => {
     if (ratingCriteria.length === 0) return 0;
-    
     const sum = ratingCriteria.reduce((total, criterion) => total + (criterion.score || 0), 0);
     return parseFloat((sum / ratingCriteria.length).toFixed(1));
   }, [ratingCriteria]);
 
-  // Use the calculated score or fallback to the stored one if no criteria exist
   const overallScore = ratingCriteria.length > 0 
     ? calculatedOverallScore 
     : (reviewDetails?.overall_score || 0);
 
-  // Helper function to format the date
   const formatPublishDate = (dateString: string | null) => {
     if (!dateString) return "Recently";
     return formatDistanceToNow(new Date(dateString), { addSuffix: true });
   };
 
-  // Helper function to render stars for rating
+  // 5-star rendering logic
   const renderStars = (score: number) => {
-    const fullStars = Math.floor(score / 2);
-    const hasHalfStar = score % 2 >= 1;
+    const fullStars = Math.floor(score);
+    const hasHalfStar = score % 1 >= 0.5;
     const totalStars = 5;
     
     return (
@@ -65,100 +52,85 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
         {Array(totalStars - fullStars - (hasHalfStar ? 1 : 0)).fill(0).map((_, i) => (
           <Star key={`empty-${i}`} className="h-5 w-5 text-yellow-500" />
         ))}
-        <span className="ml-2 text-lg font-bold">{score.toFixed(1)}/10</span>
+        <span className="ml-2 text-lg font-bold">{score.toFixed(1)}/5</span>
       </div>
     );
   };
 
-  // IMPROVED YouTube URL parsing function - handles more formats and edge cases
+  // Improved YouTube URL parser
   const getYouTubeEmbedUrl = (url: string | null): string | null => {
     if (!url) return null;
     
-    console.log("Processing YouTube URL:", url);
-    
-    // Try direct ID match first (11 characters)
-    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
-      console.log("URL is already a valid YouTube ID:", url);
-      return `https://www.youtube.com/embed/${url}`;
-    }
-    
-    // Common YouTube URL patterns
-    const patterns = [
-      // youtu.be shortened links
-      /youtu\.be\/([a-zA-Z0-9_-]{11})(\?.*)?$/,
-      // Standard youtube.com/watch?v= links
-      /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})(\&.*)?$/,
-      /youtube\.com\/watch\?.*v=([a-zA-Z0-9_-]{11})(\&.*)?$/,
-      // youtube.com/embed/ links
-      /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})(\?.*)?$/,
-      // youtube.com/v/ links
-      /youtube\.com\/v\/([a-zA-Z0-9_-]{11})(\?.*)?$/,
-    ];
-    
-    // Try each pattern
-    for (const pattern of patterns) {
-      const match = url.match(pattern);
-      if (match && match[1]) {
-        const videoId = match[1];
-        console.log("Extracted YouTube video ID:", videoId);
-        return `https://www.youtube.com/embed/${videoId}`;
+    console.log('[DEBUG] Processing YouTube URL:', url);
+
+    // Handle youtu.be shortened URLs
+    if (url.includes('youtu.be')) {
+      const id = url.split('/').pop()?.split('?')[0];
+      if (id?.match(/^[a-zA-Z0-9_-]{11}$/)) {
+        console.log('[DEBUG] Detected youtu.be URL, ID:', id);
+        return `https://www.youtube.com/embed/${id}`;
       }
     }
-    
-    // One last attempt - try to extract any 11-character ID that might be in the URL
-    const possibleIdMatch = url.match(/([a-zA-Z0-9_-]{11})/);
-    if (possibleIdMatch && possibleIdMatch[1]) {
-      console.log("Extracted possible YouTube ID as last resort:", possibleIdMatch[1]);
-      return `https://www.youtube.com/embed/${possibleIdMatch[1]}`;
+
+    // Handle standard watch URLs
+    const vParamMatch = url.match(/v=([^&#]{11})/);
+    if (vParamMatch && vParamMatch[1]) {
+      console.log('[DEBUG] Detected v= parameter, ID:', vParamMatch[1]);
+      return `https://www.youtube.com/embed/${vParamMatch[1]}`;
     }
-    
-    console.warn("Could not extract YouTube video ID from:", url);
+
+    // Handle YouTube shorts
+    if (url.includes('/shorts/')) {
+      const id = url.split('/shorts/')[1].split('?')[0];
+      if (id?.match(/^[a-zA-Z0-9_-]{11}$/)) {
+        console.log('[DEBUG] Detected shorts URL, ID:', id);
+        return `https://www.youtube.com/embed/${id}`;
+      }
+    }
+
+    // Fallback to direct ID match
+    const directMatch = url.match(/([a-zA-Z0-9_-]{11})/);
+    if (directMatch && directMatch[1]) {
+      console.log('[DEBUG] Fallback ID extraction, ID:', directMatch[1]);
+      return `https://www.youtube.com/embed/${directMatch[1]}`;
+    }
+
+    console.warn('[DEBUG] Failed to extract YouTube ID from URL:', url);
     return null;
   };
 
-  // Process the YouTube URL if available
-  const youtubeEmbedUrl = reviewDetails?.youtube_url ? 
-    getYouTubeEmbedUrl(reviewDetails.youtube_url) : null;
-  
-  console.log("Final YouTube embed URL:", youtubeEmbedUrl);
+  const youtubeEmbedUrl = useMemo(() => 
+    reviewDetails?.youtube_url ? getYouTubeEmbedUrl(reviewDetails.youtube_url) : null,
+    [reviewDetails?.youtube_url]
+  );
 
-  // Get direct YouTube watch URL for fallbacks
   const getDirectYouTubeUrl = (embedUrl: string | null): string | null => {
     if (!embedUrl) return null;
     const videoId = embedUrl.split('/').pop();
-    if (!videoId) return null;
-    return `https://www.youtube.com/watch?v=${videoId}`;
+    return videoId ? `https://www.youtube.com/watch?v=${videoId}` : null;
   };
 
   const directYouTubeUrl = getDirectYouTubeUrl(youtubeEmbedUrl);
 
-  // Add effect to log when component mounts and if video is present
   useEffect(() => {
-    console.log("ReviewLayout mounted, YouTube URL:", reviewDetails?.youtube_url);
-    console.log("YouTube embed URL:", youtubeEmbedUrl);
-    
-    // Reset video loaded state when URL changes
+    console.log('[DEBUG] YouTube embed URL:', youtubeEmbedUrl);
+    console.log('[DEBUG] Direct YouTube URL:', directYouTubeUrl);
     setVideoLoaded(false);
-  }, [reviewDetails?.youtube_url, youtubeEmbedUrl]);
+  }, [youtubeEmbedUrl, directYouTubeUrl]);
 
-  // Video load handler
   const handleVideoLoad = () => {
-    console.log("Video iframe loaded successfully");
+    console.log('[DEBUG] Video loaded successfully');
     setVideoLoaded(true);
   };
 
-  // Video error handler
   const handleVideoError = () => {
-    console.error("Error loading video iframe");
+    console.error('[DEBUG] Video load error');
     setVideoLoaded(false);
   };
 
   return (
     <article className="max-w-5xl mx-auto px-4 py-8">
-      {/* Award banner with dual support for award and awardLevel */}
-      {showAwards && awardLevel && (
-        <AwardBanner awardLevel={awardLevel} />
-      )}
+      {showAwards && awardLevel && <AwardBanner awardLevel={awardLevel} />}
       
       <header className="mb-8">
         <h1 className="text-3xl md:text-4xl font-bold mb-4">{article.title}</h1>
@@ -183,9 +155,7 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
             </div>
           )}
           
-          <Badge variant="outline" className="ml-auto">
-            Review
-          </Badge>
+          <Badge variant="outline" className="ml-auto">Review</Badge>
         </div>
         
         {overallScore > 0 && (
@@ -213,7 +183,6 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
             />
           )}
           
-          {/* Rating criteria section */}
           {ratingCriteria.length > 0 && (
             <div className="mt-12">
               <h2 className="text-2xl font-bold mb-6">Detailed Ratings</h2>
@@ -222,12 +191,12 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
                   <div key={index} className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex justify-between items-center mb-2">
                       <span className="font-medium">{criterion.name}</span>
-                      <span className="font-bold">{criterion.score}/10</span>
+                      <span className="font-bold">{criterion.score}/5</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2.5">
                       <div 
                         className="bg-blue-600 h-2.5 rounded-full" 
-                        style={{ width: `${(criterion.score / 10) * 100}%` }}
+                        style={{ width: `${(criterion.score / 5) * 100}%` }}
                       ></div>
                     </div>
                   </div>
@@ -238,7 +207,6 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
         </div>
         
         <aside className="space-y-8">
-          {/* Product specs section */}
           {reviewDetails?.product_specs && (
             <div className="bg-gray-50 p-6 rounded-lg">
               <h3 className="text-lg font-bold mb-4">Product Specifications</h3>
@@ -261,7 +229,6 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
             </div>
           )}
           
-          {/* Video section - enhanced with improved reliability and better fallback */}
           {youtubeEmbedUrl && (
             <div className="rounded-lg overflow-hidden space-y-2">
               <h3 className="text-lg font-bold mb-4 flex items-center">
@@ -269,44 +236,40 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
                 Video Review
               </h3>
               
-              {/* Video container with aspect ratio */}
-              <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden relative">
-                {/* Primary YouTube embed iframe */}
-                <iframe
-                  key={youtubeEmbedUrl}
-                  src={youtubeEmbedUrl}
-                  className="w-full h-full absolute inset-0 z-10"
-                  title="Video Review"
-                  frameBorder="0"
-                  allowFullScreen
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  onLoad={handleVideoLoad}
-                  onError={handleVideoError}
-                  loading="lazy"
-                ></iframe>
-                
-                {/* Fallback for when iframe doesn't load or has errors */}
-                {!videoLoaded && (
-                  <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-gray-100 text-center p-4">
-                    <p className="text-gray-800 mb-3">Video unavailable in preview</p>
-                    {directYouTubeUrl && (
-                      <a 
-                        href={directYouTubeUrl}
-                        className="bg-red-600 text-white px-4 py-2 rounded flex items-center hover:bg-red-700 transition-colors"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Video className="mr-2 h-4 w-4" /> Watch on YouTube
-                      </a>
-                    )}
-                    <p className="text-xs text-gray-500 mt-3">
-                      YouTube embedding restrictions may be preventing playback
-                    </p>
-                  </div>
-                )}
+              <div className="relative pb-[56.25%]"> {/* 16:9 aspect ratio */}
+                <div className="absolute inset-0 bg-gray-100 rounded-lg overflow-hidden">
+                  <iframe
+                    key={youtubeEmbedUrl}
+                    src={`${youtubeEmbedUrl}?autoplay=0&modestbranding=1`}
+                    className="w-full h-full"
+                    title="Video Review"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    onLoad={handleVideoLoad}
+                    onError={handleVideoError}
+                    loading="lazy"
+                  />
+                  
+                  {!videoLoaded && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 p-4">
+                      <p className="text-gray-600 mb-3">Loading video preview...</p>
+                      {directYouTubeUrl && (
+                        <a
+                          href={directYouTubeUrl}
+                          className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Video className="mr-2 h-4 w-4" />
+                          Watch on YouTube
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
               
-              {/* Direct link below video for convenience */}
               {directYouTubeUrl && (
                 <div className="mt-2 flex justify-end">
                   <a 
@@ -322,8 +285,7 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
             </div>
           )}
           
-          {/* Gallery */}
-          {reviewDetails?.gallery && reviewDetails.gallery.length > 0 && (
+          {reviewDetails?.gallery?.length > 0 && (
             <div>
               <h3 className="text-lg font-bold mb-4">Product Gallery</h3>
               <div className="grid grid-cols-2 gap-4">
@@ -339,7 +301,6 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
             </div>
           )}
           
-          {/* Call to action */}
           <div className="border border-gray-200 rounded-lg p-6 text-center">
             <h3 className="text-lg font-bold mb-2">Interested in this product?</h3>
             <p className="text-gray-600 mb-4">Check current availability and pricing</p>
