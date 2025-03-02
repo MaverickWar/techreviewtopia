@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Laptop, Smartphone, Gamepad, Brain, Award, Star, Calendar, FileText, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -111,180 +111,202 @@ const ContentPreview = ({ item }: { item: ContentItem }) => {
 const FeaturedContent = () => {
   const [allContent, setAllContent] = useState<ContentItem[]>([]);
   const [visibleItems, setVisibleItems] = useState(8);
-
-  const { data: featuredContent, isLoading } = useQuery({
-    queryKey: ['featuredContent'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('featured_content')
-        .select(`
-          id,
-          position,
-          content:content_id (
-            id,
-            title,
-            type,
-            description,
-            featured_image,
-            status,
-            published_at,
-            author_id,
-            layout_settings,
-            review_details (
-              overall_score,
-              youtube_url
-            )
-          )
-        `)
-        .order('position');
-
-      if (error) {
-        console.error("Error fetching featured content:", error);
-        return [];
-      }
-      
-      // Filter out any items where content is null
-      const validData = data.filter(item => item.content);
-      
-      const transformedContent: ContentItem[] = validData
-        .map(item => {
-          // Safely destructure content with default values to prevent null reference errors
-          const { 
-            id = '',
-            title = '',
-            description = '',
-            featured_image = '',
-            type = 'article',
-            review_details = []
-          } = item.content || {};
-          
-          // Create safe base content object
-          const baseContent: BaseContent = {
-            id,
-            title,
-            category: 'Technology', // Default category
-            image: featured_image || 'https://images.unsplash.com/photo-1661956602944-249bcd04b63f',
-            excerpt: description || 'No description available',
-            author: 'Tech Writer',
-            readTime: '5 min read',
-            type: type as 'review' | 'article',
-            slug: id,
-            categorySlug: 'technology',
-            award: type === 'review' ? 'editors-choice' : null,
-          };
-          
-          // For reviews, add rating information
-          if (type === 'review') {
-            const firstReview = Array.isArray(review_details) && review_details.length > 0 
-              ? review_details[0] 
-              : { overall_score: 4.5, youtube_url: null };
-            
-            return {
-              ...baseContent,
-              type: 'review' as const,
-              rating: firstReview.overall_score || 4.5,
-              youtubeUrl: firstReview.youtube_url
-            };
-          }
-          
-          // For articles
-          return {
-            ...baseContent,
-            type: 'article' as const
-          };
-        });
-
-      console.log("Transformed content:", transformedContent);
-
-      return transformedContent.sort((a, b) => {
-        if (a.type === 'review' && b.type !== 'review') return -1;
-        if (a.type !== 'review' && b.type === 'review') return 1;
-        if (a.type === 'review' && b.type === 'review') {
-          return (b as Review).rating - (a as Review).rating;
-        }
-        return 0;
-      });
-    }
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (featuredContent && featuredContent.length > 0) {
-      setAllContent(featuredContent);
-    } else if (!isLoading && (!featuredContent || featuredContent.length === 0)) {
-      // Fallback mock data if no featured content is available
-      const mockContent: ContentItem[] = [
-        {
-          id: 'mock-1',
-          title: 'Dell XPS 13 Plus Review',
-          category: 'Laptops',
-          image: 'https://images.unsplash.com/photo-1593642702749-b7d2a804fbcf',
-          excerpt: 'The latest Dell XPS 13 Plus brings innovative design and powerful performance.',
-          author: 'Tech Reviewer',
-          readTime: '8 min read',
-          type: 'review',
-          slug: 'dell-xps-13-plus-review',
-          categorySlug: 'technology',
-          rating: 4.7,
-          award: 'editors-choice'
-        },
-        {
-          id: 'mock-2',
-          title: 'The Future of AI in Consumer Tech',
-          category: 'Technology',
-          image: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485',
-          excerpt: 'How artificial intelligence is changing the landscape of consumer technology.',
-          author: 'AI Specialist',
-          readTime: '6 min read',
-          type: 'article',
-          slug: 'future-of-ai-consumer-tech',
-          categorySlug: 'technology'
+    const fetchFeaturedContent = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('featured_content')
+          .select(`
+            id,
+            position,
+            content:content_id (
+              id,
+              title,
+              type,
+              description,
+              featured_image,
+              status,
+              published_at,
+              author_id,
+              layout_settings,
+              review_details (
+                overall_score,
+                youtube_url
+              )
+            )
+          `)
+          .order('position');
+
+        if (error) {
+          console.error("Error fetching featured content:", error);
+          throw error;
         }
-      ];
-      
-      // Add more mock items to have a decent amount for display
-      const expandedMock = [...mockContent];
-      for (let i = 3; i <= 8; i++) {
-        expandedMock.push(
-          i % 2 === 0 
-            ? {
-                id: `mock-${i}`,
-                title: `Latest Gaming Laptop Review ${i}`,
-                category: 'Gaming',
-                image: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45',
-                excerpt: 'Reviewing the latest gaming laptop with cutting-edge graphics and performance.',
-                author: 'Gaming Expert',
-                readTime: '7 min read',
-                type: 'review',
-                slug: `gaming-laptop-review-${i}`,
-                categorySlug: 'technology',
-                rating: 4.2 + (i / 10),
-              }
-            : {
-                id: `mock-${i}`,
-                title: `Tech Trends ${2023 + i}`,
-                category: 'Technology',
-                image: 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b',
-                excerpt: 'Exploring the emerging technology trends to watch this year.',
-                author: 'Trend Analyst',
-                readTime: '5 min read',
-                type: 'article',
-                slug: `tech-trends-${2023 + i}`,
-                categorySlug: 'technology',
-              }
-        );
+        
+        // Filter out any items where content is null
+        const validData = data.filter(item => item.content);
+        
+        const transformedContent: ContentItem[] = validData
+          .map(item => {
+            // Safely destructure content with default values to prevent null reference errors
+            const { 
+              id = '',
+              title = '',
+              description = '',
+              featured_image = '',
+              type = 'article',
+              review_details = []
+            } = item.content || {};
+            
+            // Create safe base content object with properly typed 'type' field
+            const baseContent = {
+              id,
+              title,
+              category: 'Technology', // Default category
+              image: featured_image || 'https://images.unsplash.com/photo-1661956602944-249bcd04b63f',
+              excerpt: description || 'No description available',
+              author: 'Tech Writer',
+              readTime: '5 min read',
+              slug: id,
+              categorySlug: 'technology',
+              award: type === 'review' ? 'editors-choice' : null,
+            };
+            
+            // For reviews, add rating information
+            if (type === 'review') {
+              const firstReview = Array.isArray(review_details) && review_details.length > 0 
+                ? review_details[0] 
+                : { overall_score: 4.5, youtube_url: null };
+              
+              return {
+                ...baseContent,
+                type: 'review' as const,
+                rating: firstReview.overall_score || 4.5,
+                youtubeUrl: firstReview.youtube_url
+              };
+            }
+            
+            // For articles
+            return {
+              ...baseContent,
+              type: 'article' as const
+            };
+          });
+
+        console.log("Transformed content:", transformedContent);
+
+        const sortedContent = transformedContent.sort((a, b) => {
+          if (a.type === 'review' && b.type !== 'review') return -1;
+          if (a.type !== 'review' && b.type === 'review') return 1;
+          if (a.type === 'review' && b.type === 'review') {
+            return (b as Review).rating - (a as Review).rating;
+          }
+          return 0;
+        });
+
+        setAllContent(sortedContent);
+      } catch (err) {
+        console.error("Error in fetchFeaturedContent:", err);
+        setError(err instanceof Error ? err : new Error('Unknown error'));
+        
+        // Provide fallback mock data
+        const mockContent: ContentItem[] = [
+          {
+            id: 'mock-1',
+            title: 'Dell XPS 13 Plus Review',
+            category: 'Laptops',
+            image: 'https://images.unsplash.com/photo-1593642702749-b7d2a804fbcf',
+            excerpt: 'The latest Dell XPS 13 Plus brings innovative design and powerful performance.',
+            author: 'Tech Reviewer',
+            readTime: '8 min read',
+            type: 'review',
+            slug: 'dell-xps-13-plus-review',
+            categorySlug: 'technology',
+            rating: 4.7,
+            award: 'editors-choice'
+          },
+          {
+            id: 'mock-2',
+            title: 'The Future of AI in Consumer Tech',
+            category: 'Technology',
+            image: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485',
+            excerpt: 'How artificial intelligence is changing the landscape of consumer technology.',
+            author: 'AI Specialist',
+            readTime: '6 min read',
+            type: 'article',
+            slug: 'future-of-ai-consumer-tech',
+            categorySlug: 'technology'
+          }
+        ];
+        
+        // Add more mock items to have a decent amount for display
+        const expandedMock = [...mockContent];
+        for (let i = 3; i <= 8; i++) {
+          expandedMock.push(
+            i % 2 === 0 
+              ? {
+                  id: `mock-${i}`,
+                  title: `Latest Gaming Laptop Review ${i}`,
+                  category: 'Gaming',
+                  image: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45',
+                  excerpt: 'Reviewing the latest gaming laptop with cutting-edge graphics and performance.',
+                  author: 'Gaming Expert',
+                  readTime: '7 min read',
+                  type: 'review' as const,
+                  slug: `gaming-laptop-review-${i}`,
+                  categorySlug: 'technology',
+                  rating: 4.2 + (i / 10),
+                }
+              : {
+                  id: `mock-${i}`,
+                  title: `Tech Trends ${2023 + i}`,
+                  category: 'Technology',
+                  image: 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b',
+                  excerpt: 'Exploring the emerging technology trends to watch this year.',
+                  author: 'Trend Analyst',
+                  readTime: '5 min read',
+                  type: 'article' as const,
+                  slug: `tech-trends-${2023 + i}`,
+                  categorySlug: 'technology',
+                }
+          );
+        }
+        
+        setAllContent(expandedMock);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setAllContent(expandedMock);
-    }
-  }, [featuredContent, isLoading]);
+    };
+
+    fetchFeaturedContent();
+  }, []);
 
   // Handle the case when allContent is still empty
-  if (allContent.length === 0) {
+  if (isLoading) {
     return (
       <section className="py-12 bg-white">
         <div className="content-container">
           <div className="text-center py-12">
             <p className="text-gray-500">Loading featured content...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    console.warn("Using fallback data due to error:", error);
+  }
+
+  if (allContent.length === 0) {
+    return (
+      <section className="py-12 bg-white">
+        <div className="content-container">
+          <div className="text-center py-12">
+            <p className="text-gray-500">No featured content available.</p>
           </div>
         </div>
       </section>
@@ -394,11 +416,12 @@ const FeaturedContent = () => {
 
 const Index = () => {
   const [topRatedReviews, setTopRatedReviews] = useState<Review[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { data: reviewData } = useQuery({
-    queryKey: ['topRatedReviews'],
-    queryFn: async () => {
+  useEffect(() => {
+    const fetchTopRatedReviews = async () => {
       try {
+        setIsLoading(true);
         const { data, error } = await supabase
           .from('content')
           .select(`
@@ -415,7 +438,7 @@ const Index = () => {
 
         if (error) {
           console.error("Error fetching top rated reviews:", error);
-          return [];
+          throw error;
         }
 
         // Transform the data to match our Review interface
@@ -442,7 +465,7 @@ const Index = () => {
         
         // If no real data, provide fallback data
         if (reviews.length === 0) {
-          return [
+          const fallbackReviews: Review[] = [
             {
               id: 'mock-review-1',
               title: 'MacBook Pro M2 Pro Review',
@@ -483,19 +506,62 @@ const Index = () => {
               rating: 4.6
             }
           ];
+          setTopRatedReviews(fallbackReviews);
+        } else {
+          setTopRatedReviews(reviews);
         }
-        
-        return reviews;
       } catch (error) {
-        console.error("Error in topRatedReviews query:", error);
-        return [];
+        console.error("Error in topRatedReviews:", error);
+        // Use fallback data when there's an error
+        const fallbackReviews: Review[] = [
+          {
+            id: 'mock-review-1',
+            title: 'MacBook Pro M2 Pro Review',
+            category: 'Laptops',
+            image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8',
+            excerpt: 'The definitive MacBook Pro review with M2 Pro chip benchmarks.',
+            author: 'Apple Expert',
+            readTime: '10 min read',
+            type: 'review',
+            slug: 'macbook-pro-m2-pro-review',
+            categorySlug: 'technology',
+            rating: 4.9
+          },
+          {
+            id: 'mock-review-2',
+            title: 'Asus ROG Zephyrus G14 Review',
+            category: 'Gaming Laptops',
+            image: 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89',
+            excerpt: 'The pinnacle of AMD-powered gaming laptops in a compact form factor.',
+            author: 'Gaming Reviewer',
+            readTime: '8 min read',
+            type: 'review',
+            slug: 'asus-rog-zephyrus-g14-review',
+            categorySlug: 'technology',
+            rating: 4.7
+          },
+          {
+            id: 'mock-review-3',
+            title: 'Framework Laptop 13 Review',
+            category: 'Laptops',
+            image: 'https://images.unsplash.com/photo-1602080858428-57174f9431cf',
+            excerpt: 'The most repairable and upgradeable laptop on the market gets better.',
+            author: 'Hardware Expert',
+            readTime: '7 min read',
+            type: 'review',
+            slug: 'framework-laptop-13-review',
+            categorySlug: 'technology',
+            rating: 4.6
+          }
+        ];
+        setTopRatedReviews(fallbackReviews);
+      } finally {
+        setIsLoading(false);
       }
-    }
-  });
+    };
 
-  useEffect(() => {
-    if (reviewData) setTopRatedReviews(reviewData);
-  }, [reviewData]);
+    fetchTopRatedReviews();
+  }, []);
 
   return (
     <>
@@ -535,34 +601,40 @@ const Index = () => {
             </Button>
           </div>
           
-          <div className="flex overflow-x-auto pb-4 gap-4 scrollbar-hide">
-            {topRatedReviews.slice(0, 3).map((review) => (
-              <div key={review.id} className="min-w-[300px] flex-1">
-                <Card className="h-full">
-                  <Link to={`/${review.categorySlug}/content/${review.slug}`}>
-                    <div className="aspect-video relative">
-                      <img 
-                        src={review.image} 
-                        className="object-cover h-full w-full"
-                        loading="lazy"
-                        alt={review.title}
-                      />
-                      <div className="absolute top-2 left-2">
-                        <Badge className="bg-purple-600 flex items-center gap-1 text-xs">
-                          <Star className="h-3 w-3" />
-                          {review.rating.toFixed(1)}
-                        </Badge>
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Loading top rated products...</p>
+            </div>
+          ) : (
+            <div className="flex overflow-x-auto pb-4 gap-4 scrollbar-hide">
+              {topRatedReviews.slice(0, 3).map((review) => (
+                <div key={review.id} className="min-w-[300px] flex-1">
+                  <Card className="h-full">
+                    <Link to={`/${review.categorySlug}/content/${review.slug}`}>
+                      <div className="aspect-video relative">
+                        <img 
+                          src={review.image} 
+                          className="object-cover h-full w-full"
+                          loading="lazy"
+                          alt={review.title}
+                        />
+                        <div className="absolute top-2 left-2">
+                          <Badge className="bg-purple-600 flex items-center gap-1 text-xs">
+                            <Star className="h-3 w-3" />
+                            {review.rating.toFixed(1)}
+                          </Badge>
+                        </div>
                       </div>
-                    </div>
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold text-lg line-clamp-2 mb-2">{review.title}</h3>
-                      <p className="text-sm text-gray-600 line-clamp-2">{review.excerpt}</p>
-                    </CardContent>
-                  </Link>
-                </Card>
-              </div>
-            ))}
-          </div>
+                      <CardContent className="p-4">
+                        <h3 className="font-semibold text-lg line-clamp-2 mb-2">{review.title}</h3>
+                        <p className="text-sm text-gray-600 line-clamp-2">{review.excerpt}</p>
+                      </CardContent>
+                    </Link>
+                  </Card>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </>
