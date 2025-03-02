@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Laptop, Smartphone, Gamepad, Brain, Award, Star, Calendar, FileText, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -161,39 +160,41 @@ const FeaturedContent = () => {
               review_details = []
             } = item.content || {};
             
-            // Create safe base content object with properly typed 'type' field
-            const baseContent = {
-              id,
-              title,
-              category: 'Technology', // Default category
-              image: featured_image || 'https://images.unsplash.com/photo-1661956602944-249bcd04b63f',
-              excerpt: description || 'No description available',
-              author: 'Tech Writer',
-              readTime: '5 min read',
-              slug: id,
-              categorySlug: 'technology',
-              award: type === 'review' ? 'editors-choice' : null,
-            };
-            
-            // For reviews, add rating information
+            // Create properly typed content objects based on the type
             if (type === 'review') {
               const firstReview = Array.isArray(review_details) && review_details.length > 0 
                 ? review_details[0] 
                 : { overall_score: 4.5, youtube_url: null };
               
               return {
-                ...baseContent,
+                id,
+                title,
+                category: 'Technology', // Default category
+                image: featured_image || 'https://images.unsplash.com/photo-1661956602944-249bcd04b63f',
+                excerpt: description || 'No description available',
+                author: 'Tech Writer',
+                readTime: '5 min read',
+                slug: id,
+                categorySlug: 'technology',
+                award: 'editors-choice',
                 type: 'review' as const,
                 rating: firstReview.overall_score || 4.5,
                 youtubeUrl: firstReview.youtube_url
-              };
+              } as Review;
+            } else {
+              return {
+                id,
+                title,
+                category: 'Technology', // Default category
+                image: featured_image || 'https://images.unsplash.com/photo-1661956602944-249bcd04b63f',
+                excerpt: description || 'No description available',
+                author: 'Tech Writer',
+                readTime: '5 min read',
+                slug: id,
+                categorySlug: 'technology',
+                type: 'article' as const
+              } as Article;
             }
-            
-            // For articles
-            return {
-              ...baseContent,
-              type: 'article' as const
-            };
           });
 
         console.log("Transformed content:", transformedContent);
@@ -222,7 +223,7 @@ const FeaturedContent = () => {
             excerpt: 'The latest Dell XPS 13 Plus brings innovative design and powerful performance.',
             author: 'Tech Reviewer',
             readTime: '8 min read',
-            type: 'review',
+            type: 'review' as const,
             slug: 'dell-xps-13-plus-review',
             categorySlug: 'technology',
             rating: 4.7,
@@ -236,7 +237,7 @@ const FeaturedContent = () => {
             excerpt: 'How artificial intelligence is changing the landscape of consumer technology.',
             author: 'AI Specialist',
             readTime: '6 min read',
-            type: 'article',
+            type: 'article' as const,
             slug: 'future-of-ai-consumer-tech',
             categorySlug: 'technology'
           }
@@ -259,7 +260,7 @@ const FeaturedContent = () => {
                   slug: `gaming-laptop-review-${i}`,
                   categorySlug: 'technology',
                   rating: 4.2 + (i / 10),
-                }
+                } as Review
               : {
                   id: `mock-${i}`,
                   title: `Tech Trends ${2023 + i}`,
@@ -271,7 +272,7 @@ const FeaturedContent = () => {
                   type: 'article' as const,
                   slug: `tech-trends-${2023 + i}`,
                   categorySlug: 'technology',
-                }
+                } as Article
           );
         }
         
@@ -454,7 +455,7 @@ const Index = () => {
               excerpt: item.description || 'No description available',
               author: 'Tech Reviewer',
               readTime: '5 min read',
-              type: 'review',
+              type: 'review' as const,
               slug: item.id,
               categorySlug: 'technology',
               rating: reviewDetail?.overall_score || 4.5,
@@ -474,7 +475,7 @@ const Index = () => {
               excerpt: 'The definitive MacBook Pro review with M2 Pro chip benchmarks.',
               author: 'Apple Expert',
               readTime: '10 min read',
-              type: 'review',
+              type: 'review' as const,
               slug: 'macbook-pro-m2-pro-review',
               categorySlug: 'technology',
               rating: 4.9
@@ -487,7 +488,7 @@ const Index = () => {
               excerpt: 'The pinnacle of AMD-powered gaming laptops in a compact form factor.',
               author: 'Gaming Reviewer',
               readTime: '8 min read',
-              type: 'review',
+              type: 'review' as const,
               slug: 'asus-rog-zephyrus-g14-review',
               categorySlug: 'technology',
               rating: 4.7
@@ -500,7 +501,7 @@ const Index = () => {
               excerpt: 'The most repairable and upgradeable laptop on the market gets better.',
               author: 'Hardware Expert',
               readTime: '7 min read',
-              type: 'review',
+              type: 'review' as const,
               slug: 'framework-laptop-13-review',
               categorySlug: 'technology',
               rating: 4.6
@@ -522,7 +523,7 @@ const Index = () => {
             excerpt: 'The definitive MacBook Pro review with M2 Pro chip benchmarks.',
             author: 'Apple Expert',
             readTime: '10 min read',
-            type: 'review',
+            type: 'review' as const,
             slug: 'macbook-pro-m2-pro-review',
             categorySlug: 'technology',
             rating: 4.9
@@ -535,7 +536,7 @@ const Index = () => {
             excerpt: 'The pinnacle of AMD-powered gaming laptops in a compact form factor.',
             author: 'Gaming Reviewer',
             readTime: '8 min read',
-            type: 'review',
+            type: 'review' as const,
             slug: 'asus-rog-zephyrus-g14-review',
             categorySlug: 'technology',
             rating: 4.7
@@ -548,7 +549,7 @@ const Index = () => {
             excerpt: 'The most repairable and upgradeable laptop on the market gets better.',
             author: 'Hardware Expert',
             readTime: '7 min read',
-            type: 'review',
+            type: 'review' as const,
             slug: 'framework-laptop-13-review',
             categorySlug: 'technology',
             rating: 4.6
