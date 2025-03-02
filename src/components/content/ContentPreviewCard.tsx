@@ -14,7 +14,7 @@ export interface ContentPreviewCardProps {
   featuredImage: string | null;
   publishedAt: string | null;
   overallScore?: number | null;
-  award?: string | null; 
+  award?: string | null;
 }
 
 export const ContentPreviewCard = ({
@@ -75,7 +75,7 @@ export const ContentPreviewCard = ({
               } text-white flex items-center gap-1 px-3 py-1.5 shadow-md`}>
                 {type === "review" ? "Review" : "Article"}
               </Badge>
-              {type === "review" && overallScore !== null && (
+              {type === "review" && overallScore !== null && overallScore !== undefined && (
                 <Badge variant="default" className="bg-orange-500 text-white flex items-center gap-1 px-3 py-1.5 shadow-md">
                   <Star className="h-3.5 w-3.5 fill-current" />
                   {overallScore.toFixed(1)}
@@ -106,7 +106,7 @@ export const ContentPreviewCard = ({
               } text-white flex items-center gap-1 px-3 py-1.5 shadow-md`}>
                 {type === "review" ? "Review" : "Article"}
               </Badge>
-              {type === "review" && overallScore !== null && (
+              {type === "review" && overallScore !== null && overallScore !== undefined && (
                 <Badge variant="default" className="bg-orange-500 text-white flex items-center gap-1 px-3 py-1.5 shadow-md">
                   <Star className="h-3.5 w-3.5 fill-current" />
                   {overallScore.toFixed(1)}

@@ -17,6 +17,7 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
   const ratingCriteria = article.rating_criteria || [];
   const [videoLoaded, setVideoLoaded] = useState(false);
 
+  // Handle both award and awardLevel for compatibility
   const awardLevel = article.layout_settings?.awardLevel || article.layout_settings?.award;
   const showAwards = article.layout_settings?.showAwards !== undefined ? 
     article.layout_settings.showAwards : true;
@@ -130,6 +131,14 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
     setVideoLoaded(false);
   };
 
+  // Debug logs to help troubleshoot
+  useEffect(() => {
+    console.log('[DEBUG] Article data:', article);
+    console.log('[DEBUG] Layout settings:', article.layout_settings);
+    console.log('[DEBUG] Award level:', awardLevel);
+    console.log('[DEBUG] Show awards:', showAwards);
+  }, [article, awardLevel, showAwards]);
+
   return (
     <article className="max-w-5xl mx-auto px-4 py-8">
       {showAwards && awardLevel && <AwardBanner awardLevel={awardLevel} />}
@@ -192,8 +201,8 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
             <div className="mt-12">
               <h2 className="text-2xl font-bold mb-6">Detailed Ratings</h2>
               <div className="space-y-4">
-                {ratingCriteria.map((criterion, index) => (
-                  <div key={index} className="bg-gray-50 p-4 rounded-lg">
+                {ratingCriteria.map((criterion) => (
+                  <div key={criterion.name} className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex justify-between items-center mb-2">
                       <span className="font-medium">{criterion.name}</span>
                       <span className="font-bold">{criterion.score}/5</span>

@@ -1,3 +1,4 @@
+
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,6 +26,7 @@ interface PageData {
     featured_image: string | null;
     type: "article" | "review";
     published_at: string | null;
+    layout_settings?: Record<string, any>;
     review_details?: Array<{
       overall_score: number | null;
     }>;
@@ -217,6 +219,7 @@ export const SubcategoryPage = () => {
               featuredImage={item.featured_image}
               publishedAt={item.published_at}
               overallScore={item.review_details?.[0]?.overall_score}
+              award={item.layout_settings?.award || item.layout_settings?.awardLevel}
             />
           ))}
         </div>
