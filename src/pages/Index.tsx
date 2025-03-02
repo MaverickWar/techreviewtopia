@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Laptop, Smartphone, Gamepad, Brain, Award, Star, Calendar, FileText, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -16,6 +17,7 @@ interface BaseContent {
   excerpt: string;
   author: string;
   readTime: string;
+  type: 'review' | 'article';
   slug: string;
   categorySlug?: string;
   award?: string | null;
@@ -157,7 +159,7 @@ const FeaturedContent = () => {
           } = item.content || {};
           
           // Create safe base content object
-          const baseContent: Omit<BaseContent, 'type'> = {
+          const baseContent: BaseContent = {
             id,
             title,
             category: 'Technology', // Default category
@@ -165,6 +167,7 @@ const FeaturedContent = () => {
             excerpt: description || 'No description available',
             author: 'Tech Writer',
             readTime: '5 min read',
+            type: type as 'review' | 'article',
             slug: id,
             categorySlug: 'technology',
             award: type === 'review' ? 'editors-choice' : null,
@@ -218,7 +221,7 @@ const FeaturedContent = () => {
           excerpt: 'The latest Dell XPS 13 Plus brings innovative design and powerful performance.',
           author: 'Tech Reviewer',
           readTime: '8 min read',
-          type: 'review' as const,
+          type: 'review',
           slug: 'dell-xps-13-plus-review',
           categorySlug: 'technology',
           rating: 4.7,
@@ -232,7 +235,7 @@ const FeaturedContent = () => {
           excerpt: 'How artificial intelligence is changing the landscape of consumer technology.',
           author: 'AI Specialist',
           readTime: '6 min read',
-          type: 'article' as const,
+          type: 'article',
           slug: 'future-of-ai-consumer-tech',
           categorySlug: 'technology'
         }
@@ -251,7 +254,7 @@ const FeaturedContent = () => {
                 excerpt: 'Reviewing the latest gaming laptop with cutting-edge graphics and performance.',
                 author: 'Gaming Expert',
                 readTime: '7 min read',
-                type: 'review' as const,
+                type: 'review',
                 slug: `gaming-laptop-review-${i}`,
                 categorySlug: 'technology',
                 rating: 4.2 + (i / 10),
@@ -264,7 +267,7 @@ const FeaturedContent = () => {
                 excerpt: 'Exploring the emerging technology trends to watch this year.',
                 author: 'Trend Analyst',
                 readTime: '5 min read',
-                type: 'article' as const,
+                type: 'article',
                 slug: `tech-trends-${2023 + i}`,
                 categorySlug: 'technology',
               }
@@ -428,7 +431,7 @@ const Index = () => {
               excerpt: item.description || 'No description available',
               author: 'Tech Reviewer',
               readTime: '5 min read',
-              type: 'review' as const,
+              type: 'review',
               slug: item.id,
               categorySlug: 'technology',
               rating: reviewDetail?.overall_score || 4.5,
@@ -448,7 +451,7 @@ const Index = () => {
               excerpt: 'The definitive MacBook Pro review with M2 Pro chip benchmarks.',
               author: 'Apple Expert',
               readTime: '10 min read',
-              type: 'review' as const,
+              type: 'review',
               slug: 'macbook-pro-m2-pro-review',
               categorySlug: 'technology',
               rating: 4.9
@@ -461,7 +464,7 @@ const Index = () => {
               excerpt: 'The pinnacle of AMD-powered gaming laptops in a compact form factor.',
               author: 'Gaming Reviewer',
               readTime: '8 min read',
-              type: 'review' as const,
+              type: 'review',
               slug: 'asus-rog-zephyrus-g14-review',
               categorySlug: 'technology',
               rating: 4.7
@@ -474,12 +477,12 @@ const Index = () => {
               excerpt: 'The most repairable and upgradeable laptop on the market gets better.',
               author: 'Hardware Expert',
               readTime: '7 min read',
-              type: 'review' as const,
+              type: 'review',
               slug: 'framework-laptop-13-review',
               categorySlug: 'technology',
               rating: 4.6
             }
-          ] as Review[];
+          ];
         }
         
         return reviews;

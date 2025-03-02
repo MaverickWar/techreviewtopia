@@ -1,9 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
-import { toast } from "@/components/ui/use-toast";
-import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
 
 interface CategorySectionProps {
   selectedCategory: string | null;
@@ -18,10 +16,9 @@ export const CategorySection = ({
   onCategoryChange,
   onPageIdChange
 }: CategorySectionProps) => {
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   // Get categories query
-  const { data: categories, isLoading: isLoadingCategories } = useQuery({
+  const { data: categories } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       console.log('Fetching categories');
@@ -30,14 +27,7 @@ export const CategorySection = ({
         .select('id, name')
         .order('order_index');
       
-      if (error) {
-        toast({
-          title: "Error fetching categories",
-          description: error.message,
-          variant: "destructive"
-        });
-        throw error;
-      }
+      if (error) throw error;
       console.log('Categories:', data);
       return data;
     },
@@ -55,14 +45,7 @@ export const CategorySection = ({
         .eq('category_id', selectedCategory)
         .order('order_index');
       
-      if (error) {
-        toast({
-          title: "Error fetching subcategories",
-          description: error.message,
-          variant: "destructive"
-        });
-        throw error;
-      }
+      if (error) throw error;
       console.log('Subcategories loaded:', data);
       return data;
     },
@@ -71,114 +54,83 @@ export const CategorySection = ({
   // If we have a pageId but no selectedCategory, fetch the parent category
   useEffect(() => {
     const fetchParentCategory = async () => {
-      if (pageId && !selectedCategory && isInitialLoad) {
+      if (pageId && !selectedCategory) {
         console.log('Fetching parent category for page ID:', pageId);
-        setIsInitialLoad(false);
         
-        try {
-          // First check if this is a menu item ID
-          const { data: menuItem, error: menuItemError } = await supabase
-            .from('menu_items')
-            .select('id, category_id')
-            .eq('id', pageId)
-            .maybeSingle();
-          
-          if (!menuItemError && menuItem?.category_id) {
-            console.log('Found category from menu item:', menuItem.category_id);
-            onCategoryChange(menuItem.category_id);
+        // First check if this is a menu item ID
+        const { data: menuItem, error: menuItemError } = await supabase
+          .from('menu_items')
+          .select('category_id')
+          .eq('id', pageId)
+          .maybeSingle();
+        
+        if (!menuItemError && menuItem?.category_id) {
+          console.log('Found category from menu item:', menuItem.category_id);
+          onCategoryChange(menuItem.category_id);
+          return;
+        }
+        
+        // If not a direct menu item, check if it's a page with menu_item_id
+        const { data: page, error: pageError } = await supabase
+          .from('pages')
+          .select('menu_item_id, menu_category_id')
+          .eq('id', pageId)
+          .maybeSingle();
+        
+        if (pageError) {
+          console.error('Error fetching page:', pageError);
+          return;
+        }
+        
+        if (page) {
+          if (page.menu_category_id) {
+            console.log('Found category directly from page:', page.menu_category_id);
+            onCategoryChange(page.menu_category_id);
             return;
           }
           
-          // If not a direct menu item, check if it's a page with menu_item_id
-          const { data: page, error: pageError } = await supabase
-            .from('pages')
-            .select('id, menu_item_id, menu_category_id')
-            .eq('id', pageId)
-            .maybeSingle();
-          
-          if (pageError) {
-            console.error('Error fetching page:', pageError);
-            return;
-          }
-          
-          if (page) {
-            if (page.menu_category_id) {
-              console.log('Found category directly from page:', page.menu_category_id);
-              onCategoryChange(page.menu_category_id);
+          if (page.menu_item_id) {
+            // Get the category from the menu item
+            const { data: relatedMenuItem, error: relatedMenuItemError } = await supabase
+              .from('menu_items')
+              .select('category_id')
+              .eq('id', page.menu_item_id)
+              .maybeSingle();
+            
+            if (!relatedMenuItemError && relatedMenuItem?.category_id) {
+              console.log('Found category from related menu item:', relatedMenuItem.category_id);
+              onCategoryChange(relatedMenuItem.category_id);
               return;
             }
-            
-            if (page.menu_item_id) {
-              // Get the category from the menu item
-              const { data: relatedMenuItem, error: relatedMenuItemError } = await supabase
-                .from('menu_items')
-                .select('category_id')
-                .eq('id', page.menu_item_id)
-                .maybeSingle();
-              
-              if (!relatedMenuItemError && relatedMenuItem?.category_id) {
-                console.log('Found category from related menu item:', relatedMenuItem.category_id);
-                onCategoryChange(relatedMenuItem.category_id);
-                return;
-              }
-            }
           }
-        } catch (error) {
-          console.error('Error resolving category relationship:', error);
-          toast({
-            title: "Error resolving category",
-            description: "Could not determine the parent category for this content",
-            variant: "destructive"
-          });
         }
       }
     };
     
     fetchParentCategory();
-  }, [pageId, selectedCategory, onCategoryChange, isInitialLoad]);
-
-  // Validate the selected subcategory belongs to the current category
-  useEffect(() => {
-    if (selectedCategory && pageId && subcategories && !isLoadingSubcategories) {
-      // Check if the pageId is in the current subcategories list
-      const subcategoryExists = subcategories.some(sub => sub.id === pageId);
-      
-      // If not found and we have subcategories, reset the pageId
-      if (!subcategoryExists && subcategories.length > 0) {
-        console.log('Selected subcategory does not belong to current category, resetting');
-        onPageIdChange(null);
-      }
-    }
-  }, [selectedCategory, pageId, subcategories, isLoadingSubcategories, onPageIdChange]);
+  }, [pageId, selectedCategory, onCategoryChange]);
 
   return (
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium mb-1">Category</label>
-        {isLoadingCategories ? (
-          <div className="flex items-center space-x-2 h-10">
-            <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-            <span className="text-sm text-gray-500">Loading categories...</span>
-          </div>
-        ) : (
-          <select
-            className="w-full rounded-md border border-input bg-background px-3 py-2"
-            value={selectedCategory || ''}
-            onChange={(e) => {
-              const newCategoryId = e.target.value || null;
-              console.log('Selected category changed to:', newCategoryId);
-              onCategoryChange(newCategoryId);
-              onPageIdChange(null);
-            }}
-          >
-            <option value="">Select a category</option>
-            {categories?.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        )}
+        <select
+          className="w-full rounded-md border border-input bg-background px-3 py-2"
+          value={selectedCategory || ''}
+          onChange={(e) => {
+            const newCategoryId = e.target.value || null;
+            console.log('Selected category changed to:', newCategoryId);
+            onCategoryChange(newCategoryId);
+            onPageIdChange(null);
+          }}
+        >
+          <option value="">Select a category</option>
+          {categories?.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {selectedCategory && (
@@ -192,11 +144,7 @@ export const CategorySection = ({
           <select
             className="w-full rounded-md border border-input bg-background px-3 py-2"
             value={pageId || ''}
-            onChange={(e) => {
-              const newSubcategoryId = e.target.value || null;
-              console.log('Selected subcategory changed to:', newSubcategoryId);
-              onPageIdChange(newSubcategoryId);
-            }}
+            onChange={(e) => onPageIdChange(e.target.value || null)}
             disabled={isLoadingSubcategories}
           >
             <option value="">Select a subcategory</option>
