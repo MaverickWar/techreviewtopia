@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Laptop, Smartphone, Gamepad, Brain, Award, Star, Calendar, FileText, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -137,13 +138,63 @@ const FeaturedContent = () => {
         `)
         .order('position');
 
-      if (error) return [];
+      if (error) {
+        console.error("Error fetching featured content:", error);
+        return [];
+      }
       
-      const transformedContent: ContentItem[] = data
-        .filter(item => item.content)
+      // Filter out any items where content is null
+      const validData = data.filter(item => item.content);
+      
+      const transformedContent: ContentItem[] = validData
         .map(item => {
-          // ... existing transformation logic
+          // Safely destructure content with default values to prevent null reference errors
+          const { 
+            id = '',
+            title = '',
+            description = '',
+            featured_image = '',
+            type = 'article',
+            review_details = []
+          } = item.content || {};
+          
+          // Create safe base content object
+          const baseContent: BaseContent = {
+            id,
+            title,
+            category: 'Technology', // Default category
+            image: featured_image || 'https://images.unsplash.com/photo-1661956602944-249bcd04b63f',
+            excerpt: description || 'No description available',
+            author: 'Tech Writer',
+            readTime: '5 min read',
+            type: type as 'review' | 'article',
+            slug: id,
+            categorySlug: 'technology',
+            award: type === 'review' ? 'editors-choice' : null,
+          };
+          
+          // For reviews, add rating information
+          if (type === 'review') {
+            const firstReview = Array.isArray(review_details) && review_details.length > 0 
+              ? review_details[0] 
+              : { overall_score: 4.5, youtube_url: null };
+            
+            return {
+              ...baseContent,
+              type: 'review' as const,
+              rating: firstReview.overall_score || 4.5,
+              youtubeUrl: firstReview.youtube_url
+            };
+          }
+          
+          // For articles
+          return {
+            ...baseContent,
+            type: 'article' as const
+          };
         });
+
+      console.log("Transformed content:", transformedContent);
 
       return transformedContent.sort((a, b) => {
         if (a.type === 'review' && b.type !== 'review') return -1;
@@ -157,8 +208,88 @@ const FeaturedContent = () => {
   });
 
   useEffect(() => {
-    if (featuredContent) setAllContent(featuredContent);
-  }, [featuredContent]);
+    if (featuredContent && featuredContent.length > 0) {
+      setAllContent(featuredContent);
+    } else if (!isLoading && (!featuredContent || featuredContent.length === 0)) {
+      // Fallback mock data if no featured content is available
+      const mockContent: ContentItem[] = [
+        {
+          id: 'mock-1',
+          title: 'Dell XPS 13 Plus Review',
+          category: 'Laptops',
+          image: 'https://images.unsplash.com/photo-1593642702749-b7d2a804fbcf',
+          excerpt: 'The latest Dell XPS 13 Plus brings innovative design and powerful performance.',
+          author: 'Tech Reviewer',
+          readTime: '8 min read',
+          type: 'review',
+          slug: 'dell-xps-13-plus-review',
+          categorySlug: 'technology',
+          rating: 4.7,
+          award: 'editors-choice'
+        },
+        {
+          id: 'mock-2',
+          title: 'The Future of AI in Consumer Tech',
+          category: 'Technology',
+          image: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485',
+          excerpt: 'How artificial intelligence is changing the landscape of consumer technology.',
+          author: 'AI Specialist',
+          readTime: '6 min read',
+          type: 'article',
+          slug: 'future-of-ai-consumer-tech',
+          categorySlug: 'technology'
+        }
+      ];
+      
+      // Add more mock items to have a decent amount for display
+      const expandedMock = [...mockContent];
+      for (let i = 3; i <= 8; i++) {
+        expandedMock.push(
+          i % 2 === 0 
+            ? {
+                id: `mock-${i}`,
+                title: `Latest Gaming Laptop Review ${i}`,
+                category: 'Gaming',
+                image: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45',
+                excerpt: 'Reviewing the latest gaming laptop with cutting-edge graphics and performance.',
+                author: 'Gaming Expert',
+                readTime: '7 min read',
+                type: 'review',
+                slug: `gaming-laptop-review-${i}`,
+                categorySlug: 'technology',
+                rating: 4.2 + (i / 10),
+              }
+            : {
+                id: `mock-${i}`,
+                title: `Tech Trends ${2023 + i}`,
+                category: 'Technology',
+                image: 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b',
+                excerpt: 'Exploring the emerging technology trends to watch this year.',
+                author: 'Trend Analyst',
+                readTime: '5 min read',
+                type: 'article',
+                slug: `tech-trends-${2023 + i}`,
+                categorySlug: 'technology',
+              }
+        );
+      }
+      
+      setAllContent(expandedMock);
+    }
+  }, [featuredContent, isLoading]);
+
+  // Handle the case when allContent is still empty
+  if (allContent.length === 0) {
+    return (
+      <section className="py-12 bg-white">
+        <div className="content-container">
+          <div className="text-center py-12">
+            <p className="text-gray-500">Loading featured content...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   const mainFeatured = allContent[0] || null;
   const secondaryFeatured = allContent.slice(1, 5);
@@ -267,7 +398,98 @@ const Index = () => {
   const { data: reviewData } = useQuery({
     queryKey: ['topRatedReviews'],
     queryFn: async () => {
-      // ... existing supabase query
+      try {
+        const { data, error } = await supabase
+          .from('content')
+          .select(`
+            id,
+            title,
+            description,
+            featured_image,
+            review_details(overall_score, youtube_url)
+          `)
+          .eq('type', 'review')
+          .eq('status', 'published')
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (error) {
+          console.error("Error fetching top rated reviews:", error);
+          return [];
+        }
+
+        // Transform the data to match our Review interface
+        const reviews: Review[] = data
+          .filter(item => item.review_details && item.review_details.length > 0)
+          .map(item => {
+            const reviewDetail = item.review_details[0];
+            return {
+              id: item.id,
+              title: item.title || 'Untitled Review',
+              category: 'Technology',
+              image: item.featured_image || 'https://images.unsplash.com/photo-1661956602944-249bcd04b63f',
+              excerpt: item.description || 'No description available',
+              author: 'Tech Reviewer',
+              readTime: '5 min read',
+              type: 'review',
+              slug: item.id,
+              categorySlug: 'technology',
+              rating: reviewDetail?.overall_score || 4.5,
+              youtubeUrl: reviewDetail?.youtube_url || null
+            };
+          })
+          .sort((a, b) => b.rating - a.rating);
+        
+        // If no real data, provide fallback data
+        if (reviews.length === 0) {
+          return [
+            {
+              id: 'mock-review-1',
+              title: 'MacBook Pro M2 Pro Review',
+              category: 'Laptops',
+              image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8',
+              excerpt: 'The definitive MacBook Pro review with M2 Pro chip benchmarks.',
+              author: 'Apple Expert',
+              readTime: '10 min read',
+              type: 'review',
+              slug: 'macbook-pro-m2-pro-review',
+              categorySlug: 'technology',
+              rating: 4.9
+            },
+            {
+              id: 'mock-review-2',
+              title: 'Asus ROG Zephyrus G14 Review',
+              category: 'Gaming Laptops',
+              image: 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89',
+              excerpt: 'The pinnacle of AMD-powered gaming laptops in a compact form factor.',
+              author: 'Gaming Reviewer',
+              readTime: '8 min read',
+              type: 'review',
+              slug: 'asus-rog-zephyrus-g14-review',
+              categorySlug: 'technology',
+              rating: 4.7
+            },
+            {
+              id: 'mock-review-3',
+              title: 'Framework Laptop 13 Review',
+              category: 'Laptops',
+              image: 'https://images.unsplash.com/photo-1602080858428-57174f9431cf',
+              excerpt: 'The most repairable and upgradeable laptop on the market gets better.',
+              author: 'Hardware Expert',
+              readTime: '7 min read',
+              type: 'review',
+              slug: 'framework-laptop-13-review',
+              categorySlug: 'technology',
+              rating: 4.6
+            }
+          ];
+        }
+        
+        return reviews;
+      } catch (error) {
+        console.error("Error in topRatedReviews query:", error);
+        return [];
+      }
     }
   });
 
@@ -323,6 +545,7 @@ const Index = () => {
                         src={review.image} 
                         className="object-cover h-full w-full"
                         loading="lazy"
+                        alt={review.title}
                       />
                       <div className="absolute top-2 left-2">
                         <Badge className="bg-purple-600 flex items-center gap-1 text-xs">
