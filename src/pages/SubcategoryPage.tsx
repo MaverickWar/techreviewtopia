@@ -1,4 +1,3 @@
-
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -212,7 +211,6 @@ export const SubcategoryPage = () => {
               key={item.id}
               slug={item.id}
               categorySlug={categorySlug || ""}
-              subcategorySlug={subcategorySlug || ""}
               title={item.title}
               description={item.description}
               type={item.type}

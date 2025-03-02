@@ -5,7 +5,7 @@ import { Star, Calendar, FileText, Award } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
-interface ContentPreviewCardProps {
+export interface ContentPreviewCardProps {
   slug: string;
   categorySlug: string;
   title: string;
