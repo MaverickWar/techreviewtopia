@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -280,7 +279,7 @@ export const FormContainer = ({ initialData }: FormContainerProps) => {
               <AccordionContent>
                 <LayoutSectionWrapper
                   contentType={formData.type}
-                  layoutTemplate={formData.layout_template || "classic"}
+                  layoutTemplate={getValidLayoutTemplate(formData.layout_template)}
                   layoutSettings={formData.layout_settings || {}}
                   previewArticle={previewArticle as ArticleData}
                   onLayoutChange={(layout) => {
