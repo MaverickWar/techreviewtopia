@@ -4,7 +4,7 @@ import { ArticleData } from "@/types/content";
 import { AwardBanner } from "./AwardBanner";
 import { AwardRibbon } from "./AwardRibbon";
 import { formatDistanceToNow } from "date-fns";
-import { Star, StarHalf, User, Clock, Bookmark, Video, ExternalLink } from "lucide-react";
+import { Star, StarHalf, User, Clock, Bookmark, Video, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +16,7 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
   const reviewDetails = article.review_details?.[0];
   const ratingCriteria = article.rating_criteria || [];
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   const awardLevel = article.layout_settings?.awardLevel || article.layout_settings?.award;
   const showAwards = article.layout_settings?.showAwards !== undefined ? 
@@ -130,6 +131,76 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
     setVideoLoaded(false);
   };
 
+  // Enhanced product specs parsing and display
+  const parseProductSpecs = (specs: any) => {
+    if (!specs) return [];
+    
+    // If specs is an array of {label, value} objects
+    if (Array.isArray(specs)) {
+      return [{
+        category: "General",
+        items: specs.map(spec => ({
+          label: spec.label || spec.name,
+          value: spec.value
+        }))
+      }];
+    }
+    
+    // If specs is an object with category keys
+    if (typeof specs === 'object') {
+      return Object.entries(specs).map(([category, items]) => {
+        // If the items is itself an object of key-value pairs
+        if (items && typeof items === 'object' && !Array.isArray(items)) {
+          return {
+            category,
+            items: Object.entries(items as Record<string, any>).map(([label, value]) => ({
+              label,
+              value: String(value)
+            }))
+          };
+        }
+        
+        // If items is already an array
+        if (Array.isArray(items)) {
+          return {
+            category,
+            items: items.map(item => ({
+              label: item.label || item.name,
+              value: item.value
+            }))
+          };
+        }
+        
+        // Fallback for simple key-value
+        return {
+          category,
+          items: [{
+            label: category,
+            value: String(items)
+          }]
+        };
+      });
+    }
+    
+    return [];
+  };
+
+  const formattedSpecs = useMemo(() => parseProductSpecs(reviewDetails?.product_specs), [reviewDetails?.product_specs]);
+
+  const toggleSection = (category: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
+  // Default to first section expanded
+  useEffect(() => {
+    if (formattedSpecs.length > 0 && Object.keys(expandedSections).length === 0) {
+      setExpandedSections({ [formattedSpecs[0].category]: true });
+    }
+  }, [formattedSpecs]);
+
   return (
     <article className="max-w-5xl mx-auto px-4 py-8">
       {showAwards && awardLevel && <AwardBanner awardLevel={awardLevel} />}
@@ -212,25 +283,37 @@ export const ReviewLayout: React.FC<ReviewLayoutProps> = ({ article }) => {
         </div>
         
         <aside className="space-y-8">
-          {reviewDetails?.product_specs && (
-            <div className="bg-gray-50 p-6 rounded-lg">
+          {formattedSpecs.length > 0 && (
+            <div className="bg-gray-50 p-6 rounded-lg border border-gray-100">
               <h3 className="text-lg font-bold mb-4">Product Specifications</h3>
-              <dl className="space-y-2">
-                {Array.isArray(reviewDetails.product_specs) ? 
-                  reviewDetails.product_specs.map((spec, index) => (
-                    <div key={index} className="grid grid-cols-2 gap-4">
-                      <dt className="text-gray-600 font-medium">{spec.label}</dt>
-                      <dd className="font-medium">{String(spec.value)}</dd>
-                    </div>
-                  )) : 
-                  Object.entries(reviewDetails.product_specs || {}).map(([key, value], index) => (
-                    <div key={index} className="grid grid-cols-2 gap-4">
-                      <dt className="text-gray-600 font-medium">{key}</dt>
-                      <dd className="font-medium">{String(value)}</dd>
-                    </div>
-                  ))
-                }
-              </dl>
+              <div className="divide-y divide-gray-200">
+                {formattedSpecs.map((section, index) => (
+                  <div key={index} className="py-2">
+                    <button 
+                      onClick={() => toggleSection(section.category)}
+                      className="flex justify-between items-center w-full py-2 font-medium text-gray-800 hover:text-blue-600 transition-colors"
+                    >
+                      {section.category}
+                      {expandedSections[section.category] ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </button>
+                    
+                    {expandedSections[section.category] && (
+                      <div className="mt-2 space-y-2 pl-2">
+                        {section.items.map((spec, i) => (
+                          <div key={i} className="grid grid-cols-2 gap-2 text-sm pb-1">
+                            <div className="text-gray-600">{spec.label}</div>
+                            <div className="font-medium">{spec.value}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
           
