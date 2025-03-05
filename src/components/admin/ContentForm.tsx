@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
@@ -20,7 +19,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ContentType, ContentStatus, LayoutTemplate, ArticleData } from "@/types/content";
+import { ContentType, ContentStatus, LayoutTemplate, ArticleData, LAYOUT_OPTIONS } from "@/types/content";
 import RichTextEditor from "@/components/editor/RichTextEditor";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -36,6 +35,19 @@ import { LayoutSectionWrapper } from "./content-form/LayoutSectionWrapper";
 interface ContentFormProps {
   initialData?: ContentFormData;
 }
+
+// Helper function to validate if a string is a valid LayoutTemplate
+const isValidLayoutTemplate = (layout: string): layout is LayoutTemplate => {
+  return LAYOUT_OPTIONS.some(option => option.id === layout);
+};
+
+// Helper function to get a valid layout template or default to "classic"
+const getValidLayoutTemplate = (layout?: string): LayoutTemplate => {
+  if (layout && isValidLayoutTemplate(layout)) {
+    return layout;
+  }
+  return "classic";
+};
 
 export const ContentForm = ({ initialData }: ContentFormProps) => {
   const { id } = useParams();
@@ -216,8 +228,8 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         }
       }
 
-      // Get the layout template from existing content
-      const layoutTemplate = existingContent.layout_template || 'classic';
+      // Get the layout template from existing content and ensure it's valid
+      const layoutTemplate = getValidLayoutTemplate(existingContent.layout_template);
       console.log('Setting layout template from existing content:', layoutTemplate);
 
       // Get the page and menu item information
@@ -246,7 +258,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         rating_criteria: existingContent.rating_criteria || [],
         overall_score: reviewDetails?.overall_score || 0,
         youtube_url: reviewDetails?.youtube_url || null,
-        layout_template: layoutTemplate as LayoutTemplate,
+        layout_template: layoutTemplate,
         layout_settings: layoutSettings
       });
 
@@ -285,7 +297,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     console.log("Layout template changed to:", layoutTemplate);
     setFormData(prev => ({
       ...prev,
-      layout_template: layoutTemplate as LayoutTemplate
+      layout_template: getValidLayoutTemplate(layoutTemplate)
     }));
   };
 
@@ -380,6 +392,9 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
         throw new Error("You must be logged in to create or edit content");
       }
 
+      // Ensure we have a valid LayoutTemplate
+      const validLayoutTemplate = getValidLayoutTemplate(data.layout_template);
+
       // If editing existing content (has an ID), update directly
       if (data.id) {
         // Update content without trying to associate with menu items/pages
@@ -393,7 +408,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             status: data.status,
             author_id: data.author_id,
             featured_image: data.featured_image,
-            layout_template: data.layout_template,
+            layout_template: validLayoutTemplate,
             layout_settings: data.layout_settings || {}
           })
           .eq("id", data.id)
@@ -475,7 +490,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
             status: data.status,
             author_id: data.author_id,
             featured_image: data.featured_image,
-            layout_template: data.layout_template,
+            layout_template: validLayoutTemplate,
             layout_settings: data.layout_settings || {}
           })
           .select()
@@ -557,7 +572,7 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     content: formData.content,
     type: formData.type,
     featured_image: formData.featured_image,
-    layout_template: formData.layout_template,
+    layout_template: getValidLayoutTemplate(formData.layout_template),
     published_at: new Date().toISOString(),
     review_details: formData.type === "review" ? [{
       id: "preview",
@@ -793,4 +808,3 @@ export const ContentForm = ({ initialData }: ContentFormProps) => {
     </form>
   );
 };
-
