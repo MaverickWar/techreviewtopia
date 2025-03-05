@@ -7,7 +7,7 @@ import { CategoryPage } from "@/pages/CategoryPage";
 import { SubcategoryPage } from "@/pages/SubcategoryPage";
 import ArticlePage from "@/pages/ArticlePage";
 import NotFound from "@/pages/NotFound";
-import { AdminLayout } from "@/components/admin/AdminLayout";
+import { NewAdminLayout } from "@/components/admin/NewAdminLayout";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { ContentManager } from "@/components/admin/ContentManager";
 import { PagesManager } from "@/components/admin/pages/PagesManager";
@@ -33,7 +33,7 @@ function App() {
         <Route path=":categorySlug/content/:contentId" element={<ArticlePage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
-      <Route path="/admin" element={<AdminLayout><Outlet /></AdminLayout>}>
+      <Route path="/admin" element={<NewAdminLayout><Outlet /></NewAdminLayout>}>
         <Route index element={<AdminDashboard />} />
         <Route path="content/*" element={<ContentManager />} />
         <Route path="pages/*" element={<PagesManager />} />
