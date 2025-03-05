@@ -16,16 +16,16 @@ export const ClassicLayout: React.FC<ClassicLayoutProps> = ({ article }) => {
   const showAwards = article.layout_settings?.showAwards !== undefined ? 
     article.layout_settings.showAwards : true;
   
-  console.log("ClassicLayout - article:", article);
-  console.log("ClassicLayout - layout_settings:", article.layout_settings);
-  console.log("ClassicLayout - award level:", awardLevel);
-  console.log("ClassicLayout - show awards:", showAwards);
-
   // Helper function to format the date
   const formatPublishDate = (dateString: string | null) => {
     if (!dateString) return "Recently";
     return formatDistanceToNow(new Date(dateString), { addSuffix: true });
   };
+
+  // Extract author name with fallback
+  const authorName = article.author?.display_name || 
+                     article.author?.email?.split('@')[0] || 
+                     "Editorial Team";
 
   return (
     <article className="max-w-4xl mx-auto px-4 py-8 overflow-x-hidden">
@@ -39,7 +39,7 @@ export const ClassicLayout: React.FC<ClassicLayoutProps> = ({ article }) => {
         
         {article.description && (
           <div 
-            className="text-xl text-gray-700 mb-6 leading-relaxed break-words"
+            className="text-xl text-gray-700 mb-6 leading-relaxed break-words prose"
             dangerouslySetInnerHTML={{ __html: article.description }}
           />
         )}
@@ -47,7 +47,7 @@ export const ClassicLayout: React.FC<ClassicLayoutProps> = ({ article }) => {
         <div className="flex flex-wrap items-center text-sm text-gray-500 gap-4 mb-6">
           <div className="flex items-center">
             <User className="h-4 w-4 mr-1 flex-shrink-0" />
-            <span className="truncate">{article.author?.display_name || "Editorial Team"}</span>
+            <span className="truncate">By {authorName}</span>
           </div>
           
           {article.published_at && (

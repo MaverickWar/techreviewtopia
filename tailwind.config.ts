@@ -262,6 +262,38 @@ export default {
               marginBottom: '1.6em',
               paddingLeft: '1em',
             },
+            // Add additional rules to preserve inline styles
+            '*': {
+              maxWidth: '100%'
+            },
+            // Ensure inline styles are preserved
+            '[style]': {
+              display: 'inline-block',
+              maxWidth: '100%'
+            },
+            // Add better table styling
+            'table': {
+              width: '100%',
+              tableLayout: 'fixed',
+              borderCollapse: 'collapse',
+              marginTop: '1.5em',
+              marginBottom: '1.5em'
+            },
+            'table td, table th': {
+              borderColor: 'var(--tw-prose-td-borders)',
+              padding: '0.75em',
+              verticalAlign: 'top'
+            },
+            // Support for divs with styles
+            'div': {
+              maxWidth: '100%',
+              marginTop: '1em',
+              marginBottom: '1em'
+            },
+            // Preserve spans with styling
+            'span[style]': {
+              display: 'inline'
+            }
           },
         },
       },

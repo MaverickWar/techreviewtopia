@@ -73,16 +73,18 @@ const ArticlePage = () => {
           }
         }
         
-        // Get author information
+        // Get author information with more details
         const { data: authorData, error: authorError } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, email, display_name, avatar_url, role')
           .eq('id', contentData.author_id)
           .maybeSingle();
           
         if (authorError) {
           console.error("Error fetching author details:", authorError);
         }
+        
+        console.log("Author data:", authorData);
         
         // Normalize layout settings if they exist
         let normalizedLayoutSettings = contentData.layout_settings || {};
